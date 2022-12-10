@@ -1,3 +1,5 @@
+#! /usr/bin/env php
+
 <?php
 
 // parse the IMSLP data (in JSON/mediawiki format) and populate the SQL DB
@@ -9,62 +11,96 @@ require_once("template.inc");
 function parse_title() {
 }
 
+function process_files($body) {
+    echo "start process_files\n";
+    $pos = 0;
+    while ($pos < strlen($body)) {
+        $pos = strpos($body, '{{', $pos);
+        if ($pos === false) break;
+        [$template_name, $args, $end_pos] = parse_template($body, $pos);
+        $pos = $end_pos;
+        echo sprintf("got template %s, %d args\n", $template_name, count($args));
+    }
+    echo "end process_files\n";
+}
+
 function do_composition($title, $body) {
-    echo "processing $title\n";
+    echo "\n------------------\nprocessing $title\n";
     if (starts_with($body, '#REDIRECT')) {
         echo "Redirect; skipping\n";
         return;
     }
-    [$template_name, $args] = parse_template($body);
-    echo "got $template_name\n";
-    if (strtolower($template_name) == 'attrib') {
-        echo "Got attrib:\n";
-    } else if ($template_name == '#fte:imslppage') {
-        foreach ($args as $name=>$arg) {
-            echo "arg $name:\n";
-            if ($name === '*****AUDIO*****') {
-            } else if ($name === '*****FILES*****') {
-            } else if ($name === 'NCRecordings') {
-            } else if ($name === 'Work Title') {
-                echo "title: $arg\n";
-            } else if ($name === 'Alternative Title') {
-            } else if ($name === 'Opus/Catalogue Number') {
-                echo "opus: $arg\n";
-            } else if ($name === 'Key') {
-            } else if ($name === 'Movements Header') {
-            } else if ($name === 'Number of Movements/Sections') {
-            } else if ($name === 'Incipit') {
-            } else if ($name === 'Dedication') {
-            } else if ($name === 'First Performance') {
-            } else if ($name === 'Year/Date of Composition') {
-            } else if ($name === 'Year of First Publication') {
-            } else if ($name === 'Librettist') {
-            } else if ($name === 'Language') {
-            } else if ($name === 'Related Works') {
-            } else if ($name === 'Extra Information') {
-            } else if ($name === 'Piece Style') {
-            } else if ($name === 'Authorities') {
-            } else if ($name === 'Manuscript Sources') {
-            } else if ($name === 'Average Duration') {
-            } else if ($name === 'SearchKey') {
-            } else if ($name === 'SearchKey-amarec') {
-            } else if ($name === 'SearchKey-scores') {
-            } else if ($name === 'External Links') {
-            } else if ($name === 'Discography') {
-            } else if ($name === 'Instrumentation') {
-            } else if ($name === 'InstrDetail') {
-            } else if ($name === 'Tags') {
-            } else if ($name === '*****COMMENTS*****') {
-            } else if ($name === '*****END OF TEMPLATE*****') {
-            } else if ($arg === '*****WORK INFO*****') {
-            } else if ($arg === '*****END OF TEMPLATE*****') {
-            } else {
-                echo "unrecognized arg name: $name: $arg\n";
+    $pos = 0;
+    while ($pos < strlen($body)) {
+        //echo sprintf('---- start of while: pos %d (%s)\n', $pos, substr($body, $pos, 2));
+        $x = strpos($body, '{{', $pos);
+        if ($x === false) {
+            $y = trim(substr($body, $pos));
+            if ($y) {
+                echo "non-template text at end: $y\n";
             }
+            break;
         }
-    } else {
-        echo "unrecognized: ($template_name) $body\n";
-        exit;
+        $y = trim(substr2($body, $pos, $x));
+        if ($y) {
+            echo "non-template text: $y\n";
+        }
+        $pos = $x;
+        [$template_name, $args, $end_pos] = parse_template($body, $pos);
+        echo "got template $template_name\n";
+        $pos = $end_pos;
+        if (strtolower($template_name) == 'attrib') {
+            echo "Got attrib\n";
+        } else if ($template_name == '#fte:imslppage') {
+            foreach ($args as $name=>$arg) {
+                echo "arg $name:\n";
+                if ($name === '*****AUDIO*****') {
+                } else if ($name === '*****FILES*****') {
+                    process_files($arg);
+                } else if ($name === 'NCRecordings') {
+                } else if ($name === 'Work Title') {
+                    echo "title: $arg\n";
+                } else if ($name === 'Alternative Title') {
+                } else if ($name === 'Opus/Catalogue Number') {
+                    echo "opus: $arg\n";
+                } else if ($name === 'Key') {
+                } else if ($name === 'Movements Header') {
+                } else if ($name === 'Number of Movements/Sections') {
+                } else if ($name === 'Incipit') {
+                } else if ($name === 'Dedication') {
+                } else if ($name === 'First Performance') {
+                } else if ($name === 'Year/Date of Composition') {
+                } else if ($name === 'Year of First Publication') {
+                } else if ($name === 'Librettist') {
+                } else if ($name === 'Language') {
+                } else if ($name === 'Related Works') {
+                } else if ($name === 'Extra Information') {
+                } else if ($name === 'Piece Style') {
+                } else if ($name === 'Authorities') {
+                } else if ($name === 'Manuscript Sources') {
+                } else if ($name === 'Average Duration') {
+                } else if ($name === 'SearchKey') {
+                } else if ($name === 'SearchKey-amarec') {
+                } else if ($name === 'SearchKey-scores') {
+                } else if ($name === 'External Links') {
+                } else if ($name === 'Discography') {
+                } else if ($name === 'Instrumentation') {
+                } else if ($name === 'InstrDetail') {
+                } else if ($name === 'Tags') {
+                } else if ($name === '*****COMMENTS*****') {
+                    echo "comments: $arg\n";
+                //} else if ($name === '*****END OF TEMPLATE*****') {
+                } else if ($arg === '*****WORK INFO*****') {
+                } else if ($arg === '*****END OF TEMPLATE*****') {
+                    echo "got end of template\n";
+                } else {
+                    echo "unrecognized arg name: $name: $arg\n";
+                }
+            }
+        } else {
+            echo "unrecognized: ($template_name) $body\n";
+            exit;
+        }
     }
 }
 

@@ -100,11 +100,14 @@ function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
 
 // given a string of the form
 // {{tname | arg=val | arg=val ... }}
-// return the template name and an array of argument names and values.
+// return
+//      - the template name
+//      - an array of argument names and values.
+//      - the offset of the position past the }}
 // The values may contain template calls.
 //
-function parse_template($str) {
-    $i = 2;
+function parse_template($str, $start_pos) {
+    $i = $start_pos + 2;
     $args = [];
 
     // get the template name
@@ -130,20 +133,22 @@ function parse_template($str) {
                 add_arg($args, $str, $i, $eq_pos, $arg_end_pos);
                 $i = $arg_end_pos + 1;
             } else {
-                echo "malformed template call: $str\n";
+                echo sprintf('malformed template call: %s\n', substr($str, $start_pos));
+                debug_print_backtrace();
                 exit;
             }
         }
     } else {
-        echo "malformed template call: $str\n";
+        echo sprintf('malformed template call: %s\n', substr($str, $start_pos));
+        debug_print_backtrace();
         exit;
     }
-    return [$template_name, $args];
+    return [$template_name, $args, $template_end_pos+2];
 }
 
 if (0) {
     $x = "{{blah |x=\n |y=\n{{foo: |a=b}}}}";
-    print_r(parse_template($x));
+    print_r(parse_template($x, 0));
 }
 
 ?>

@@ -47,10 +47,82 @@ class IMSLP_person {
     }
 }
 
-class IMSLP_language {
+class IMSLP_style {
     static function insert($clause) {
         $db = IMSLP_DB::get();
-        $ret = $db->insert('language', $clause);
+        $ret = $db->insert('style', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_external_link {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('external_link', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_composition {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('composition', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_imslp_user {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('imslp_user', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_license {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('license', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_score_file_set {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('score_file_set', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_score_file {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('score_file', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_audio_file_set {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('score_file', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+}
+
+class IMSLP_audio_file {
+    static function insert($clause) {
+        $db = IMSLP_DB::get();
+        $ret = $db->insert('score_file', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
