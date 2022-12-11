@@ -1,18 +1,19 @@
 <?php
 
-///////////////////////////
-//
-// code for parsing (possibly nested) Mediawiki template calls
-// These look like
+// Functions for parsing Mediawiki pages.
+// These are an alternation of text and template calls.
+// templates look like
 //      {{name|arg1|arg}}
 // or
 //      {{templatename | name=val | name=val}}
 // and the arguments can contain template calls.
-//
-///////////////////////////
 
 function starts_with($text, $x) {
     return strpos($text, $x) === 0;
+}
+
+function substr2($str, $start, $end) {
+    return substr($str, $start, $end-$start);
 }
 
 // scan a template argument.
@@ -81,10 +82,6 @@ function scan_arg($str, $start_pos) {
     return [$eq_pos, $arg_end_pos, $template_end_pos];
 }
 
-function substr2($str, $start, $end) {
-    return substr($str, $start, $end-$start);
-}
-
 // append an argument (named or positional) to the array $args
 //
 function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
@@ -146,9 +143,54 @@ function parse_template($str, $start_pos) {
     return [$template_name, $args, $template_end_pos+2];
 }
 
+// parse an "item", which is either
+// - a template call, in which case return [object, new_pos]
+// - other text, in which case return [string, new_pos]
+// - the end of the string is reached: return [false, 0]
+//
+function parse_item($str, $pos) {
+    $tstart = strpos($str, '{{', $pos);
+    if ($tstart === false) {
+        // no more template calls
+        //
+        $y = trim(substr($str, $pos));
+        if ($y) {
+            return [$y, strlen($str)];
+        }
+        return [false, 0];
+    }
+    // check for text before the template call
+    //
+    $y = trim(substr2($str, $pos, $tstart));
+    if ($y) {
+        return [$y, $tstart];
+    }
+    // if none, parse the template call
+    //
+    [$template_name, $args, $end_pos] = parse_template($str, $tstart);
+    $x = new StdClass;
+    $x->name = $template_name;
+    $x->args = $args;
+    return [$x, $end_pos];
+}
+
 if (0) {
-    $x = "{{blah |x=\n |y=\n{{foo: |a=b}}}}";
-    print_r(parse_template($x, 0));
+    $str = "foobar {{blah |x=\n |y=\n{{foo: |a=b}}}} blah";
+    $pos = 0;
+    while (true) {
+        [$item, $new_pos] = parse_item($str, $pos);
+        $pos = $new_pos;
+        if ($item === false) break;
+        if (is_string($item)) {
+            echo "got text: $item\n";
+        } else {
+            echo "got template call\n";
+            echo "  name: $item->name\n";
+            foreach ($item->args as $n=>$v) {
+                echo "  arg $n => $v\n";
+            }
+        }
+    }
 }
 
 ?>

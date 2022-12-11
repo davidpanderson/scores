@@ -1,8 +1,8 @@
 # composer, librettist, etc.
 create table person (
     id                      integer         not null auto_increment,
-    last_name               text            not null,
     first_name              text            not null,
+    last_name               text            not null,
     primary key(id)
 );
 
