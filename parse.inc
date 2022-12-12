@@ -1,11 +1,10 @@
-#! /usr/bin/env php
-
 <?php
 
-// parse IMSLP data (in JSON/mediawiki format) and populate the SQL DB
+// parse IMSLP data (in JSON/mediawiki format) into PHP data structures
 
 require_once("mediawiki.inc");
-require_once("imslp_db.inc");
+
+$verbose = false;
 
 // given "Piano_Sonata_No.13,_Op.27_No.1_(Beethoven,_Ludwig_van)" return
 // - title/opus (with spaces)
@@ -71,10 +70,10 @@ function file_args_to_object($args) {
     $f->thumb_filenames = [];
     $f->sample_filenames = [];
     foreach ($args as $name=>$val) {
-        if (starts_with($name, 'File Name')) {
-            $f->file_names[] = $val;
-        } else if (starts_with($name, 'File Description')) {
-            $f->file_descs[] = $val;
+        if (starts_with($name, 'File Name ')) {
+            add_elements($name, $val, $f->file_names);
+        } else if (starts_with($name, 'File Description ')) {
+            add_elements($name, $val, $f->file_descs);
         } else if ($name == 'Editor') {
             $f->editor = $val;
         } else if ($name == 'Image Type') {
@@ -128,6 +127,46 @@ function file_args_to_object($args) {
     return $f;
 }
 
+function audio_args_to_object($args) {
+    $f = new StdClass;
+    $f->file_names = [];
+    $f->file_descs = [];
+    $f->uploaders = [];
+    $f->date_submitteds = [];
+    foreach ($args as $name=>$val) {
+        if (starts_with($name, 'File Name ')) {
+            add_elements($name, $val, $f->file_names);
+        } else if (starts_with($name, 'File Description ')) {
+            add_elements($name, $val, $f->file_descs);
+        } else if ($name == 'Uploader') {
+            $f->uploader = $val;
+        } else if (starts_with($name, 'Uploader ')) {
+            add_elements($name, $val, $f->uploaders);
+        } else if ($name == 'Date Submitted') {
+            $f->date_submitted = $val;
+        } else if (starts_with($name, 'Date Submitted ')) {
+            add_elements($name, $val, $f->date_submitteds);
+        } else if ($name == 'Performers') {
+            $f->performers = $val;
+        } else if ($name == 'Performer Categories') {
+            $f->performer_categories = $val;
+        } else if ($name == 'Publisher Information') {
+            $f->publisher_info= $val;
+        } else if ($name == 'Copyright') {
+            $f->copyright = $val;
+        } else if ($name == 'Thumb Filename') {
+            $f->thumb_filename = $val;
+        } else if ($name == 'Misc. Notes') {
+            $f->misc_notes = $val;
+        } else if ($name == 'Arranger') {
+            $f->arranger = $val;
+        } else {
+            echo "unrecognized audio arg: $name ($val)\n";
+        }
+    }
+    return $f;
+}
+
 // parse the *****FILES***** part of a composition.
 // this is a sequence of #fte:imslpfile template calls,
 // possibly interspersed with
@@ -141,7 +180,6 @@ function file_args_to_object($args) {
 // Return a list which is an alternation of strings and file objects
 
 function parse_files($str) {
-    echo "start parse_files\n";
     $pos = 0;
     $files = [];
     $nfiles = 0;
@@ -151,8 +189,13 @@ function parse_files($str) {
         if ($item === false) break;
         $pos = $new_pos;
         if (is_string($item)) {
-            $files[] = $item;
-            $nstr++;
+            $x = explode("\n", $item);
+            foreach ($x as $line) {
+                if ($line) {
+                    $files[] = $line;
+                    $nstr++;
+                }
+            }
         } else {
             if ($item->name == '#fte:imslpfile') {
                 $files[] = file_args_to_object($item->args);
@@ -162,7 +205,35 @@ function parse_files($str) {
             $nfiles++;
         }
     }
-    echo "end parse_files; $nfiles files, $nstr strings\n";
+    return $files;
+}
+
+function parse_audio($str) {
+    $pos = 0;
+    $files = [];
+    $nfiles = 0;
+    $nstr = 0;
+    while (true) {
+        [$item, $new_pos] = parse_item($str, $pos);
+        if ($item === false) break;
+        $pos = $new_pos;
+        if (is_string($item)) {
+            $x = explode("\n", $item);
+            foreach ($x as $line) {
+                if ($line) {
+                    $files[] = $line;
+                    $nstr++;
+                }
+            }
+        } else {
+            if ($item->name == '#fte:imslpaudio') {
+                $files[] = audio_args_to_object($item->args);
+            } else {
+                echo "unrecognized template in audio list: $item->name\n";
+            }
+            $nfiles++;
+        }
+    }
     return $files;
 }
 
@@ -170,18 +241,17 @@ function parse_files($str) {
 // Return an object containing most of the info.
 //
 function parse_composition($title, $body) {
-    echo "\n------------------\nprocessing $title\n";
+    global $verbose;
+    if ($verbose) {
+        echo "\n------------------\nprocessing $title\n";
+    }
     $comp = new StdClass;
     [$t, $first, $last] = parse_title($title);
-    echo "  title: $t\n";
-    echo "  auth_first: $first\n";
-    echo "  auth_last: $last\n";
     $comp->title = $t;
-    $comp->auth_first = $first;
-    $comp->auth_last = $last;
+    $comp->composer_first = $first;
+    $comp->composer_last = $last;
     $comp->extra_text = [];
     if (starts_with($body, '#REDIRECT')) {
-        echo "Redirect; skipping\n";
         $lines = explode("\n", $body);
         $comp->redirect = $lines[0];
         for ($i=1; $i<count($lines); $i++) {
@@ -199,54 +269,83 @@ function parse_composition($title, $body) {
         if ($item === false) break;
         if (is_string($item)) {
             $comp->extra_text[] = $item;
-            echo "non-template text: $item\n";
+            //echo "non-template text: $item\n";
             continue;
         }
-        echo "got template $item->name\n";
+        if ($verbose) {
+            echo "got template $item->name\n";
+        }
         if (strtolower($item->name) == 'attrib') {
-            echo "Got attrib\n";
+            $comp->attrib = $item->args[0];
         } else if ($item->name == '#fte:imslppage') {
             foreach ($item->args as $name=>$arg) {
-                echo "arg $name:\n";
+                if ($verbose) {
+                    echo "arg $name:\n";
+                }
                 if ($name === '*****AUDIO*****') {
+                    $comp->audios = parse_audio($arg);
                 } else if ($name === '*****FILES*****') {
-                    parse_files($arg);
+                    $comp->files = parse_files($arg);
                 } else if ($name === 'NCRecordings') {
+                    $comp->ncrecordings = $arg;
                 } else if ($name === 'Work Title') {
-                    echo "title: $arg\n";
+                    $comp->title = $arg;
                 } else if ($name === 'Alternative Title') {
+                    $comp->alternative_title = $arg;
                 } else if ($name === 'Opus/Catalogue Number') {
-                    echo "opus: $arg\n";
+                    $comp->opus = $arg;
                 } else if ($name === 'Key') {
+                    $comp->key = $arg;
                 } else if ($name === 'Movements Header') {
+                    $comp->movements_header = $arg;
                 } else if ($name === 'Number of Movements/Sections') {
+                    $comp->movements = $arg;
                 } else if ($name === 'Incipit') {
+                    $comp->incipit = $arg;
                 } else if ($name === 'Dedication') {
+                    $comp->dedication = $arg;
                 } else if ($name === 'First Performance') {
+                    $comp->first_performance = $arg;
                 } else if ($name === 'Year/Date of Composition') {
+                    $comp->composition_date = $arg;
                 } else if ($name === 'Year of First Publication') {
+                    $comp->publication_date = $arg;
                 } else if ($name === 'Librettist') {
+                    $comp->librettist = $arg;
                 } else if ($name === 'Language') {
+                    $comp->language = $arg;
                 } else if ($name === 'Related Works') {
+                    $comp->related_works = $arg;
                 } else if ($name === 'Extra Information') {
+                    $comp->extra_info = $arg;
                 } else if ($name === 'Piece Style') {
+                    $comp->style = $arg;
                 } else if ($name === 'Authorities') {
+                    $comp->authorities = $arg;
                 } else if ($name === 'Manuscript Sources') {
+                    $comp->manuscript_sources = $arg;
                 } else if ($name === 'Average Duration') {
+                    $comp->average_duration = $arg;
                 } else if ($name === 'SearchKey') {
+                    $comp->search_key = $arg;
                 } else if ($name === 'SearchKey-amarec') {
+                    $comp->search_key_amarec = $arg;
                 } else if ($name === 'SearchKey-scores') {
+                    $comp->search_key_scores = $arg;
                 } else if ($name === 'External Links') {
+                    $comp->external_links = $arg;
                 } else if ($name === 'Discography') {
+                    $comp->discography = $arg;
                 } else if ($name === 'Instrumentation') {
+                    $comp->instrumentation = $arg;
                 } else if ($name === 'InstrDetail') {
+                    $comp->instr_detail = $arg;
                 } else if ($name === 'Tags') {
+                    $comp->tags = $arg;
                 } else if ($name === '*****COMMENTS*****') {
-                    echo "comments: $arg\n";
-                //} else if ($name === '*****END OF TEMPLATE*****') {
+                    $comp->comments = $arg;
                 } else if ($arg === '*****WORK INFO*****') {
                 } else if ($arg === '*****END OF TEMPLATE*****') {
-                    echo "got end of template\n";
                 } else {
                     echo "unrecognized arg name: $name: $arg\n";
                 }
@@ -259,17 +358,4 @@ function parse_composition($title, $body) {
     return $comp;
 }
 
-function main($nlines) {
-    $f = fopen('david_page_dump.txt', 'r');
-    for ($i=0; $i<$nlines; $i++) {
-        $x = fgets($f);
-        if (!$x) break;
-        $y = json_decode($x);
-        foreach ($y as $title => $body) {
-            parse_composition($title, $body);
-        }
-    }
-}
-
-main(1);
 ?>

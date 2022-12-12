@@ -67,38 +67,52 @@ create table license (
     primary key(id)
 );
 
+# a group of 1 or more files (e.g. parts)
+#
 create table score_file_set (
     id                      integer         not null auto_increment,
     composition_id          integer         not null,
-    type                    integer         not null,
-        # score, parts, Arrangements and Transcriptions
+    hier1                   text            not null,
+    hier2                   text            not null,
+    hier3                   text            not null,
     arrangement_name        text            not null,
     editor_id               integer         not null,
     image_type              text            not null,
         # Normal Scan, Typeset, Manuscript Scan
-    scanner                 text            not null,
-    uploader_id             integer         not null,
-    date_submitted          text            not null,
     publisher_info          text            not null,
     license_id              integer         not null,
     misc_notes              text            not null,
     amazon_info             text            not null,
+    arranger                text            not null,
+    translator              text            not null,
+    sm_plus                 text            not null,
+    reprint                 text            not null,
+    engraver                text            not null,
+    file_tags               text            not null,
     primary key(id)
 );
 
+# a single file
 create table score_file (
     id                      integer         not null auto_increment,
-    file_set_id             integer         not null,
+    score_file_set_id       integer         not null,
     name                    text            not null,
+    thumb_filename          text            not null,
+    sample_filename         text            not null,
     description             text            not null,
+    scanner                 text            not null,
+    uploader_id             integer         not null,
+    date_submitted          text            not null,
+    page_count              text            not null,
     primary key(id)
 );
 
 create table audio_file_set (
     id                      integer         not null auto_increment,
     composition_id          integer         not null,
-    type                    text            not null,
-        # Synthesized/MIDI
+    hier1                   text            not null,
+    hier2                   text            not null,
+    hier3                   text            not null,
     name                    text            not null,
     performers              text            not null,
     uploader_id             integer         not null,
@@ -111,7 +125,7 @@ create table audio_file_set (
 
 create table audio_file (
     id                      integer         not null auto_increment,
-    file_set_id             integer         not null,
+    audio_file_set_id       integer         not null,
     name                    text            not null,
     description             text            not null,
     primary key(id)

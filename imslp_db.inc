@@ -33,6 +33,11 @@ class IMSLP_person {
         $db = IMSLP_DB::get();
         return $db->lookup_id($id, 'person', 'IMSLP_person');
     }
+    static function lookup($clause) {
+        $db = IMSLP_DB::get();
+        return $db->lookup('person', 'IMSLP_person', $clause);
+    }
+
     // clause is like "(a,b) values (0, 1)"
     //
     static function insert($clause) {
@@ -84,6 +89,10 @@ class IMSLP_imslp_user {
 }
 
 class IMSLP_license {
+    static function lookup($clause) {
+        $db = IMSLP_DB::get();
+        return $db->lookup('license', 'IMSLP_license', $clause);
+    }
     static function insert($clause) {
         $db = IMSLP_DB::get();
         $ret = $db->insert('license', $clause);
