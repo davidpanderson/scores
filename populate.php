@@ -7,39 +7,57 @@ require_once("mediawiki.inc");
 require_once("parse.inc");
 require_once("imslp_db.inc");
 
-$test = true;
+$test = false;
 
 // look up person, create if not there.
 // return ID
 //
 function get_person($first, $last) {
     global $test;
-    $p = IMSLP_person::lookup(
-        sprintf("first_name='%s' and last_name='%s'", $first, $last)
+    $p = DB_person::lookup(
+        sprintf("first_name='%s' and last_name='%s'",
+            DB::escape($first),
+            DB::escape($last)
+        )
     );
     if ($p) return $p->id;
-    $q = sprintf("(first_name, last_name) values ('%s', '%s')", $first, $last);
+    $q = sprintf("(first_name, last_name) values ('%s', '%s')",
+        DB::escape($first),
+        DB::escape($last)
+    );
     if ($test) {
         echo "person insert: $q\n";
         $id = 0;
     } else {
-        $id = IMSLP_person::insert($q);
+        $id = DB_person::insert($q);
+        if (!$id) {
+            echo "person insert failed\n";
+            exit;
+        }
     }
     return $id;
 }
 
 function get_license($name) {
     global $test;
-    $p = IMSLP_license::lookup(
-        sprintf("name='%s'", $name)
+    $p = DB_license::lookup(
+        sprintf("name='%s'",
+            DB::escape($name)
+        )
     );
     if ($p) return $p->id;
-    $q = sprintf("(name) values ('%s')", $name);
+    $q = sprintf("(name) values ('%s')",
+        DB::escape($name)
+    );
     if ($test) {
         echo "license insert: $q\n";
         $id = 0;
     } else {
-        $id = IMSLP_license::insert($q);
+        $id = DB_license::insert($q);
+        if (!$id) {
+            echo "license insert failed\n";
+            exit;
+        }
     }
     return $id;
 }
@@ -80,74 +98,86 @@ function make_score_file($f, $i, $file_set_id) {
     }
     $q = sprintf(
         "(score_file_set_id, name, description) values (%d, '%s', '%s')",
-        $file_set_id, $f->file_names[$i], $f->file_descs[$i]
+        $file_set_id,
+        DB::escape($f->file_names[$i]),
+        DB::escape($f->file_descs[$i])
     );
     if ($test) {
         echo "score_file insert: $q\n";
     } else {
-        $id = IMSLP_score_file::insert($q);
+        $id = DB_score_file::insert($q);
+        if (!$id) {
+            echo "score_file insert failed\n";
+            exit;
+        }
     }
 }
 
 function make_score_file_set($cid, $f, $hier) {
     global $test;
     $q = sprintf(
-        "(composition_id, hier1, hier2, hier3) values (%d, '%s' '%s', '%s')",
+        "(composition_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
         $cid,
-        $hier[0], $hier[1], $hier[2]
+        DB::escape($hier[0]),
+        DB::escape($hier[1]),
+        DB::escape($hier[2])
     );
     if ($test) {
         echo "file set insert: $q\n";
         $file_set_id = 1;
     } else {
-        $file_set_id = IMSLP_score_file_set::insert($q);
+        $file_set_id = DB_score_file_set::insert($q);
+        if (!$file_set_id) {
+            echo "score_file insert failed\n";
+            exit;
+        }
     }
     $x = [];
     if (!empty($f->arrangement_name)) {
-        $x[] = sprintf("arrangement_name='%s'", $f->arrangement_name);
+        $x[] = sprintf("arrangement_name='%s'", DB::escape($f->arrangement_name));
     }
     if (!empty($f->editor_id)) {
         $x[] = sprintf("editor_id=%d", $editor_id);
     }
     if (!empty($f->image_type)) {
-        $x[] = sprintf("image_type='%s'", $f->image_type);
+        $x[] = sprintf("image_type='%s'", DB::escape($f->image_type));
     }
     if (!empty($f->publisher_info)) {
-        $x[] = sprintf("publisher_info='%s'", $f->publisher_info);
+        $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
     }
     if (!empty($f->license_id)) {
         $x[] = sprintf("license_id=%d", $license_id);
     }
     if (!empty($f->misc_notes)) {
-        $x[] = sprintf("misc_notes='%s'", $f->misc_notes);
+        $x[] = sprintf("misc_notes='%s'", DB::escape($f->misc_notes));
     }
     if (!empty($f->amazon_info)) {
-        $x[] = sprintf("amazon_info='%s'", $f->amazon_info);
+        $x[] = sprintf("amazon_info='%s'", DB::escape($f->amazon_info));
     }
     if (!empty($f->arranger)) {
-        $x[] = sprintf("arranger='%s'", $f->arranger);
+        $x[] = sprintf("arranger='%s'", DB::escape($f->arranger));
     }
     if (!empty($f->translator)) {
-        $x[] = sprintf("translator='%s'", $f->translator);
+        $x[] = sprintf("translator='%s'", DB::escape($f->translator));
     }
     if (!empty($f->sm_plus)) {
-        $x[] = sprintf("sm_plus='%s'", $f->sm_plus);
+        $x[] = sprintf("sm_plus='%s'", DB::escape($f->sm_plus));
     }
     if (!empty($f->reprint)) {
-        $x[] = sprintf("reprint='%s'", $f->reprint);
+        $x[] = sprintf("reprint='%s'", DB::escape($f->reprint));
     }
     if (!empty($f->engraver)) {
-        $x[] = sprintf("engraver='%s'", $f->engraver);
+        $x[] = sprintf("engraver='%s'", DB::escape($f->engraver));
     }
     if (!empty($f->file_tags)) {
-        $x[] = sprintf("file_tags='%s'", $f->file_tags);
+        $x[] = sprintf("file_tags='%s'", DB::escape($f->file_tags));
     }
     if ($x) {
         $query = implode(',', $x);
         if ($test) {
             echo "file set update: $query\n";
         } else {
-            $x = new IMSLP_score_file_set;
+            $x = new DB_score_file_set;
             $x->id = $file_set_id;
             $x->update($query);
         }
@@ -205,48 +235,60 @@ function make_audio_file($f, $i, $file_set_id) {
     }
     $q = sprintf(
         "(audio_file_set_id, name, description) values (%d, '%s', '%s')",
-        $file_set_id, $f->file_names[$i], $f->file_descs[$i]
+        $file_set_id,
+        DB::escape($f->file_names[$i]),
+        DB::escape($f->file_descs[$i])
     );
     if ($test) {
         echo "audio_file insert: $q\n";
     } else {
-        $id = IMSLP_audio_file::insert($q);
+        $id = DB_audio_file::insert($q);
+        if (!$id) {
+            echo "audio_file insert failed\n";
+            exit;
+        }
     }
 }
 
 function make_audio_set($cid, $f, $hier) {
     global $test;
     $q = sprintf(
-        "(composition_id, hier1, hier2, hier3) values (%d, '%s' '%s', '%s')",
+        "(composition_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
         $cid,
-        $hier[0], $hier[1], $hier[2]
+        DB::escape($hier[0]),
+        DB::escape($hier[1]),
+        DB::escape($hier[2])
     );
     if ($test) {
         echo "audio set insert: $q\n";
         $file_set_id = 1;
     } else {
-        $file_set_id = IMSLP_audio_file_set::insert($q);
+        $file_set_id = DB_audio_file_set::insert($q);
+        if (!$file_set_id) {
+            echo "audio_file_set insert failed\n";
+            exit;
+        }
     }
     $x = [];
     if (!empty($f->publisher_info)) {
-        $x[] = sprintf("publisher_info='%s'", $f->publisher_info);
+        $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
     }
     if (!empty($f->copyright)) {
         $license_id = get_license($f->copyright);
         $x[] = sprintf("license_id=%d", $license_id);
     }
     if (!empty($f->misc_notes)) {
-        $x[] = sprintf("misc_notes='%s'", $f->misc_notes);
+        $x[] = sprintf("misc_notes='%s'", DB::escape($f->misc_notes));
     }
     if (!empty($f->arranger)) {
-        $x[] = sprintf("arranger='%s'", $f->arranger);
+        $x[] = sprintf("arranger='%s'", DB::escape($f->arranger));
     }
     if ($x) {
         $query = implode(',', $x);
         if ($test) {
             echo "file set update: $query\n";
         } else {
-            $x = new IMSLP_audio_file_set;
+            $x = new DB_audio_file_set;
             $x->id = $file_set_id;
             $x->update($query);
         }
@@ -297,46 +339,48 @@ function make_composition($c) {
     global $test;
 
     $q = sprintf("(composer_id, title, opus) values (%d, '%s', '%s')",
-        $composer_id, $c->title, $c->opus
+        $composer_id,
+        DB::escape($c->title),
+        DB::escape($c->opus)
     );
     if ($test){
         echo "composition insert: $q\n";
         $composition_id = 1;
     } else {
-        $composition_id = IMSLP_composition::insert($q);
+        $composition_id = DB_composition::insert($q);
+        if (!$composition_id) {
+            echo "composition insert failed\n";
+            exit;
+        }
     }
 
-    if (!$composition_id) {
-        echo "insert failed for $composer_id, $c->title, $c->opus\n";
-        return;
-    }
     $x = [];
     if (!empty($c->alternative_title)) {
-        $x[] = sprintf("alternative_title='%s'", $c->alternative_title);
+        $x[] = sprintf("alternative_title='%s'", DB::escape($c->alternative_title));
     }
     if (!empty($c->key)) {
-        $x[] = sprintf("key='%s'", $c->key);
+        $x[] = sprintf("_key='%s'", DB::escape($c->key));
     }
     if (!empty($c->nmovements)) {
         $x[] = sprintf("nmovements=%d", $c->nmovements);
     }
     if (!empty($c->movement_names)) {
-        $x[] = sprintf("movement_names='%s'", $c->movement_names);
+        $x[] = sprintf("movement_names='%s'", DB::escape($c->movement_names));
     }
     if (!empty($c->incipit)) {
-        $x[] = sprintf("incipit='%s'", $c->incipit);
+        $x[] = sprintf("incipit='%s'", DB::escape($c->incipit));
     }
     if (!empty($c->dedication)) {
-        $x[] = sprintf("dedication='%s'", $c->dedication);
+        $x[] = sprintf("dedication='%s'", DB::escape($c->dedication));
     }
     if (!empty($c->composition_date)) {
-        $x[] = sprintf("composition_date='%s'", $c->composition_date);
+        $x[] = sprintf("composition_date='%s'", DB::escape($c->composition_date));
     }
     if (!empty($c->first_performance)) {
-        $x[] = sprintf("first_performance='%s'", $c->first_performance);
+        $x[] = sprintf("first_performance='%s'", DB::escape($c->first_performance));
     }
     if (!empty($c->publication_date)) {
-        $x[] = sprintf("publication_date='%s'", $c->publication_date);
+        $x[] = sprintf("publication_date='%s'", DB::escape($c->publication_date));
     }
     if (!empty($c->average_dur_min)) {
         $x[] = sprintf("average_dur_min=%d", $c->average_dur_min);
@@ -347,7 +391,7 @@ function make_composition($c) {
         if ($test) {
             echo "comp update: $query\n";
         } else {
-            $comp = new IMSLP_composition;
+            $comp = new DB_composition;
             $comp->id = $composition_id;
             $ret = $comp->update($query);
             if (!$ret) {
@@ -360,7 +404,7 @@ function make_composition($c) {
         make_score_file_sets($composition_id, $c->files);
     }
     if ($c->audios) {
-        make_audio_file_sets($composition_id, $c->files);
+        make_audio_file_sets($composition_id, $c->audios);
     }
 }
 
@@ -372,6 +416,10 @@ function main($nlines) {
         $y = json_decode($x);
         foreach ($y as $title => $body) {
             $comp = parse_composition($title, $body);
+            if (!empty($comp->redirect)) {
+                // TODO - link to other composition
+                continue;
+            }
             make_composition($comp);
         }
     }

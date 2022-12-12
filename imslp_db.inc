@@ -5,7 +5,7 @@
 
 require_once("db_conn.inc");
 
-class IMSLP_DB extends DbConn {
+class DB extends DbConn {
     static function get() {
         $x = json_decode(file_get_contents("db.json"));
         $instance = new DbConn();
@@ -20,118 +20,130 @@ class IMSLP_DB extends DbConn {
     }
 
     // Escape quotes in a string to be inserted in the DB.
-    // Important!  prevents SQL injection attacks
+    // Important!  Prevents SQL injection attacks.
     //
-    static function escape_string($string) {
-        $db = IMSLP_DB::get();
+    static function escape($string) {
+        $db = DB::get();
         return $db->base_escape_string(trim($string));
     }
 }
 
-class IMSLP_person {
+class DB_person {
     static function lookup_id($id) {
-        $db = IMSLP_DB::get();
-        return $db->lookup_id($id, 'person', 'IMSLP_person');
+        $db = DB::get();
+        return $db->lookup_id($id, 'person', 'DB_person');
     }
     static function lookup($clause) {
-        $db = IMSLP_DB::get();
-        return $db->lookup('person', 'IMSLP_person', $clause);
+        $db = DB::get();
+        return $db->lookup('person', 'DB_person', $clause);
     }
 
     // clause is like "(a,b) values (0, 1)"
     //
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('person', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
     static function enum($where_clause, $order_clause=null) {
-        $db = IMSLP_DB::get();
-        return $db->enum('person', 'IMSLP_person', $where_clause, $order_clause);
+        $db = DB::get();
+        return $db->enum('person', 'DB_person', $where_clause, $order_clause);
     }
 }
 
-class IMSLP_style {
+class DB_style {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('style', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
 }
 
-class IMSLP_external_link {
+class DB_external_link {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('external_link', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
 }
 
-class IMSLP_composition {
+class DB_composition {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('composition', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'composition', $clause);
+    }
 }
 
-class IMSLP_imslp_user {
+class DB_imslp_user {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('imslp_user', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
 }
 
-class IMSLP_license {
+class DB_license {
     static function lookup($clause) {
-        $db = IMSLP_DB::get();
-        return $db->lookup('license', 'IMSLP_license', $clause);
+        $db = DB::get();
+        return $db->lookup('license', 'DB_license', $clause);
     }
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('license', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
 }
 
-class IMSLP_score_file_set {
+class DB_score_file_set {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('score_file_set', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'score_file_set', $clause);
+    }
 }
 
-class IMSLP_score_file {
+class DB_score_file {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
+        $db = DB::get();
         $ret = $db->insert('score_file', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
 }
 
-class IMSLP_audio_file_set {
+class DB_audio_file_set {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
-        $ret = $db->insert('score_file', $clause);
+        $db = DB::get();
+        $ret = $db->insert('audio_file_set', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'audio_file_set', $clause);
+    }
 }
 
-class IMSLP_audio_file {
+class DB_audio_file {
     static function insert($clause) {
-        $db = IMSLP_DB::get();
-        $ret = $db->insert('score_file', $clause);
+        $db = DB::get();
+        $ret = $db->insert('audio_file', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }

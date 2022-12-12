@@ -3,6 +3,7 @@ create table person (
     id                      integer         not null auto_increment,
     first_name              text            not null,
     last_name               text            not null,
+    # should have birth/death dates, nationality, etc.
     primary key(id)
 );
 
@@ -12,6 +13,7 @@ create table language (
     primary key(id)
 );
 
+# classical, romantic etc.
 create table style (
     id                      integer         not null auto_increment,
     name                    text            not null,
@@ -114,6 +116,7 @@ create table audio_file_set (
     hier2                   text            not null,
     hier3                   text            not null,
     name                    text            not null,
+    arranger                text            not null,
     performers              text            not null,
     uploader_id             integer         not null,
     date_submitted          text            not null,
