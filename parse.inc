@@ -38,20 +38,22 @@ function parse_title($str) {
     return [$t, $first, $last];
 }
 
-// $name is of the form "foo 4" or "foo 4-6".
-// Add $val to the corresponding elements of $arr
+// $name is of the form "foo bar 4" or "foo bar 4-6".
+// Add $val to the corresponding elements of the array $arr
+// NOTE: our arrays are 0-offset
 //
 function add_elements($name, $val, &$arr) {
     $x = explode(' ', $name);
-    $y = explode('-', $x[1]);
+    $n = count($x);
+    $y = explode('-', $x[$n-1]);
     if (count($y) == 1) {
         $n = (int)$y[0];
-        $arr[$n] = $val;
+        $arr[$n-1] = $val;
     } else {
         $n = (int)$y[0];
         $m = (int)$y[1];
         for ($i=$n; $i<=$m; $i++) {
-            $arr[$i] = $val;
+            $arr[$i-1] = $val;
         }
     }
 }

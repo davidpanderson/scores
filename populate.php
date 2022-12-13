@@ -1,7 +1,7 @@
 <?php
 
 // functions for creating database entries,
-// given the data structures passed from parse.php
+// given the PHP data structures passed from parse.php
 
 require_once("mediawiki.inc");
 require_once("parse.inc");
@@ -9,7 +9,7 @@ require_once("imslp_db.inc");
 
 $test = false;
 
-// look up person, create if not there.
+// look up person (e.g. composer), create if not there.
 // return ID
 //
 function get_person($first, $last) {
@@ -85,10 +85,12 @@ if (0) {
     print_r(hier_label('foo'));
 }
 
+///////////////// SCORE FILES /////////////////
+
 function make_score_file($f, $i, $file_set_id) {
     global $test;
-    if (array_key_exists($i+1, $f->uploaders)) {
-        $uploader = $f->uploaders[$i+1];
+    if (array_key_exists($i, $f->uploaders)) {
+        $uploader = $f->uploaders[$i];
     } else {
         if (empty($f->uploader)) {
             echo "no uploader\n";
@@ -222,10 +224,12 @@ function make_score_file_sets($cid, $files) {
     }
 }
 
+///////////////// AUDIO FILES /////////////////
+
 function make_audio_file($f, $i, $file_set_id) {
     global $test;
-    if (array_key_exists($i+1, $f->uploaders)) {
-        $uploader = $f->uploaders[$i+1];
+    if (array_key_exists($i, $f->uploaders)) {
+        $uploader = $f->uploaders[$i];
     } else {
         if (empty($f->uploader)) {
             echo "no uploader\n";
@@ -332,6 +336,8 @@ function make_audio_file_sets($cid, $audios) {
     }
 }
 
+///////////////// COMPOSITIONS /////////////////
+
 // create DB records for composition and its files
 //
 function make_composition($c) {
@@ -421,6 +427,7 @@ function main($nlines) {
                 continue;
             }
             make_composition($comp);
+            break;
         }
     }
 }

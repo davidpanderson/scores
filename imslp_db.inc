@@ -71,6 +71,10 @@ class DB_external_link {
 }
 
 class DB_composition {
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'composition', 'DB_composition');
+    }
     static function insert($clause) {
         $db = DB::get();
         $ret = $db->insert('composition', $clause);
@@ -80,6 +84,10 @@ class DB_composition {
     function update($clause) {
         $db = DB::get();
         return $db->update($this, 'composition', $clause);
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('composition', 'DB_composition', $where_clause, $order_clause);
     }
 }
 
@@ -116,6 +124,10 @@ class DB_score_file_set {
         $db = DB::get();
         return $db->update($this, 'score_file_set', $clause);
     }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('score_file_set', 'DB_score_file_set', $where_clause, $order_clause);
+    }
 }
 
 class DB_score_file {
@@ -124,6 +136,10 @@ class DB_score_file {
         $ret = $db->insert('score_file', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('score_file', 'DB_score_file', $where_clause, $order_clause);
     }
 }
 
