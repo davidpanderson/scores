@@ -59,14 +59,9 @@ class DB_style {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-}
-
-class DB_external_link {
-    static function insert($clause) {
+    static function lookup($clause) {
         $db = DB::get();
-        $ret = $db->insert('external_link', $clause);
-        if (!$ret) return 0;
-        return $db->insert_id();
+        return $db->lookup('style', 'DB_style', $clause);
     }
 }
 
@@ -91,23 +86,14 @@ class DB_composition {
     }
 }
 
-class DB_imslp_user {
-    static function insert($clause) {
-        $db = DB::get();
-        $ret = $db->insert('imslp_user', $clause);
-        if (!$ret) return 0;
-        return $db->insert_id();
-    }
-}
-
-class DB_license {
+class DB_copyright {
     static function lookup($clause) {
         $db = DB::get();
-        return $db->lookup('license', 'DB_license', $clause);
+        return $db->lookup('copyright', 'DB_copyright', $clause);
     }
     static function insert($clause) {
         $db = DB::get();
-        $ret = $db->insert('license', $clause);
+        $ret = $db->insert('copyright', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }

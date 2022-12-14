@@ -38,24 +38,38 @@ function get_person($first, $last) {
     return $id;
 }
 
-function get_license($name) {
+function get_copyright($name) {
     global $test;
-    $p = DB_license::lookup(
-        sprintf("name='%s'",
-            DB::escape($name)
-        )
-    );
+    if (!$name) return 0;
+    $p = DB_copyright::lookup(sprintf("name='%s'", DB::escape($name)));
     if ($p) return $p->id;
-    $q = sprintf("(name) values ('%s')",
-        DB::escape($name)
-    );
+    $q = sprintf("(name) values ('%s')", DB::escape($name));
     if ($test) {
-        echo "license insert: $q\n";
+        echo "copyright insert: $q\n";
         $id = 0;
     } else {
-        $id = DB_license::insert($q);
+        $id = DB_copyright::insert($q);
         if (!$id) {
-            echo "license insert failed\n";
+            echo "copyright insert failed\n";
+            exit;
+        }
+    }
+    return $id;
+}
+
+function get_style($name) {
+    global $test;
+    if (!$name) return 0;
+    $p = DB_style::lookup(sprintf("name='%s'", DB::escape($name)));
+    if ($p) return $p->id;
+    $q = sprintf("(name) values ('%s')", DB::escape($name));
+    if ($test) {
+        echo "style insert: $q\n";
+        $id = 0;
+    } else {
+        $id = DB_style::insert($q);
+        if (!$id) {
+            echo "style insert failed\n";
             exit;
         }
     }
@@ -89,17 +103,8 @@ if (0) {
 
 function make_score_file($f, $i, $file_set_id) {
     global $test;
-    if (array_key_exists($i, $f->uploaders)) {
-        $uploader = $f->uploaders[$i];
-    } else {
-        if (empty($f->uploader)) {
-            echo "no uploader\n";
-            print_r($f);
-        }
-        $uploader = $f->uploader;
-    }
     $q = sprintf(
-        "(score_file_set_id, name, description) values (%d, '%s', '%s')",
+        "(score_file_set_id, file_name, file_description) values (%d, '%s', '%s')",
         $file_set_id,
         DB::escape($f->file_names[$i]),
         DB::escape($f->file_descs[$i])
@@ -113,10 +118,42 @@ function make_score_file($f, $i, $file_set_id) {
             exit;
         }
     }
+
+    $x = [];
+    if (array_key_exists($i, $f->date_submitteds)) {
+        $x[] = sprintf("date_submitted='%s'", DB::escape($f->date_submitteds[$i]));
+    }
+    if (array_key_exists($i, $f->page_counts)) {
+        $x[] = sprintf("page_count='%s'", DB::escape($f->page_counts[$i]));
+    }
+    if (array_key_exists($i, $f->sample_filenames)) {
+        $x[] = sprintf("sample_filename='%s'", DB::escape($f->sample_filenames[$i]));
+    }
+    if (array_key_exists($i, $f->scanners)) {
+        $x[] = sprintf("scanner='%s'", DB::escape($f->scanners[$i]));
+    }
+    if (array_key_exists($i, $f->thumb_filenames)) {
+        $x[] = sprintf("thumb_filename='%s'", DB::escape($f->thumb_filenames[$i]));
+    }
+    if (array_key_exists($i, $f->uploaders)) {
+        $x[] = sprintf("uploader='%s'", DB::escape($f->uploaders[$i]));
+    }
+    if ($x) {
+        $query = implode(',', $x);
+        if ($test) {
+            echo "score file update: $query\n";
+        } else {
+            $x = new DB_score_file;
+            $x->id = $id;
+            $x->update($query);
+        }
+    }
 }
 
 function make_score_file_set($cid, $f, $hier) {
     global $test;
+    $copyright_id = get_copyright($f->copyright);
+
     $q = sprintf(
         "(composition_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
         $cid,
@@ -135,44 +172,56 @@ function make_score_file_set($cid, $f, $hier) {
         }
     }
     $x = [];
-    if (!empty($f->arrangement_name)) {
-        $x[] = sprintf("arrangement_name='%s'", DB::escape($f->arrangement_name));
-    }
-    if (!empty($f->editor_id)) {
-        $x[] = sprintf("editor_id=%d", $editor_id);
-    }
-    if (!empty($f->image_type)) {
-        $x[] = sprintf("image_type='%s'", DB::escape($f->image_type));
-    }
-    if (!empty($f->publisher_info)) {
-        $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
-    }
-    if (!empty($f->license_id)) {
-        $x[] = sprintf("license_id=%d", $license_id);
-    }
-    if (!empty($f->misc_notes)) {
-        $x[] = sprintf("misc_notes='%s'", DB::escape($f->misc_notes));
-    }
-    if (!empty($f->amazon_info)) {
-        $x[] = sprintf("amazon_info='%s'", DB::escape($f->amazon_info));
+    if (!empty($f->amazon)) {
+        $x[] = sprintf("amazon='%s'", DB::escape($f->amazon));
     }
     if (!empty($f->arranger)) {
         $x[] = sprintf("arranger='%s'", DB::escape($f->arranger));
     }
-    if (!empty($f->translator)) {
-        $x[] = sprintf("translator='%s'", DB::escape($f->translator));
+    if ($copyright_id) {
+        $x[] = sprintf("copyright_id=%d", $copyright_id);
     }
-    if (!empty($f->sm_plus)) {
-        $x[] = sprintf("sm_plus='%s'", DB::escape($f->sm_plus));
+    if (!empty($f->date_submitted)) {
+        $x[] = sprintf("date_submitted='%s'", DB::escape($f->date_submitted));
     }
-    if (!empty($f->reprint)) {
-        $x[] = sprintf("reprint='%s'", DB::escape($f->reprint));
+    if (!empty($f->editor)) {
+        $x[] = sprintf("editor='%s'", DB::escape($f->editor));
     }
     if (!empty($f->engraver)) {
         $x[] = sprintf("engraver='%s'", DB::escape($f->engraver));
     }
     if (!empty($f->file_tags)) {
         $x[] = sprintf("file_tags='%s'", DB::escape($f->file_tags));
+    }
+    if (!empty($f->image_type)) {
+        $x[] = sprintf("image_type='%s'", DB::escape($f->image_type));
+    }
+    if (!empty($f->misc_notes)) {
+        $x[] = sprintf("misc_notes='%s'", DB::escape($f->misc_notes));
+    }
+    if (!empty($f->publisher_information)) {
+        $x[] = sprintf("publisher_information='%s'", DB::escape($f->publisher_information));
+    }
+    if (!empty($f->reprint)) {
+        $x[] = sprintf("reprint='%s'", DB::escape($f->reprint));
+    }
+    if (!empty($f->sample_filename)) {
+        $x[] = sprintf("sample_filename='%s'", DB::escape($f->sample_filename));
+    }
+    if (!empty($f->scanner)) {
+        $x[] = sprintf("scanner='%s'", DB::escape($f->scanner));
+    }
+    if (!empty($f->sm_plus)) {
+        $x[] = sprintf("sm_plus='%s'", DB::escape($f->sm_plus));
+    }
+    if (!empty($f->thumb_filename)) {
+        $x[] = sprintf("thumb_filename='%s'", DB::escape($f->thumb_filename));
+    }
+    if (!empty($f->translator)) {
+        $x[] = sprintf("translator='%s'", DB::escape($f->translator));
+    }
+    if (!empty($f->uploader)) {
+        $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
     }
     if ($x) {
         $query = implode(',', $x);
@@ -228,15 +277,6 @@ function make_score_file_sets($cid, $files) {
 
 function make_audio_file($f, $i, $file_set_id) {
     global $test;
-    if (array_key_exists($i, $f->uploaders)) {
-        $uploader = $f->uploaders[$i];
-    } else {
-        if (empty($f->uploader)) {
-            echo "no uploader\n";
-            print_r($f);
-        }
-        $uploader = $f->uploader;
-    }
     $q = sprintf(
         "(audio_file_set_id, name, description) values (%d, '%s', '%s')",
         $file_set_id,
@@ -252,10 +292,25 @@ function make_audio_file($f, $i, $file_set_id) {
             exit;
         }
     }
+    $x = [];
+    if (array_key_exists($i, $f->date_submitteds)) {
+        $x[] = sprintf("date_submitted='%s'", DB::escape($f->date_submitteds[$i]));
+    }
+    if ($x) {
+        $query = implode(',', $x);
+        if ($test) {
+            echo "score file update: $query\n";
+        } else {
+            $x = new DB_score_file;
+            $x->id = $id;
+            $x->update($query);
+        }
+    }
 }
 
 function make_audio_set($cid, $f, $hier) {
     global $test;
+    $copyright_id = get_copyright($f->copyright);
     $q = sprintf(
         "(composition_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
         $cid,
@@ -277,15 +332,26 @@ function make_audio_set($cid, $f, $hier) {
     if (!empty($f->publisher_info)) {
         $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
     }
-    if (!empty($f->copyright)) {
-        $license_id = get_license($f->copyright);
-        $x[] = sprintf("license_id=%d", $license_id);
+    if ($copyright_id) {
+        $x[] = sprintf("copyright_id=%d", $copyright_id);
+    }
+    if (!empty($f->date_submitted)) {
+        $x[] = sprintf("date_submitted='%s'", DB::escape($f->date_submitted));
     }
     if (!empty($f->misc_notes)) {
         $x[] = sprintf("misc_notes='%s'", DB::escape($f->misc_notes));
     }
-    if (!empty($f->arranger)) {
-        $x[] = sprintf("arranger='%s'", DB::escape($f->arranger));
+    if (!empty($f->performer_categories)) {
+        $x[] = sprintf("performer_categories='%s'", DB::escape($f->performer_categories));
+    }
+    if (!empty($f->performers)) {
+        $x[] = sprintf("performers='%s'", DB::escape($f->performers));
+    }
+    if (!empty($f->publisher_info)) {
+        $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
+    }
+    if (!empty($f->uploader)) {
+        $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
     }
     if ($x) {
         $query = implode(',', $x);
@@ -341,13 +407,14 @@ function make_audio_file_sets($cid, $audios) {
 // create DB records for composition and its files
 //
 function make_composition($c) {
-    $composer_id = get_person($c->composer_first, $c->composer_last);
     global $test;
+    $composer_id = get_person($c->composer_first, $c->composer_last);
+    $piece_style_id = get_style($c->piece_style);
 
-    $q = sprintf("(composer_id, title, opus) values (%d, '%s', '%s')",
+    $q = sprintf("(composer_id, work_title, opus_catalogue) values (%d, '%s', '%s')",
         $composer_id,
-        DB::escape($c->title),
-        DB::escape($c->opus)
+        DB::escape($c->work_title),
+        DB::escape($c->opus_catalogue)
     );
     if ($test){
         echo "composition insert: $q\n";
@@ -364,32 +431,89 @@ function make_composition($c) {
     if (!empty($c->alternative_title)) {
         $x[] = sprintf("alternative_title='%s'", DB::escape($c->alternative_title));
     }
-    if (!empty($c->key)) {
-        $x[] = sprintf("_key='%s'", DB::escape($c->key));
+    if (!empty($c->attrib)) {
+        $x[] = sprintf("attrib='%s'", DB::escape($c->attrib));
     }
-    if (!empty($c->nmovements)) {
-        $x[] = sprintf("nmovements=%d", $c->nmovements);
+    if (!empty($c->authorities)) {
+        $x[] = sprintf("authorities='%s'", DB::escape($c->authorities));
     }
-    if (!empty($c->movement_names)) {
-        $x[] = sprintf("movement_names='%s'", DB::escape($c->movement_names));
+    if (!empty($c->average_duration)) {
+        $x[] = sprintf("average_duration='%s'", DB::escape($c->average_duration));
     }
-    if (!empty($c->incipit)) {
-        $x[] = sprintf("incipit='%s'", DB::escape($c->incipit));
+    if (!empty($c->comments)) {
+        $x[] = sprintf("comments='%s'", DB::escape($c->comments));
     }
     if (!empty($c->dedication)) {
         $x[] = sprintf("dedication='%s'", DB::escape($c->dedication));
     }
-    if (!empty($c->composition_date)) {
-        $x[] = sprintf("composition_date='%s'", DB::escape($c->composition_date));
+    if (!empty($c->discography)) {
+        $x[] = sprintf("discography='%s'", DB::escape($c->discography));
+    }
+    if (!empty($c->external_links)) {
+        $x[] = sprintf("external_links='%s'", DB::escape($c->external_links));
+    }
+    if (!empty($c->extra_information)) {
+        $x[] = sprintf("extra_information='%s'", DB::escape($c->extra_information));
     }
     if (!empty($c->first_performance)) {
         $x[] = sprintf("first_performance='%s'", DB::escape($c->first_performance));
     }
-    if (!empty($c->publication_date)) {
-        $x[] = sprintf("publication_date='%s'", DB::escape($c->publication_date));
+    if (!empty($c->incipit)) {
+        $x[] = sprintf("incipit='%s'", DB::escape($c->incipit));
     }
-    if (!empty($c->average_dur_min)) {
-        $x[] = sprintf("average_dur_min=%d", $c->average_dur_min);
+    if (!empty($c->instrdetail)) {
+        $x[] = sprintf("instrdetail='%s'", DB::escape($c->instrdetail));
+    }
+    if (!empty($c->instrumentation)) {
+        $x[] = sprintf("instrumentation='%s'", DB::escape($c->instrumentation));
+    }
+    if (!empty($c->key)) {
+        $x[] = sprintf("_key='%s'", DB::escape($c->key));
+    }
+    if (!empty($c->language)) {
+        $x[] = sprintf("language='%s'", DB::escape($c->language));
+    }
+    if (!empty($c->librettist)) {
+        $x[] = sprintf("librettist='%s'", DB::escape($c->librettist));
+    }
+    if (!empty($c->manuscript_sources)) {
+        $x[] = sprintf("manuscript_sources='%s'", DB::escape($c->manuscript_sources));
+    }
+    if (!empty($c->movements_header)) {
+        $x[] = sprintf("movements_header='%s'", DB::escape($c->movements_header));
+    }
+    if (!empty($c->ncrecordings)) {
+        $x[] = sprintf("ncrecordings='%s'", DB::escape($c->ncrecordings));
+    }
+    if (!empty($c->number_of_movements_sections)) {
+        $x[] = sprintf("number_of_movements_sections='%s'", DB::escape($c->number_of_movements_sections));
+    }
+    if ($piece_style_id) {
+        $x[] = sprintf("piece_style_id=%d", $piece_style_id);
+    }
+    if (!empty($c->related_works)) {
+        $x[] = sprintf("related_works='%s'", DB::escape($c->related_works));
+    }
+    if (!empty($c->searchkey)) {
+        $x[] = sprintf("searchkey='%s'", DB::escape($c->searchkey));
+    }
+    if (!empty($c->searchkey_amarec)) {
+        $x[] = sprintf("searchkey_amarec='%s'", DB::escape($c->searchkey_amarec));
+    }
+    if (!empty($c->searchkey_scores)) {
+        $x[] = sprintf("searchkey_scores='%s'", DB::escape($c->searchkey_scores));
+    }
+    if (!empty($c->tags)) {
+        $x[] = sprintf("tags='%s'", DB::escape($c->tags));
+    }
+    if (!empty($c->year_date_of_composition)) {
+        $x[] = sprintf("year_date_of_composition='%s'", DB::escape($c->year_date_of_composition));
+    }
+    if (!empty($c->year_of_first_publication)) {
+        $x[] = sprintf("year_of_first_publication='%s'", DB::escape($c->year_of_first_publication));
+    }
+    if (!empty($c->work_title)) {
+        $x[] = sprintf("work_title='%s'", DB::escape($c->work_title));
     }
 
     if ($x) {

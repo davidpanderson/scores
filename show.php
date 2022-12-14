@@ -1,5 +1,8 @@
 <?php
 
+// parse mediawiki data, show the resulting PHP data structure
+// (and error/unrecognized messages)
+
 require_once("parse.inc");
 
 function main($nlines) {
