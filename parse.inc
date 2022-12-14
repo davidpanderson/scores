@@ -38,27 +38,37 @@ function parse_title($str) {
     return [$t, $first, $last];
 }
 
-// $name is of the form "foo bar 4" or "foo bar 4-6" or "foo bar 1,3".
+// $name is of the form "foo bar 4" or "foo bar 4-6" or "foo bar 1-3,4,7".
 // Add $val to the corresponding elements of the array $arr
-// NOTE: arrays are 0-offset
+// NOTE: the array are 0-offset, but the numbers are 1-offset
 //
 function add_elements($name, $val, &$arr) {
     $x = explode(' ', $name);
     $n = count($x);
-    $y = explode('-', $x[$n-1]);
-    if (count($y) == 1) {
-        $n = (int)$y[0];
-        $arr[$n-1] = $val;
-    } else {
-        $n = (int)$y[0];
-        $m = (int)$y[1];
-        for ($i=$n; $i<=$m; $i++) {
-            $arr[$i-1] = $val;
+    $last = $x[$n-1];
+
+    $y = explode(',', $last);
+    foreach ($y as $z) {
+        $y = explode('-', $z);
+        if (count($y) > 1) {
+            $n = (int)$y[0];
+            $m = (int)$y[1];
+            for ($i=$n; $i<=$m; $i++) {
+                $arr[$i-1] = $val;
+            }
+        } else {
+            $n = (int)$y[0];
+            $arr[$n-1] = $val;
         }
     }
 }
 
-if (1) {
+if (0) {
+    $x = [];
+    //add_elements('xxx 4,5,8', 'foo', $x);
+    add_elements('xxx 1-3,5,8', 'foo', $x);
+    print_r($x);
+    exit;
 }
 
 // convert a #fte:imslpfile template call to an object
