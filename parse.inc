@@ -12,21 +12,19 @@ $verbose = false;
 // - last name
 //
 function parse_title($str) {
+    $str = str_replace('_', ' ', $str);
     $x = strpos($str, '(');
     if ($x === false) {
-        return [$str, '',''];
+        return [trim($str), '',''];
     }
     $y = strpos($str, ')');
     if ($y === false || $y < $x) {
         echo "malformed title $str\n";
         return [$str, '',''];
     }
-    $t = substr2($str, 0, $x);
-    $t = str_replace('_', ' ', $t);
-    $t = trim($t);
+    $t = trim(substr2($str, 0, $x));
 
     $c = substr2($str, $x+1, $y);
-    $c = str_replace('_', ' ', $c);
     $x = strpos($c, ',');
     if ($x === false) {
         $last = trim($c);
@@ -261,10 +259,7 @@ function parse_composition($title, $body) {
         echo "\n------------------\nprocessing $title\n";
     }
     $comp = new StdClass;
-    [$t, $first, $last] = parse_title($title);
-    $comp->title = $t;
-    $comp->composer_first = $first;
-    $comp->composer_last = $last;
+    $comp->json_title = $title;
     $comp->extra_text = [];
     if (starts_with($body, '#REDIRECT')) {
         $lines = explode("\n", $body);
@@ -358,7 +353,7 @@ function parse_composition($title, $body) {
                 } else if ($name === 'Year of First Publication') {
                     $comp->year_of_first_publication = $arg;
                 } else if ($name === 'Work Title') {
-                    $comp->title = $arg;
+                    $comp->work_title = $arg;
                 } else if ($arg === '*****WORK INFO*****') {
                 } else if ($arg === '*****END OF TEMPLATE*****') {
                 } else {

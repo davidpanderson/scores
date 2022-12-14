@@ -20,7 +20,7 @@ function page_head($title, $is_front=false) {
 
     echo sprintf(
         '<p><table width=100%%><tr><td><font size=+3>%s</font></td><td align=right>%s</a></td></tr></table>',
-        $is_front?"IMSLP home page":'<a href=index.php>Return to home page</a>',
+        $is_front?"IMSLP/DB home page":'<a href=index.php>Return to home page</a>',
         ''
     );
     echo "<hr>";

@@ -87,6 +87,10 @@ class DB_composition {
 }
 
 class DB_copyright {
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'copyright', 'DB_copyright');
+    }
     static function lookup($clause) {
         $db = DB::get();
         return $db->lookup('copyright', 'DB_copyright', $clause);
@@ -127,6 +131,10 @@ class DB_score_file {
         $db = DB::get();
         return $db->enum('score_file', 'DB_score_file', $where_clause, $order_clause);
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'score_file', $clause);
+    }
 }
 
 class DB_audio_file_set {
@@ -135,6 +143,10 @@ class DB_audio_file_set {
         $ret = $db->insert('audio_file_set', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('audio_file_set', 'DB_audio_file_set', $where_clause, $order_clause);
     }
     function update($clause) {
         $db = DB::get();
@@ -148,5 +160,13 @@ class DB_audio_file {
         $ret = $db->insert('audio_file', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('audio_file', 'DB_audio_file', $where_clause, $order_clause);
+    }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'audio_file', $clause);
     }
 }

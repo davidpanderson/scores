@@ -38,6 +38,8 @@ create table copyright (
 create table composition (
     id                      integer         not null auto_increment,
     redirect_id             integer         not null,
+    title                   text            not null,
+        # from JSON key; includes title, opus, composer
     composer_id             integer         not null,
     alternative_title       text            not null,
     attrib                  text            not null,
@@ -68,6 +70,7 @@ create table composition (
     searchkey_scores        text            not null,
     tags                    text            not null,
     year_date_of_composition text           not null,
+    year_of_composition     integer         not null,
     year_of_first_publication text          not null,
     work_title              text            not null,
     primary key(id)
@@ -128,7 +131,7 @@ create table audio_file_set (
     misc_notes              text            not null,
     performer_categories    text            not null,
     performers              text            not null,
-    publisher_info          text            not null,
+    publisher_information   text            not null,
     uploader                text            not null,
     primary key(id)
 );
@@ -141,3 +144,6 @@ create table audio_file (
     file_description             text            not null,
     primary key(id)
 );
+
+alter table composition add fulltext cindex (title, instrumentation);
+alter table person add fulltext pindex (first_name, last_name);

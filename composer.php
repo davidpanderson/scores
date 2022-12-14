@@ -3,7 +3,7 @@ require_once("imslp.inc");
 require_once("imslp_db.inc");
 
 function main($id) {
-    $c = DB_person::lookup($id);
+    $c = DB_person::lookup_id($id);
     if (!$c) {
         error_page('no such person');
     }
@@ -12,7 +12,7 @@ function main($id) {
     echo "<h2>Compositions</h2>";
     $compositions = DB_composition::enum("composer_id=$id");
     foreach ($compositions as $c) {
-        echo sprintf("<a href=composition.php?id=%d>%s</a><p>",
+        echo sprintf("<p><a href=composition.php?id=%d>%s</a>",
             $c->id, $c->title
         );
     }

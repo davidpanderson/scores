@@ -278,7 +278,7 @@ function make_score_file_sets($cid, $files) {
 function make_audio_file($f, $i, $file_set_id) {
     global $test;
     $q = sprintf(
-        "(audio_file_set_id, name, description) values (%d, '%s', '%s')",
+        "(audio_file_set_id, file_name, file_description) values (%d, '%s', '%s')",
         $file_set_id,
         DB::escape($f->file_names[$i]),
         DB::escape($f->file_descs[$i])
@@ -408,12 +408,14 @@ function make_audio_file_sets($cid, $audios) {
 //
 function make_composition($c) {
     global $test;
-    $composer_id = get_person($c->composer_first, $c->composer_last);
+    [$title, $composer_first, $composer_last] = parse_title($c->json_title);
+    $composer_id = get_person($composer_first, $composer_last);
     $piece_style_id = get_style($c->piece_style);
 
-    $q = sprintf("(composer_id, work_title, opus_catalogue) values (%d, '%s', '%s')",
+    $json_title = str_replace('_', ' ', $c->json_title);
+    $q = sprintf("(composer_id, title, opus_catalogue) values (%d, '%s', '%s')",
         $composer_id,
-        DB::escape($c->work_title),
+        DB::escape($json_title),
         DB::escape($c->opus_catalogue)
     );
     if ($test){
@@ -508,6 +510,10 @@ function make_composition($c) {
     }
     if (!empty($c->year_date_of_composition)) {
         $x[] = sprintf("year_date_of_composition='%s'", DB::escape($c->year_date_of_composition));
+        $year = (int)$c->year_date_of_composition;
+        if ($year) {
+            $x[] = sprintf("year_of_composition=%d", $year);
+        }
     }
     if (!empty($c->year_of_first_publication)) {
         $x[] = sprintf("year_of_first_publication='%s'", DB::escape($c->year_of_first_publication));
@@ -551,7 +557,7 @@ function main($nlines) {
                 continue;
             }
             make_composition($comp);
-            break;
+            //break;
         }
     }
 }
