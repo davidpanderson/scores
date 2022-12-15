@@ -286,7 +286,7 @@ function parse_composition($title, $body) {
             echo "got template $item->name\n";
         }
         if (strtolower($item->name) == 'attrib') {
-            $comp->attrib = $item->args[0];
+            $comp->attrib = $item->args['positional_arg'];
         } else if ($item->name == '#fte:imslppage') {
             foreach ($item->args as $name=>$arg) {
                 if ($verbose) {

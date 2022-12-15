@@ -36,7 +36,7 @@ class DbConn {
     function do_query($q) {
         global $generating_xml;
         $q = str_replace('DBNAME', $this->db_name, $q);
-        echo "query: $q<br>\n";
+        //echo "query: $q<br>\n";
         $ret = $this->db_conn->query($q);
         if (!$ret) {
             if (!$generating_xml) {
