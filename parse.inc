@@ -13,11 +13,11 @@ $verbose = false;
 //
 function parse_title($str) {
     $str = str_replace('_', ' ', $str);
-    $x = strpos($str, '(');
+    $x = strrpos($str, '(');
     if ($x === false) {
         return [trim($str), '',''];
     }
-    $y = strpos($str, ')');
+    $y = strrpos($str, ')');
     if ($y === false || $y < $x) {
         echo "malformed title $str\n";
         return [$str, '',''];
@@ -35,6 +35,8 @@ function parse_title($str) {
     }
     return [$t, $first, $last];
 }
+
+//print_r(parse_title("Piano_Sonata_No.13,_Op.27_No.1_(suite)_(Beethoven,_Ludwig_van)"));
 
 // $name is of the form "foo bar 4" or "foo bar 4-6" or "foo bar 1-3,4,7".
 // Add $val to the corresponding elements of the array $arr
@@ -287,7 +289,30 @@ function parse_composition($title, $body) {
         }
         if (strtolower($item->name) == 'attrib') {
             $comp->attrib = $item->args['positional_arg'];
+        } else if ($item->name == 'WorkNonPD-USandEU') {
+            $comp->nonpd_us = true;
+            $comp->nonpd_eu = true;
+        } else if ($item->name == 'WorkNonPD-EU') {
+            $comp->nonpd_eu = true;
+        } else if ($item->name == 'PopSection') {
+            $comp->pop_section = $item->args['positional_arg'];
+        } else if (!strcasecmp($item->name, 'Mbox')) {
+            $comp->mbox = $item->args['positional_arg'];
+        } else if ($item->name == 'CollPage') {
+            // meaning ??
+        } else if ($item->name == 'CollabCat') {
+            // meaning ??
+        } else if ($item->name == 'Collab') {
+        } else if ($item->name == 'Symphonies (Beethoven, Ludwig van)') {
+        } else if ($item->name == 'Operas (Wagner, Richard)') {
+        } else if ($item->name == 'Concertos_(Mendelssohn,_Felix)') {
+        } else if ($item->name == 'LinkWorkN') {
+        } else if ($item->name == 'LinkName') {
+        } else if ($item->name == 'LinkComp') {
+        } else if ($item->name == 'fax') {
+        } else if ($item->name == 'PMBSrp') {
         } else if ($item->name == '#fte:imslppage') {
+            $comp->imslppage = true;
             foreach ($item->args as $name=>$arg) {
                 if ($verbose) {
                     echo "arg $name:\n";
@@ -362,6 +387,7 @@ function parse_composition($title, $body) {
             }
         } else {
             echo "unrecognized template name: $item->name\n";
+            echo "exiting\n";
             exit;
         }
     }

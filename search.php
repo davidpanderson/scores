@@ -4,10 +4,22 @@ require_once('imslp_db.inc');
 require_once('imslp.inc');
 
 function composition_search_action($keywords) {
+    // remove commas
+    //
+    $k = str_replace(',', ' ', $keywords);
+
+    // add the plural of each word
+    //
+    $k2 = explode(' ', $k);
+    $k3 = $k2;
+    foreach ($k2 as $k) {
+        $k3[] = $k.'s';
+    }
+    $k3 = implode(' ', $k3);
     $clause = sprintf("match (title, instrumentation) against ('%s')",
-        DB::escape($keywords)
+        DB::escape($k3)
     );
-    $clause .= " limit 10";
+    $clause .= " limit 50";
     $comps = DB_composition::enum($clause);
     page_head('Search results');
     foreach ($comps as $comp) {

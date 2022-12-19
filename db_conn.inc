@@ -1,10 +1,14 @@
 <?php
 
-//require_once("../inc/db.inc");
-
 // represents a connection to a database.
-// Intended to be subclassed (e.g., BoincDb, BossaDb)
+// Intended to be subclassed
 //
+
+$exit_on_db_error = false;
+    // set this to true in maintenance scripts;
+    // show error details and exit
+$show_queries = false;
+
 class DbConn {
     var $db_conn;
     var $db_name;
@@ -34,19 +38,24 @@ class DbConn {
     // in keeping with PHP/MySQL convention, return true (nonzero) on success.
     //
     function do_query($q) {
-        global $generating_xml;
+        global $exit_on_db_error, $show_queries;
         $q = str_replace('DBNAME', $this->db_name, $q);
-        //echo "query: $q<br>\n";
+
+        if ($show_queries) {
+            echo "query: $q\n";
+        }
         $ret = $this->db_conn->query($q);
         if (!$ret) {
-            if (!$generating_xml) {
-                echo "Database Error<br>\n";
+            if ($exit_on_db_error) {
+                echo "Database Error\n";
+                echo "Query: $q\n";
+                echo  $this->base_error(), "\n";
+                debug_print_backtrace();
                 exit;
+            } else {
+                echo "Database Error<br>\n";
+                return null;
             }
-            //echo ": ", $this->base_error(), "\n<pre>";
-            //var_dump(debug_backtrace());
-            //echo "</pre>query: $q\n";
-            return null;
         }
         return $ret;
     }

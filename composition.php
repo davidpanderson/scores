@@ -109,6 +109,11 @@ function show_files_hier($x, $level, $is_score) {
     global $hier_vals;
     $vals = $hier_vals[$level];
 
+    $sp = '';
+    for ($j=0; $j<$level; $j++) {
+        $sp .= "&nbsp;&nbsp;&nbsp;";
+    }
+
     // show values in list (see above)
     //
     foreach ($vals as $v) {
@@ -116,7 +121,7 @@ function show_files_hier($x, $level, $is_score) {
             continue;
         }
         if ($v) {
-            echo "<h3>$v</h3>\n";
+            echo "<h3>$sp $v</h3>\n";
         }
         if ($level == 2) {
             show_file_sets($x[$v], $is_score);
@@ -130,7 +135,7 @@ function show_files_hier($x, $level, $is_score) {
     foreach ($x as $v=>$list) {
         if (in_array($v, $vals)) continue;
         if ($v) {
-            echo "<h3>$v</h3>\n";
+            echo "<h3>$sp $v</h3>\n";
         }
         if ($level == 2) {
             show_file_sets($list, $is_score);

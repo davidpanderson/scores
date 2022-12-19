@@ -1,6 +1,5 @@
 <?php
 require_once("imslp.inc");
-require_once("bootstrap.inc");
 require_once("imslp_db.inc");
 
 function composer_list() {

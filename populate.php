@@ -103,6 +103,16 @@ if (0) {
 
 function make_score_file($f, $i, $file_set_id) {
     global $test;
+    if (!array_key_exists($i, $f->file_names)) {
+        echo "make_score_file(): missing file name\n";
+        print_r($f->file_names);
+        return;
+    }
+    if (!array_key_exists($i, $f->file_descs)) {
+        echo "make_score_file(): missing file desc\n";
+        print_r($f->file_descs);
+        return;
+    }
     $q = sprintf(
         "(score_file_set_id, file_name, file_description) values (%d, '%s', '%s')",
         $file_set_id,
@@ -487,6 +497,12 @@ function make_composition($c) {
     if (!empty($c->ncrecordings)) {
         $x[] = sprintf("ncrecordings='%s'", DB::escape($c->ncrecordings));
     }
+    if (!empty($c->nonpd_eu)) {
+        $x[] = sprintf("nonpd_eu=1");
+    }
+    if (!empty($c->nonpd_us)) {
+        $x[] = sprintf("nonpd_us=1");
+    }
     if (!empty($c->number_of_movements_sections)) {
         $x[] = sprintf("number_of_movements_sections='%s'", DB::escape($c->number_of_movements_sections));
     }
@@ -539,7 +555,7 @@ function make_composition($c) {
     if ($c->files) {
         make_score_file_sets($composition_id, $c->files);
     }
-    if ($c->audios) {
+    if (!empty($c->audios)) {
         make_audio_file_sets($composition_id, $c->audios);
     }
 }
@@ -552,8 +568,8 @@ function main($nlines) {
         $y = json_decode($x);
         foreach ($y as $title => $body) {
             $comp = parse_composition($title, $body);
-            if (!empty($comp->redirect)) {
-                // TODO - link to other composition
+            if (empty($comp->imslppage)) {
+                // redirect, pop_section, link)work
                 continue;
             }
             make_composition($comp);
@@ -562,6 +578,8 @@ function main($nlines) {
     }
 }
 
-main(1);
+$exit_on_db_error = true;
+
+main(10);
 
 ?>

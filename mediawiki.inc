@@ -8,8 +8,10 @@
 //      {{templatename | name=val | name=val}}
 // and the arguments can contain template calls.
 
+// case-insensitive
+//
 function starts_with($text, $x) {
-    return strpos($text, $x) === 0;
+    return stripos($text, $x) === 0;
 }
 
 function substr2($str, $start, $end) {
@@ -17,8 +19,10 @@ function substr2($str, $start, $end) {
 }
 
 // scan a template argument.
-// Ignore the contents of {{...}} (template calls)
-// and [[...]] (wiki links, which can contain |)
+// Ignore the contents of:
+//      {{...}} (template calls, which can contain |)
+//      [[...]] (wiki links, which can contain |)
+//      <score>...</score> (incipit strings, which can contain { {, }} etc.)
 // Return
 //      eq_pos: offset of top-level = or -1
 //      arg_end_pos: offset of top-level | or -1
@@ -33,12 +37,12 @@ function scan_arg($str, $start_pos) {
     $arg_end_pos = -1;
     $template_end_pos = -1;
     for ($i=$start_pos; $i < $n; $i++) {
-        if (substr($str, $i, 2) == '{{') {
+        if (!$incipit_depth && substr($str, $i, 2) == '{{') {
             $template_depth += 1;
             $i += 1;
             continue;
         }
-        if (substr($str, $i, 2) == '}}') {
+        if (!$incipit_depth && substr($str, $i, 2) == '}}') {
             if ($template_depth == 0) {
                 $template_end_pos = $i;
                 break;

@@ -61,6 +61,8 @@ create table composition (
     manuscript_sources      text            not null,
     movements_header        text            not null,
     ncrecordings            text            not null,
+    nonpd_eu                tinyint         not null,
+    nonpd_us                tinyint         not null,
     number_of_movements_sections     text         not null,
     opus_catalogue          text            not null,
     piece_style_id          integer         not null,

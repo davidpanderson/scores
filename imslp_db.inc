@@ -5,6 +5,10 @@
 
 require_once("db_conn.inc");
 
+$exit_on_db_error = false;
+    // set this to true in maintenance scripts;
+    // show error details and exit
+
 class DB extends DbConn {
     static function get() {
         $x = json_decode(file_get_contents("db.json"));

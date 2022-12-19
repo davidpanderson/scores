@@ -2,6 +2,8 @@
 
 ini_set('display_errors', 1);
 
+require_once("bootstrap.inc");
+
 function page_head($title, $is_front=false) {
     echo sprintf('
 <!DOCTYPE html>
