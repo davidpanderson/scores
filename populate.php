@@ -6,6 +6,7 @@
 require_once("mediawiki.inc");
 require_once("parse.inc");
 require_once("imslp_db.inc");
+require_once("imslp_util.inc");
 
 $test = false;
 
@@ -60,6 +61,8 @@ function get_copyright($name) {
 function get_style($name) {
     global $test;
     if (!$name) return 0;
+    $name = str_replace('_', ' ', $name);
+        // e.g. Early_20th_century
     $p = DB_style::lookup(sprintf("name='%s'", DB::escape($name)));
     if ($p) return $p->id;
     $q = sprintf("(name) values ('%s')", DB::escape($name));

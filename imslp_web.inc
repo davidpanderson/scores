@@ -22,7 +22,7 @@ function page_head($title, $is_front=false) {
 
     echo sprintf(
         '<p><table width=100%%><tr><td><font size=+3>%s</font></td><td align=right>%s</a></td></tr></table>',
-        $is_front?"IMSLP/DB home page":'<a href=index.php>Return to home page</a>',
+        $is_front?"IMSLP/DB home page (prototype)":'<a href=index.php>Return to home page</a>',
         ''
     );
     echo "<hr>";
@@ -192,6 +192,29 @@ function row_heading($x, $class='bg-primary') {
         ', $class, $x
     );
 }
+
+/////////////////// buttons ////////////////////
+
+function button_text($url, $text, $desc=null, $class="btn-success btn-sm") {
+    if (!$desc) {
+        $desc = $text;
+    }
+    return sprintf(' <a href="%s" title="%s" class="btn %s">%s</a>',
+        $url, $desc, $class, $text
+    );
+}
+
+function show_button($url, $text, $desc=null, $class="btn-success btn-sm") {
+    echo button_text($url, $text, $desc, $class);
+}
+
+// for places with a bunch of buttons, like forum posts
+//
+function show_button_small($url, $text, $desc=null) {
+    echo button_text($url, $text, $desc, "btn-primary btn-xs");
+}
+
+//////////////// TEXT ////////////////////
 
 // use the following around text with long lines,
 // to limit the width and make it more readable.

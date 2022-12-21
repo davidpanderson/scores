@@ -53,7 +53,7 @@ class DbConn {
                 debug_print_backtrace();
                 exit;
             } else {
-                echo "Database Error<br>\n";
+                echo "Database Error: $q<br>\n";
                 return null;
             }
         }

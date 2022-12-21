@@ -8,15 +8,7 @@
 //      {{templatename | name=val | name=val}}
 // and the arguments can contain template calls.
 
-// case-insensitive
-//
-function starts_with($text, $x) {
-    return stripos($text, $x) === 0;
-}
-
-function substr2($str, $start, $end) {
-    return substr($str, $start, $end-$start);
-}
+require_once("imslp_util.inc");
 
 // scan a template argument.
 // Ignore the contents of:

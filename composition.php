@@ -1,5 +1,5 @@
 <?php
-require_once("imslp.inc");
+require_once("imslp_web.inc");
 require_once("imslp_db.inc");
 
 // $fss is a list of file sets (score or audio);
@@ -167,6 +167,7 @@ function main($id) {
         error_page('no such composition');
     }
     page_head("$c->title");
+    echo "<p>";
     start_table('table-striped');
     $composer = DB_person::lookup_id($c->composer_id);
     $name = "$composer->first_name $composer->last_name";
@@ -190,6 +191,10 @@ function main($id) {
         row2('Instrumentation', $c->instrumentation);
     }
     end_table();
+    show_button("edit_comp.php?id=$id", 'Edit composition');
+    show_button("edit_score.php?comp_id=$id", 'Add score file');
+    show_button("edit_audio.php?comp_id=$id", 'Add audio file');
+    echo "<hr>";
     show_score_files($c->id);
     show_audio_files($c->id);
     page_tail();

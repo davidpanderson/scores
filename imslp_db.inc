@@ -63,9 +63,17 @@ class DB_style {
         if (!$ret) return 0;
         return $db->insert_id();
     }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'style', 'DB_style');
+    }
     static function lookup($clause) {
         $db = DB::get();
         return $db->lookup('style', 'DB_style', $clause);
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('style', 'DB_style', $where_clause, $order_clause);
     }
 }
 
