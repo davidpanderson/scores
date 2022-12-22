@@ -79,6 +79,35 @@ function get_style($name) {
     return $id;
 }
 
+function get_publisher($name, $imprint, $location) {
+    global $test;
+    if (!$name) return 0;
+    $p = DB_publisher::lookup(
+        sprintf("name='%s' and imprint='%s' and location='%s'",
+            DB::escape($name),
+            DB::escape($imprint),
+            DB::escape($location)
+        )
+    );
+    if ($p) return $p->id;
+    $q = sprintf("(name, imprint, location) values ('%s', '%s', '%s')",
+        DB::escape($name),
+        DB::escape($imprint),
+        DB::escape($location)
+    );
+    if ($test) {
+        echo "style insert: $q\n";
+        $id = 0;
+    } else {
+        $id = DB_publisher::insert($q);
+        if (!$id) {
+            echo "publisher insert failed\n";
+            exit;
+        }
+    }
+    return $id;
+}
+
 // given a string of the form ===FOO, return [3, 'FOO']
 //
 function hier_label($str) {
@@ -165,7 +194,10 @@ function make_score_file($f, $i, $file_set_id) {
 
 function make_score_file_set($cid, $f, $hier) {
     global $test;
-    $copyright_id = get_copyright($f->copyright);
+    $copyright_id = 0;
+    if (!empty($f->copyright)) {
+        $copyright_id = get_copyright($f->copyright);
+    }
 
     $q = sprintf(
         "(composition_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
@@ -214,6 +246,31 @@ function make_score_file_set($cid, $f, $hier) {
     }
     if (!empty($f->publisher_information)) {
         $x[] = sprintf("publisher_information='%s'", DB::escape($f->publisher_information));
+    }
+    if (!empty($f->pub)) {
+        $pub = $f->pub;
+        // sometimes the name is missing
+        //
+        if ($pub->imprint && !$pub->name) {
+            $pub->name = $pub->imprint;
+        }
+        $publisher_id = get_publisher($pub->name, $pub->imprint, $pub->location);
+        $x[] = sprintf("pub_id=%d", $publisher_id);
+        if (!empty($pub->date)) {
+            $x[] = sprintf("pub_date='%s'", DB::escape($pub->date));
+        }
+        if (!empty($pub->edition_number)) {
+            $x[] = sprintf("pub_edition_number='%s'", DB::escape($pub->edition_number));
+        }
+        if (!empty($pub->extra)) {
+            $x[] = sprintf("pub_extra='%s'", DB::escape($pub->extra));
+        }
+        if (!empty($pub->plate_number)) {
+            $x[] = sprintf("pub_plate_number='%s'", DB::escape($pub->plate_number));
+        }
+        if (!empty($pub->year)) {
+            $x[] = sprintf("pub_year=%d", $pub->year);
+        }
     }
     if (!empty($f->reprint)) {
         $x[] = sprintf("reprint='%s'", DB::escape($f->reprint));
@@ -423,9 +480,16 @@ function make_composition($c) {
     global $test;
     [$title, $composer_first, $composer_last] = parse_title($c->json_title);
     $composer_id = get_person($composer_first, $composer_last);
-    $piece_style_id = get_style($c->piece_style);
+    if (!empty($c->piece_style)) {
+        $piece_style_id = get_style($c->piece_style);
+    } else {
+        $piece_style_id = 0;
+    }
 
     $json_title = str_replace('_', ' ', $c->json_title);
+    if (empty($c->opus_catalogue)) {
+        $c->opus_catalogue = '';
+    }
     $q = sprintf("(composer_id, title, opus_catalogue) values (%d, '%s', '%s')",
         $composer_id,
         DB::escape($json_title),
@@ -569,6 +633,7 @@ function main($nlines) {
         $x = fgets($f);
         if (!$x) break;
         $y = json_decode($x);
+        DB::begin_transaction();
         foreach ($y as $title => $body) {
             $comp = parse_composition($title, $body);
             if (empty($comp->imslppage)) {
@@ -578,6 +643,7 @@ function main($nlines) {
             make_composition($comp);
             //break;
         }
+        DB::commit_transaction();
     }
 }
 

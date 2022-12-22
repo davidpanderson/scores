@@ -10,7 +10,12 @@ $exit_on_db_error = false;
     // show error details and exit
 
 class DB extends DbConn {
+    static $instance;
+
     static function get() {
+        if (isset(self::$instance)) {
+            return self::$instance;
+        }
         $x = json_decode(file_get_contents("db.json"));
         $instance = new DbConn();
         $ret = $instance->init_conn(
@@ -20,7 +25,17 @@ class DB extends DbConn {
             echo "Can't connect to DB";
             die();
         }
+        self::$instance = $instance;
         return $instance;
+    }
+
+    static function begin_transaction() {
+        $db = db::get();
+        $db->do_query('begin');
+    }
+    static function commit_transaction() {
+        $db = db::get();
+        $db->do_query('commit');
     }
 
     // Escape quotes in a string to be inserted in the DB.
@@ -74,6 +89,27 @@ class DB_style {
     static function enum($where_clause, $order_clause=null) {
         $db = DB::get();
         return $db->enum('style', 'DB_style', $where_clause, $order_clause);
+    }
+}
+
+class DB_publisher {
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'publisher', 'DB_publisher');
+    }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('publisher', 'DB_publisher', $clause);
+    }
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('publisher', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('publisher', 'DB_publisher', $where_clause, $order_clause);
     }
 }
 

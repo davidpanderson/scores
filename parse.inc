@@ -1,6 +1,14 @@
 <?php
 
-// parse IMSLP data (in JSON/mediawiki format) into PHP data structures
+// parse IMSLP data (in JSON/mediawiki format) into PHP data structures.
+//
+// we parse high-level constructs:
+// composition (#fte:imslppage)
+//      score files (#fte:imslpfile)
+//          publisher ({{P}})
+//      audio files (#fte:imslpaudio)
+//
+// Other template calls are not parsed, and go into text fields.
 
 require_once("mediawiki.inc");
 
@@ -9,6 +17,9 @@ $verbose = false;
 // $name is of the form "foo bar 4" or "foo bar 4-6" or "foo bar 1-3,4,7".
 // Add $val to the corresponding elements of the array $arr
 // NOTE: the array are 0-offset, but the numbers are 1-offset
+//
+// Used to parse file name, file description, date submitted args
+// from file and audio template calls.
 //
 function add_elements($name, $val, &$arr) {
     $x = explode(' ', $name);
@@ -39,6 +50,44 @@ if (0) {
     exit;
 }
 
+// $x is the publisher_information arg for a score file.
+// If it contains a {{P template call,
+// parse the args and return a PHP object.
+// Else return null
+//
+function parse_publisher($str) {
+    $pos = 0;
+    $other_text = '';
+    $pub = null;
+    while (true) {
+        [$item, $new_pos] = parse_item($str, $pos);
+        $pos = $new_pos;
+        if ($item === false) break;
+        if (is_string($item)) {
+            $other_text .= " $item";
+        } else {
+            if ($item->name === 'P') {
+                $pub = new StdClass;
+                $args = $item->args;
+                $n = count($args);
+                $pub->name = $n>0?$args[0]:'';
+                $pub->imprint = $n>1?$args[1]:'';
+                $pub->location = $n>2?$args[2]:'';
+                $pub->date = $n>3?$args[3]:'';
+                $pub->year = $n>4?(int)$args[4]:0;
+                $pub->edition_number = $n>5?$args[5]:'';
+                $pub->plate_number = $n>6?$args[6]:'';
+            }
+        }
+    }
+    return $pub;
+}
+
+if (0) {
+    $x = "''[[Haydn - Piano Sonatas (Martienssen)|Sonaten f▒~C¼r Klavier zu zwei H▒~CC¤nden]]''<br>{{P|Edition Peters|C.F. Peters|Leipzig||1937||11261}}";
+    print_r(parse_publisher($x));
+}
+
 // convert a #fte:imslpfile template call to an object
 //
 function file_args_to_object($args) {
@@ -53,53 +102,55 @@ function file_args_to_object($args) {
     $f->thumb_filenames = [];
     $f->sample_filenames = [];
     foreach ($args as $name=>$val) {
-        if ($name == 'Amazon') {
+        // MUST USE === in name comparisons (0 == 'foo' thing)
+        if ($name === 'Amazon') {
             $f->amazon = $val;
-        } else if ($name == 'Arranger') {
+        } else if ($name === 'Arranger') {
             $f->arranger = $val;
-        } else if ($name == 'Copyright') {
+        } else if ($name === 'Copyright') {
             $f->copyright = $val;
-        } else if ($name == 'Date Submitted') {
+        } else if ($name === 'Date Submitted') {
             $f->date_submitted = $val;
         } else if (starts_with($name, 'Date Submitted ')) {
             add_elements($name, $val, $f->date_submitteds);
-        } else if ($name == 'Editor') {
+        } else if ($name === 'Editor') {
             $f->editor = $val;
-        } else if ($name == 'Engraver') {
+        } else if ($name === 'Engraver') {
             $f->engraver = $val;
         } else if (starts_with($name, 'File Name ')) {
             add_elements($name, $val, $f->file_names);
         } else if (starts_with($name, 'File Description ')) {
             add_elements($name, $val, $f->file_descs);
-        } else if ($name == 'File Tags') {
+        } else if ($name === 'File Tags') {
             $f->file_tags = $val;
-        } else if ($name == 'Image Type') {
+        } else if ($name === 'Image Type') {
             $f->image_type = $val;
-        } else if ($name == 'Misc. Notes') {
+        } else if ($name === 'Misc. Notes') {
             $f->misc_notes = $val;
         } else if (starts_with($name, 'Page Count ')) {
             add_elements($name, $val, $f->page_counts);
-        } else if ($name == 'Publisher Information') {
+        } else if ($name === 'Publisher Information') {
             $f->publisher_information = $val;
-        } else if ($name == 'Reprint') {
+            $f->pub = parse_publisher($val);
+        } else if ($name === 'Reprint') {
             $f->reprint = $val;
-        } else if ($name == 'Sample Filename') {
+        } else if ($name === 'Sample Filename') {
             $f->sample_filename = $val;
         } else if (starts_with($name, 'Sample Filename ')) {
             add_elements($name, $val, $f->sample_filenames);
-        } else if ($name == 'Scanner') {
+        } else if ($name === 'Scanner') {
             $f->scanner = $val;
         } else if (starts_with($name, 'Scanner ')) {
             add_elements($name, $val, $f->scanners);
-        } else if ($name == 'SM+') {
+        } else if ($name === 'SM+') {
             $f->sm_plus = $val;
-        } else if ($name == 'Thumb Filename') {
+        } else if ($name === 'Thumb Filename') {
             $f->thumb_filename = $val;
         } else if (starts_with($name, 'Thumb Filename ')) {
             add_elements($name, $val, $f->thumb_filenames);
-        } else if ($name == 'Translator') {
+        } else if ($name === 'Translator') {
             $f->translator = $val;
-        } else if ($name == 'Uploader') {
+        } else if ($name === 'Uploader') {
             $f->uploader = $val;
         } else if (starts_with($name, 'Uploader ')) {
             add_elements($name, $val, $f->uploaders);
@@ -117,9 +168,10 @@ function audio_args_to_object($args) {
     $f->uploaders = [];
     $f->date_submitteds = [];
     foreach ($args as $name=>$val) {
-        if ($name == 'Copyright') {
+        // MUST USE === in name comparisons (0 == 'foo' thing)
+        if ($name === 'Copyright') {
             $f->copyright = $val;
-        } else if ($name == 'Date Submitted') {
+        } else if ($name === 'Date Submitted') {
             $f->date_submitted = $val;
         } else if (starts_with($name, 'Date Submitted ')) {
             add_elements($name, $val, $f->date_submitteds);
@@ -127,21 +179,21 @@ function audio_args_to_object($args) {
             add_elements($name, $val, $f->file_names);
         } else if (starts_with($name, 'File Description ')) {
             add_elements($name, $val, $f->file_descs);
-        } else if ($name == 'Misc. Notes') {
+        } else if ($name === 'Misc. Notes') {
             $f->misc_notes = $val;
-        } else if ($name == 'Performer Categories') {
+        } else if ($name === 'Performer Categories') {
             $f->performer_categories = $val;
-        } else if ($name == 'Performers') {
+        } else if ($name === 'Performers') {
             $f->performers = $val;
-        } else if ($name == 'Publisher Information') {
+        } else if ($name === 'Publisher Information') {
             $f->publisher_information= $val;
-        } else if ($name == 'Uploader') {
+        } else if ($name === 'Uploader') {
             $f->uploader = $val;
         } else if (starts_with($name, 'Uploader ')) {
             add_elements($name, $val, $f->uploaders);
-        } else if ($name == 'Thumb Filename') {
+        } else if ($name === 'Thumb Filename') {
             $f->thumb_filename = $val;
-        //} else if ($name == 'Arranger') {
+        //} else if ($name === 'Arranger') {
         //    $f->arranger = $val;
         } else {
             echo "unrecognized audio arg: $name ($val)\n";
@@ -191,6 +243,8 @@ function parse_files($str) {
     return $files;
 }
 
+// parse the *****AUDIO***** arg of a composition page
+//
 function parse_audio($str) {
     $pos = 0;
     $files = [];
@@ -256,16 +310,16 @@ function parse_composition($title, $body) {
             echo "got template $item->name\n";
         }
         if (strtolower($item->name) == 'attrib') {
-            $comp->attrib = $item->args['positional_arg'];
+            $comp->attrib = $item->args[0];
         } else if ($item->name == 'WorkNonPD-USandEU') {
             $comp->nonpd_us = true;
             $comp->nonpd_eu = true;
         } else if ($item->name == 'WorkNonPD-EU') {
             $comp->nonpd_eu = true;
         } else if ($item->name == 'PopSection') {
-            $comp->pop_section = $item->args['positional_arg'];
+            $comp->pop_section = $item->args[0];
         } else if (!strcasecmp($item->name, 'Mbox')) {
-            $comp->mbox = $item->args['positional_arg'];
+            $comp->mbox = $item->args[0];
         } else if ($item->name == 'CollPage') {
             // meaning ??
         } else if ($item->name == 'CollabCat') {
@@ -282,6 +336,7 @@ function parse_composition($title, $body) {
         } else if ($item->name == '#fte:imslppage') {
             $comp->imslppage = true;
             foreach ($item->args as $name=>$arg) {
+                // MUST USE === in name comparisons (0 == 'foo' thing)
                 if ($verbose) {
                     echo "arg $name:\n";
                 }

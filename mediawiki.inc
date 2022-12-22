@@ -94,10 +94,8 @@ function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
         $value = trim(substr2($str, $eq_pos+1, $end_pos));
         $args[$name] = $value;
     } else {
-        // this avoids PHP's 0 == 'foobar' debacle
-        //
         $value = trim(substr2($str, $start_pos, $end_pos));
-        $args['positional_arg'] = $value;
+        $args[] = $value;
     }
 }
 

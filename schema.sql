@@ -78,6 +78,14 @@ create table composition (
     primary key(id)
 );
 
+create table publisher (
+    id                      integer         not null auto_increment,
+    name                    text            not null,
+    imprint                 text            not null,
+    location                text            not null,
+    primary key(id)
+);
+
 # a group of 1 or more score files (e.g. parts)
 #
 create table score_file_set (
@@ -97,6 +105,14 @@ create table score_file_set (
         # Normal Scan, Typeset, Manuscript Scan
     misc_notes              text            not null,
     publisher_information   text            not null,
+        # the following populated if {{P was used
+    pub_date                text            not null,
+    pub_edition_number      text            not null,
+    pub_extra               text            not null,
+    pub_id                  integer         not null,
+    pub_plate_number        text            not null,
+    pub_year                integer         not null,
+
     reprint                 text            not null,
     sample_filename         text            not null,
     scanner                 text            not null,
