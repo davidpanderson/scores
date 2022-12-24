@@ -11,16 +11,6 @@ function style_options() {
     return $x;
 }
 
-function composer_list() {
-    echo "<h2>Composers</h2>";
-    $composers = DB_person::enum('', 'order by last_name');
-    foreach ($composers as $c) {
-        echo sprintf("<p><a href=composer.php?id=%d>%s, %s</a>\n",
-            $c->id, $c->last_name, $c->first_name
-        );
-    }
-}
-
 function search_form() {
     echo "<h2>Composition search</h2>";
     form_start('search_comp.php');
@@ -38,7 +28,11 @@ function search_form() {
 function main() {
     page_head("IMSLP/DB", true);
     search_form();
-    composer_list();
+
+    echo "<h2>Composers</h2>";
+    show_button('composer.php', 'View all');
+    echo "<h2>Publishers</h2>";
+    show_button('publisher.php', 'View all');
     page_tail();
 }
 

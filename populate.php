@@ -11,9 +11,10 @@ require_once("imslp_util.inc");
 $test = false;
 
 // look up person (e.g. composer), create if not there.
+// set composer/performer flags if needed
 // return ID
 //
-function get_person($first, $last) {
+function get_person($first, $last, $is_composer, $is_performer) {
     global $test;
     $p = DB_person::lookup(
         sprintf("first_name='%s' and last_name='%s'",
@@ -21,10 +22,20 @@ function get_person($first, $last) {
             DB::escape($last)
         )
     );
-    if ($p) return $p->id;
-    $q = sprintf("(first_name, last_name) values ('%s', '%s')",
+    if ($p) {
+        if ($is_composer && !$p->is_composer) {
+            $p->update("is_composer=1");
+        }
+        if ($is_performer && !$p->is_performer) {
+            $p->update("is_performer=1");
+        }
+        return $p->id;
+    }
+    $q = sprintf("(first_name, last_name, is_composer, is_performer) values ('%s', '%s', %d, %d)",
         DB::escape($first),
-        DB::escape($last)
+        DB::escape($last),
+        $is_composer?1:0,
+        $is_performer?1:0
     );
     if ($test) {
         echo "person insert: $q\n";
@@ -96,12 +107,62 @@ function get_publisher($name, $imprint, $location) {
         DB::escape($location)
     );
     if ($test) {
-        echo "style insert: $q\n";
+        echo "publisher insert: $q\n";
         $id = 0;
     } else {
         $id = DB_publisher::insert($q);
         if (!$id) {
             echo "publisher insert failed\n";
+            exit;
+        }
+    }
+    return $id;
+}
+
+function get_ensemble($name, $type) {
+    global $test;
+    if (!$name) return 0;
+    $e = DB_ensemble::lookup(
+        sprintf("name='%s'", DB::escape($name))
+    );
+    if ($e) return $e->id;
+    $q = sprintf("(name, type) values ('%s', '%s')",
+        DB::escape($name),
+        DB::escape($type)
+    );
+    if ($test) {
+        echo "ensemble insert: $q\n";
+        $id = 0;
+    } else {
+        $id = DB_ensemble::insert($q);
+        if (!$id) {
+            echo "ensemble insert failed\n";
+            exit;
+        }
+    }
+    return $id;
+}
+
+function get_performer_role($first, $last, $role) {
+    global $test;
+    $person_id = get_person($first, $last, false, true);
+    $p = DB_performer_role::lookup(
+        sprintf("person_id=%d and role='%s'",
+            $person_id, DB::escape($role)
+        )
+    );
+    if ($p) return $p->id;
+    $q = sprintf("(person_id, role) values (%d, '%s')",
+        $person_id,
+        DB::escape($role)
+    );
+    if ($test) {
+        echo "performer_role insert: $q\n";
+        $id = 0;
+    } else {
+        $id = DB_performer_role::insert($q);
+        if (!$id) {
+            echo "performer_role insert failed\n";
             exit;
         }
     }
@@ -255,7 +316,7 @@ function make_score_file_set($cid, $f, $hier) {
             $pub->name = $pub->imprint;
         }
         $publisher_id = get_publisher($pub->name, $pub->imprint, $pub->location);
-        $x[] = sprintf("pub_id=%d", $publisher_id);
+        $x[] = sprintf("publisher_id=%d", $publisher_id);
         if (!empty($pub->date)) {
             $x[] = sprintf("pub_date='%s'", DB::escape($pub->date));
         }
@@ -423,14 +484,16 @@ function make_audio_set($cid, $f, $hier) {
     if (!empty($f->uploader)) {
         $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
     }
+
+    $afs = new DB_audio_file_set;
+    $afs->id = $file_set_id;
+
     if ($x) {
         $query = implode(',', $x);
         if ($test) {
             echo "file set update: $query\n";
         } else {
-            $x = new DB_audio_file_set;
-            $x->id = $file_set_id;
-            $x->update($query);
+            $afs->update($query);
         }
     }
 
@@ -439,6 +502,32 @@ function make_audio_set($cid, $f, $hier) {
     $n = count($f->file_names);
     for ($i=0; $i<$n; $i++) {
         make_audio_file($f, $i, $file_set_id);
+    }
+
+    // create the performer records
+    //
+    [$ensemble, $performers] = parse_performers(
+        empty($f->performers)?'':$f->performers,
+        empty($f->performer_categories)?'':$f->performer_categories
+    );
+    if ($ensemble) {
+        $ens_id = get_ensemble($ensemble[0], $ensemble[1]);
+        $query = "ensemble_id=$ens_id";
+        if ($test) {
+            echo "file set update: $query\n";
+        } else {
+            $afs->update($query);
+        }
+    }
+
+    foreach ($performers as $perf) {
+        $perf_role_id = get_performer_role($perf[0], $perf[1], $perf[2]);
+        $query = "(audio_file_set_id, performer_role_id) values ($file_set_id, $perf_role_id)";
+        if ($test) {
+            echo "audio_performer insert: $query\n";
+        } else {
+            DB_audio_performer::insert($query);
+        }
     }
 }
 
@@ -479,7 +568,7 @@ function make_audio_file_sets($cid, $audios) {
 function make_composition($c) {
     global $test;
     [$title, $composer_first, $composer_last] = parse_title($c->json_title);
-    $composer_id = get_person($composer_first, $composer_last);
+    $composer_id = get_person($composer_first, $composer_last, true, false);
     if (!empty($c->piece_style)) {
         $piece_style_id = get_style($c->piece_style);
     } else {

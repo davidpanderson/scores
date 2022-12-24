@@ -69,6 +69,10 @@ class DB_person {
         $db = DB::get();
         return $db->enum('person', 'DB_person', $where_clause, $order_clause);
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'person', $clause);
+    }
 }
 
 class DB_style {
@@ -218,3 +222,48 @@ class DB_audio_file {
         return $db->update($this, 'audio_file', $clause);
     }
 }
+
+class DB_performer_role {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('performer_role', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'performer_role', 'DB_performer_role');
+    }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('performer_role', 'DB_performer_role', $clause);
+    }
+}
+
+class DB_ensemble {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('ensemble', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'ensemble', 'DB_ensemble');
+    }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('ensemble', 'DB_ensemble', $clause);
+    }
+}
+
+class DB_audio_performer {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('audio_performer', $clause);
+        if (!$ret) return 0;
+        return 1;
+    }
+}
+
+?>

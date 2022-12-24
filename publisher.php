@@ -7,7 +7,10 @@ function publisher_list() {
     $pubs = DB_publisher::enum('', 'order by name');
     page_head("Publishers");
     start_table('table-striped');
-    row_heading_array(['Name', 'Imprint', 'Location']);
+    row_heading_array([
+        'Name<br><small>Click to view scores</small>',
+        'Imprint', 'Location'
+    ]);
     foreach ($pubs as $pub) {
         row_array([
             "<a href=publisher.php?id=$pub->id>$pub->name</a>",

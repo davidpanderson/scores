@@ -3,19 +3,26 @@
 # To avoid confusion, field names are same of mediawiki template param names;
 # in some cases these are not ideal.
 
-# composer, librettist, etc.
-
+# person: composer, performer, librettist, etc.
+# May want a way to allow 2 people with same name
+#
 create table person (
     id                      integer         not null auto_increment,
-    first_name              text            not null,
-    last_name               text            not null,
-    # should have birth/death dates, nationality, etc.
+    first_name              varchar(255)    not null,
+    last_name               varchar(255)    not null,
+    is_composer             tinyint         not null,
+    is_performer            tinyint         not null,
+    # birth/death dates, nationality, etc.
+    # link to Wikipedia page
+    unique(first_name, last_name),
     primary key(id)
 );
+alter table person add fulltext pindex (first_name, last_name);
 
 create table language (
     id                      integer         not null auto_increment,
-    name                    text            not null,
+    name                    varchar(255)    not null,
+    unique(name),
     primary key(id)
 );
 
@@ -23,7 +30,8 @@ create table language (
 #
 create table style (
     id                      integer         not null auto_increment,
-    name                    text            not null,
+    name                    varchar(255)    not null,
+    unique(name),
     primary key(id)
 );
 
@@ -31,14 +39,15 @@ create table style (
 #
 create table copyright (
     id                      integer         not null auto_increment,
-    name                    text            not null,
+    name                    varchar(255)    not null,
+    unique(name),
     primary key(id)
 );
 
 create table composition (
     id                      integer         not null auto_increment,
     redirect_id             integer         not null,
-    title                   text            not null,
+    title                   varchar(255)    not null,
         # from JSON key; includes title, opus, composer
     composer_id             integer         not null,
     alternative_title       text            not null,
@@ -75,8 +84,10 @@ create table composition (
     year_of_composition     integer         not null,
     year_of_first_publication text          not null,
     work_title              text            not null,
+    unique(title),
     primary key(id)
 );
+alter table composition add fulltext cindex (title, instrumentation);
 
 create table publisher (
     id                      integer         not null auto_increment,
@@ -92,8 +103,11 @@ create table score_file_set (
     id                      integer         not null auto_increment,
     composition_id          integer         not null,
     hier1                   text            not null,
+        # none, Parts, Arrangements and Transcriptions
     hier2                   text            not null,
+        # none, Complete, Selections, the name of a movement
     hier3                   text            not null,
+        # for Piano, for Piano (name of arranger)
     amazon                  text            not null,
     arranger                text            not null,
     copyright_id            integer         not null,
@@ -106,10 +120,10 @@ create table score_file_set (
     misc_notes              text            not null,
     publisher_information   text            not null,
         # the following populated if {{P was used
+    publisher_id            integer         not null,
     pub_date                text            not null,
     pub_edition_number      text            not null,
     pub_extra               text            not null,
-    pub_id                  integer         not null,
     pub_plate_number        text            not null,
     pub_year                integer         not null,
 
@@ -142,10 +156,14 @@ create table audio_file_set (
     id                      integer         not null auto_increment,
     composition_id          integer         not null,
     hier1                   text            not null,
+        # none, Synthesized/MIDI
     hier2                   text            not null,
+        # none, Complete, Selections, name of a mvt
     hier3                   text            not null,
+        # for Piano, etc.
     copyright_id            integer         not null,
     date_submitted          text            not null,
+    ensemble_id             integer         not null,
     misc_notes              text            not null,
     performer_categories    text            not null,
     performers              text            not null,
@@ -159,9 +177,29 @@ create table audio_file (
     audio_file_set_id       integer         not null,
     date_submitted          text            not null,
     file_name               text            not null,
-    file_description             text            not null,
+    file_description        text            not null,
     primary key(id)
 );
 
-alter table composition add fulltext cindex (title, instrumentation);
-alter table person add fulltext pindex (first_name, last_name);
+# the combination of a person and a musical role
+# (instrument name(s) or conductor)
+create table performer_role (
+    id                      integer         not null auto_increment,
+    person_id               integer         not null,
+    role                    varchar(255)    not null,
+    primary key(id)
+);
+
+create table ensemble (
+    id                      integer         not null auto_increment,
+    name                    varchar(255)    not null,
+    type                    text            not null,
+        # orchestra, piano trio, etc.
+    unique(name),
+    primary key(id)
+);
+
+create table audio_performer (
+    audio_file_set_id       integer         not null,
+    performer_role_id       integer         not null
+);

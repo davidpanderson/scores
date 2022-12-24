@@ -60,7 +60,10 @@ function show_score_file_set($fs) {
     $files = DB_score_file::enum("score_file_set_id=$fs->id");
     $x = [];
     foreach ($files as $f) {
-        $x[] = "<a href=$f->file_name>$f->file_description</a>";
+        $x[] = sprintf('<a href="https://imslp.org/wiki/File:%s">%s</a>',
+            $f->file_name,
+            $f->file_description
+        );
         // TODO: show per-file info
     }
     row2('Files', implode('<br>', $x));
@@ -80,7 +83,10 @@ function show_audio_file_set($fs) {
     $files = DB_audio_file::enum("audio_file_set_id=$fs->id");
     $x = [];
     foreach ($files as $f) {
-        $x[] = "<a href=$f->file_name>$f->file_description</a>";
+        $x[] = sprintf('<a href="https://imslp.org/wiki/File:%s">%s</a>',
+            $f->file_name,
+            $f->file_description
+        );
         // TODO: show per-file info
     }
     row2('Files', implode('<br>', $x));
