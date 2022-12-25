@@ -30,7 +30,7 @@ function show_composer($id) {
 
 function composer_list() {
     page_head("Composers");
-    $composers = DB_person::enum('', 'order by last_name');
+    $composers = DB_person::enum('is_composer=1', 'order by last_name');
     foreach ($composers as $c) {
         echo sprintf("<p><a href=composer.php?id=%d>%s, %s</a>\n",
             $c->id, $c->last_name, $c->first_name

@@ -33,6 +33,10 @@ function main() {
     show_button('composer.php', 'View all');
     echo "<h2>Publishers</h2>";
     show_button('publisher.php', 'View all');
+    echo "<h2>Performers</h2>";
+    show_button('performer.php', 'View all');
+    echo "<h2>Ensembles</h2>";
+    show_button('ensemble.php', 'View all');
     page_tail();
 }
 

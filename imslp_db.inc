@@ -190,6 +190,10 @@ class DB_score_file {
 }
 
 class DB_audio_file_set {
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'audio_file_set', 'DB_audio_file_set');
+    }
     static function insert($clause) {
         $db = DB::get();
         $ret = $db->insert('audio_file_set', $clause);
@@ -238,6 +242,10 @@ class DB_performer_role {
         $db = DB::get();
         return $db->lookup('performer_role', 'DB_performer_role', $clause);
     }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('performer_role', 'DB_performer_role', $where_clause, $order_clause);
+    }
 }
 
 class DB_ensemble {
@@ -255,6 +263,10 @@ class DB_ensemble {
         $db = DB::get();
         return $db->lookup('ensemble', 'DB_ensemble', $clause);
     }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('ensemble', 'DB_ensemble', $where_clause, $order_clause);
+    }
 }
 
 class DB_audio_performer {
@@ -263,6 +275,10 @@ class DB_audio_performer {
         $ret = $db->insert('audio_performer', $clause);
         if (!$ret) return 0;
         return 1;
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('audio_performer', 'DB_audio_performer', $where_clause, $order_clause);
     }
 }
 

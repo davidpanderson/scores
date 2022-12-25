@@ -15,19 +15,23 @@ function sort_file_sets($fss) {
             if (array_key_exists($fs->hier2, $x2)) {
                 $x3 = $x2[$fs->hier2];
                 if (array_key_exists($fs->hier3, $x3)) {
-                    $x3[$fs->hier3][] = $fs;
+                    array_push($x3[$fs->hier3], $fs);
                 } else {
                     $x3[$fs->hier3] = [$fs];
                 }
             } else {
-                $x3 = [$fs->hier3=>$fs];
-                $x2[$fs->hier2] = $x3;
+                $x3 = [$fs->hier3=>[$fs]];
             }
+            // NOTE: x3 is a copy; need to assign to x2
+            //
+            $x2[$fs->hier2] = $x3;
         } else {
             $x3 = [$fs->hier3=>[$fs]];
             $x2 = [$fs->hier2=>$x3];
-            $x1[$fs->hier1] = $x2;
         }
+        // same
+        //
+        $x1[$fs->hier1] = $x2;
     }
     return $x1;
 }
@@ -38,6 +42,7 @@ function copyright($id) {
 }
 
 function show_score_file_set($fs) {
+    echo "<hr><a name=sfs_$fs->id></a>";
     start_table('table-striped');
     if ($fs->amazon) row2("Amazon", $fs->amazon);
     if ($fs->arranger) row2("Arranger", $fs->arranger);
@@ -71,6 +76,7 @@ function show_score_file_set($fs) {
 }
 
 function show_audio_file_set($fs) {
+    echo "<hr><a name=afs_$fs->id></a>";
     start_table('table-striped');
     if ($fs->copyright_id) row2("Copyright", copyright($fs->copyright_id));
     if ($fs->date_submitted) row2("Date Submitted", $fs->date_submitted);
