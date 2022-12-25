@@ -1,6 +1,6 @@
 <?php
 
-require_once("imslp_web.inc");
+require_once("web.inc");
 require_once("imslp_db.inc");
 
 function form() {

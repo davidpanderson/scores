@@ -1,6 +1,6 @@
 <?php
-require_once("imslp_web.inc");
 require_once("imslp_db.inc");
+require_once("web.inc");
 
 // $fss is a list of file sets (score or audio);
 // each one has fields hier1, hier2, and hier3.

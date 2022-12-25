@@ -1,5 +1,5 @@
 <?php
-require_once("imslp_web.inc");
+require_once("web.inc");
 require_once("imslp_db.inc");
 
 function style_options() {
@@ -37,6 +37,8 @@ function main() {
     show_button('performer.php', 'View all');
     echo "<h2>Ensembles</h2>";
     show_button('ensemble.php', 'View all');
+    echo "<h2>Arrangements</h2>";
+    show_button('arrangement.php', 'View all');
     page_tail();
 }
 

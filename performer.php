@@ -1,6 +1,6 @@
 <?php
 require_once("imslp_db.inc");
-require_once("imslp_web.inc");
+require_once("web.inc");
 
 function performer_list() {
     page_head("Performers");

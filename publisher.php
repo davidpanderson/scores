@@ -2,6 +2,7 @@
 
 require_once("imslp_db.inc");
 require_once("imslp_web.inc");
+require_once("web.inc");
 
 function publisher_list() {
     $pubs = DB_publisher::enum('', 'order by name');
@@ -26,10 +27,10 @@ function publisher_list() {
 function scores_by_publisher($id) {
     $pub = DB_publisher::lookup_id($id);
     page_head("Scores published by $pub->name");
-    $sets = DB_score_file_set::enum("pub_id=$id");
+    $sets = DB_score_file_set::enum("publisher_id=$id");
     start_table('table-striped');
     row_heading_array([
-        'Composition', 'Publication date', 'Edition number', 'Plate number'
+        'Composition', 'Categories', 'Publication date'
     ]);
     foreach ($sets as $set) {
         $c = DB_composition::lookup_id($set->composition_id);
@@ -40,10 +41,9 @@ function scores_by_publisher($id) {
             $date = $set->pub_year;
         }
         row_array([
-            "<a href=composition.php?id=$c->id>$c->title</a>",
-            $date,
-            $set->pub_edition_number,
-            $set->pub_plate_number
+            "<a href=composition.php?id=$c->id#sfs_$set->id>$c->title</a>",
+            hier_string($set),
+            $date
         ]);
     }
     end_table();

@@ -3,6 +3,10 @@
 // An object-oriented PHP interface to the IMSLP database.
 // Each table has a corresponding class with lookup/insert/enum functions
 
+// Note: the classes all have member functions that are the same
+// except for a table and class name.
+// Maybe there's a way to move these to a base class; I can't figure it out.
+
 require_once("db_conn.inc");
 
 $exit_on_db_error = false;
@@ -274,11 +278,32 @@ class DB_audio_performer {
         $db = DB::get();
         $ret = $db->insert('audio_performer', $clause);
         if (!$ret) return 0;
-        return 1;
+        return 1;       // table has no id
     }
     static function enum($where_clause, $order_clause=null) {
         $db = DB::get();
         return $db->enum('audio_performer', 'DB_audio_performer', $where_clause, $order_clause);
+    }
+}
+
+class DB_arrangement_target {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('arrangement_target', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('arrangement_target', 'DB_arrangement_target', $where_clause, $order_clause);
+    }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('arrangement_target', 'DB_arrangement_target', $clause);
+    }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'arrangement_target', 'DB_arrangement_target');
     }
 }
 

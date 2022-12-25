@@ -2,7 +2,7 @@
 
 // create or edit a composition
 
-require_once("imslp_web.inc");
+require_once("web.inc");
 require_once("imslp_db.inc");
 require_once("imslp_util.inc");
 

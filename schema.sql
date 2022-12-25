@@ -97,6 +97,15 @@ create table publisher (
     primary key(id)
 );
 
+# e.g. Viola and Piano, etc.
+create table arrangement_target (
+    id                      integer         not null auto_increment,
+    instruments             varchar(255)    not null,
+    unique(instruments),
+    primary key(id)
+);
+
+
 # a group of 1 or more score files (e.g. parts)
 #
 create table score_file_set (
@@ -110,6 +119,7 @@ create table score_file_set (
         # for Piano, for Piano (name of arranger)
     amazon                  text            not null,
     arranger                text            not null,
+    arrangement_target_id   integer         not null,
     copyright_id            integer         not null,
     date_submitted          text            not null,
     editor                  text            not null,

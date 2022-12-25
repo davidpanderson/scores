@@ -143,6 +143,29 @@ function get_ensemble($name, $type) {
     return $id;
 }
 
+function get_arrangement_target($instruments) {
+    global $test;
+    if (!$instruments) return 0;
+    $e = DB_arrangement_target::lookup(
+        sprintf("instruments='%s'", DB::escape($instruments))
+    );
+    if ($e) return $e->id;
+    $q = sprintf("(instruments) values ('%s')",
+        DB::escape($instruments)
+    );
+    if ($test) {
+        echo "arrangement_target insert: $q\n";
+        $id = 0;
+    } else {
+        $id = DB_arrangement_target::insert($q);
+        if (!$id) {
+            echo "arrangement_target insert failed\n";
+            exit;
+        }
+    }
+    return $id;
+}
+
 function get_performer_role($first, $last, $role) {
     global $test;
     $person_id = get_person($first, $last, false, true);
@@ -354,6 +377,15 @@ function make_score_file_set($cid, $f, $hier) {
     if (!empty($f->uploader)) {
         $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
     }
+
+    // if the score is an arrangement, link it to the arrangement target
+    //
+    $at = parse_arrangement_target($hier);
+    if ($at) {
+        $at_id = get_arrangement_target($at);
+        $x[] = "arrangement_target_id=$at_id";
+    }
+
     if ($x) {
         $query = implode(',', $x);
         if ($test) {

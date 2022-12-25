@@ -1,5 +1,6 @@
 <?php
 
+require_once("web.inc");
 require_once("imslp_db.inc");
 require_once("imslp_web.inc");
 
@@ -18,14 +19,6 @@ function ensemble_list() {
     page_tail();
 }
 
-function hier_string($h1, $h2, $h3) {
-    $x = [];
-    if ($h1) $x[]=$h1;
-    if ($h2) $x[]=$h2;
-    if ($h3) $x[]=$h3;
-    return implode('/', $x);
-}
-
 function ensemble_page($e) {
     page_head("$e->name");
     $afs = DB_audio_file_set::enum("ensemble_id=$e->id");
@@ -36,7 +29,7 @@ function ensemble_page($e) {
         $comp = DB_composition::lookup_id($compid);
         row_array([
             "<a href=composition.php?id=$compid#afs_$af->id>$comp->title</a>",
-            hier_string($af->hier1, $af->hier2, $af->hier3)
+            hier_string($af)
         ]);
     }
     end_table();

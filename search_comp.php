@@ -2,7 +2,7 @@
 
 require_once('imslp_db.inc');
 require_once('imslp_util.inc');
-require_once('imslp_web.inc');
+require_once('web.inc');
 
 function style_name($id) {
     if (!$id) return '---';
