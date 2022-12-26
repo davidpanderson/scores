@@ -440,6 +440,8 @@ function make_score_file_sets($cid, $files) {
 
 function make_audio_file($f, $i, $file_set_id) {
     global $test;
+    if (!array_key_exists($i, $f->file_names)) return;
+    if (!array_key_exists($i, $f->file_descs)) return;
     $q = sprintf(
         "(audio_file_set_id, file_name, file_description) values (%d, '%s', '%s')",
         $file_set_id,
@@ -512,6 +514,9 @@ function make_audio_set($cid, $f, $hier) {
     }
     if (!empty($f->publisher_info)) {
         $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
+    }
+    if (!empty($f->thumb_filename)) {
+        $x[] = sprintf("thumb_filename='%s'", DB::escape($f->thumb_filename));
     }
     if (!empty($f->uploader)) {
         $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
@@ -740,7 +745,7 @@ function make_composition($c) {
         }
     }
 
-    if ($c->files) {
+    if (!empty($c->files)) {
         make_score_file_sets($composition_id, $c->files);
     }
     if (!empty($c->audios)) {
@@ -751,14 +756,19 @@ function make_composition($c) {
 function main($nlines) {
     $f = fopen('david_page_dump.txt', 'r');
     for ($i=0; $i<$nlines; $i++) {
+        echo "JSON record $i\n";
         $x = fgets($f);
-        if (!$x) break;
+        if (!$x) {
+            echo "Reached end of file\n";
+            break;
+        }
+        if (!trim($x)) continue;    // skip blank lines
         $y = json_decode($x);
         DB::begin_transaction();
         foreach ($y as $title => $body) {
             $comp = parse_composition($title, $body);
             if (empty($comp->imslppage)) {
-                // redirect, pop_section, link)work
+                // redirect, pop_section, link) work
                 continue;
             }
             make_composition($comp);
@@ -770,6 +780,8 @@ function main($nlines) {
 
 $exit_on_db_error = true;
 
-main(10);
+// there are 3079 lines
+
+main(100);
 
 ?>

@@ -178,6 +178,7 @@ create table audio_file_set (
     performer_categories    text            not null,
     performers              text            not null,
     publisher_information   text            not null,
+    thumb_filename          text            not null,
     uploader                text            not null,
     primary key(id)
 );

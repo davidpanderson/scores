@@ -12,6 +12,12 @@ function substr2($str, $start, $end) {
     return substr($str, $start, $end-$start);
 }
 
+// see https://stackoverflow.com/questions/3635511/remove-diacritics-from-a-string
+//
+function remove_diacritics($x) {
+    return preg_replace('/&([a-z]{1,2})(acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml|caron);/i','$1',htmlentities($x));
+}
+
 // given "Piano_Sonata_No.13,_Op.27_No.1_(Beethoven,_Ludwig_van)" return
 // - title/opus (with spaces)
 // - first name

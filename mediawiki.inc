@@ -53,12 +53,13 @@ function scan_arg($str, $start_pos) {
             $i += 1;
             continue;
         }
-        if (substr($str, $i, 7) == '<score>') {
+        // Aaargh!!  sometimes they spell it <Score>
+        if (strtolower(substr($str, $i, 7)) == '<score>') {
             $incipit_depth += 1;
             $i += 6;
             continue;
         }
-        if (substr($str, $i, 8) == '</score>') {
+        if (strtolower(substr($str, $i, 8)) == '</score>') {
             $incipit_depth -= 1;
             $i += 7;
             continue;
@@ -93,9 +94,11 @@ function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
         $name = trim(substr2($str, $start_pos, $eq_pos));
         $value = trim(substr2($str, $eq_pos+1, $end_pos));
         $args[$name] = $value;
+        //echo "adding arg $name: $value\n";
     } else {
         $value = trim(substr2($str, $start_pos, $end_pos));
         $args[] = $value;
+        //echo "adding arg $value\n";
     }
 }
 
@@ -115,7 +118,7 @@ function parse_template($str, $start_pos) {
     //
     [$eq_pos, $arg_end_pos, $template_end_pos] = scan_arg($str, $i);
 
-    //echo "i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
+    //echo "after scan template name: i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
 
     if ($template_end_pos > 0) {
         $template_name = trim(substr2($str, $i, $template_end_pos));
@@ -123,10 +126,11 @@ function parse_template($str, $start_pos) {
         // if there are arguments, parse them
         //
         $template_name = trim(substr2($str, $i, $arg_end_pos));
+        //echo "template name $template_name\n";
         $i = $arg_end_pos + 1;
         while (true) {
             [$eq_pos, $arg_end_pos, $template_end_pos] = scan_arg($str, $i);
-            //echo "i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
+            //echo "after scan template arg: i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
             if ($template_end_pos > 0) {
                 add_arg($args, $str, $i, $eq_pos, $template_end_pos);        
                 break;
@@ -134,13 +138,13 @@ function parse_template($str, $start_pos) {
                 add_arg($args, $str, $i, $eq_pos, $arg_end_pos);
                 $i = $arg_end_pos + 1;
             } else {
-                echo sprintf('malformed template call: %s\n', substr($str, $start_pos));
+                echo sprintf('malformed template call (no arg end): %s\n', substr($str, $start_pos));
                 debug_print_backtrace();
                 exit;
             }
         }
     } else {
-        echo sprintf('malformed template call: %s\n', substr($str, $start_pos));
+        echo sprintf('malformed template call (no name): %s\n', substr($str, $start_pos));
         debug_print_backtrace();
         exit;
     }
@@ -179,7 +183,16 @@ function parse_item($str, $pos) {
 }
 
 if (0) {
-    $str = "foobar {{blah |x=\n |y=\n{{foo: |a=b}}}} blah";
+    $str = "{{#fte:imslppage
+    |Incipit=
+    <score>\relative c'{   \key c \major \tempo \"Allegro maestoso\" \time 4/4 c8 r g r c r e r f4.( \tuplet 3/2 {e16 d c)} b4 r8. g16 b8 r d r f r d r g4.( \tuplet 3/2 {a16 g f)} e4 r}</score>
+    <score>\relative c'' {   \key f \major \tempo \"Andante\" \time 4/4 f4..(  \p c16) a'4..( f16) c'2. bes16( a g f) fis4( g) r2 c,2( e4 g) bes2~( bes8 d c bes) gis( a) a4 r2    }</score>
+    <br><score>\relative c'' {   \key c\major \tempo \"Allegro vivace assai\" \time 2/4 e8-. f-. fis-. g-. a( g) f-. e-. d \appoggiatura {e16} d16( c d8) d-. d4( e8) c  | e8-. f-. fis-. g-. a( g) f-. e-. d \appoggiatura {e16} d16( c d8) e-. c4 r    }
+     </Score>
+     | *****COMMENTS***** =
+     {{Piano Concertos (Mozart, Wolfgang Amadeus)}}
+     | *****END OF TEMPLATE***** }}
+    ";
     $pos = 0;
     while (true) {
         [$item, $new_pos] = parse_item($str, $pos);

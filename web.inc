@@ -1,5 +1,7 @@
 <?php
 
+// web utility functions, not IMSLP-specific
+
 ini_set('display_errors', 1);
 
 require_once("bootstrap.inc");

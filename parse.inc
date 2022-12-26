@@ -409,9 +409,7 @@ function parse_composition($title, $body) {
                 }
             }
         } else {
-            echo "unrecognized template name: $item->name\n";
-            echo "exiting\n";
-            exit;
+            echo "unrecognized template in parse_composition(): $item->name\n";
         }
     }
     return $comp;
