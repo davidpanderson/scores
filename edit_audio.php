@@ -4,9 +4,9 @@ require_once("imslp_db.inc");
 require_once("web.inc");
 
 function form() {
-    $comp_id = get_int('comp_id');
-    $comp = DB_composition::lookup_id($comp_id);
-    if (!$comp) error_page('No such composition');
+    $work_id = get_int('work_id');
+    $work = DB_work::lookup_id($work_id);
+    if (!$work) error_page('No such work');
     $file_id = get_int('file_id', true);
     if ($file_id) {
         $file = DB_score_file::lookup_id($file_id);

@@ -13,7 +13,7 @@ function style_options() {
 
 function search_form() {
     echo "<h2>Composition search</h2>";
-    form_start('search_comp.php');
+    form_start('search_work.php');
     form_input_text(
         'Search terms
             <br><small>Title, composer, and/or instrument</small>

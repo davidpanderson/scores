@@ -25,10 +25,10 @@ function ensemble_page($e) {
     start_table('table-striped');
     row_heading_array(['Composition', 'Categories']);
     foreach ($afs as $af) {
-        $compid = $af->composition_id;
-        $comp = DB_composition::lookup_id($compid);
+        $work_id = $af->work_id;
+        $work = DB_work::lookup_id($work_id);
         row_array([
-            "<a href=composition.php?id=$compid#afs_$af->id>$comp->title</a>",
+            "<a href=work.php?id=$work_id#afs_$af->id>$work->title</a>",
             hier_string($af)
         ]);
     }

@@ -33,7 +33,7 @@ function scores_by_publisher($id) {
         'Composition', 'Categories', 'Publication date'
     ]);
     foreach ($sets as $set) {
-        $c = DB_composition::lookup_id($set->composition_id);
+        $c = DB_work::lookup_id($set->work_id);
         $date = '---';
         if ($set->pub_date) {
             $date = $set->pub_date;
@@ -41,7 +41,7 @@ function scores_by_publisher($id) {
             $date = $set->pub_year;
         }
         row_array([
-            "<a href=composition.php?id=$c->id#sfs_$set->id>$c->title</a>",
+            "<a href=work.php?id=$c->id#sfs_$set->id>$c->title</a>",
             hier_string($set),
             $date
         ]);

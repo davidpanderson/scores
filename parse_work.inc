@@ -3,7 +3,7 @@
 // parse IMSLP data (in JSON/mediawiki format) into PHP data structures.
 //
 // we parse high-level constructs:
-// composition (#fte:imslppage)
+// work (#fte:imslppage)
 //      score files (#fte:imslpfile)
 //          publisher ({{P}})
 //      audio files (#fte:imslpaudio)
@@ -202,7 +202,7 @@ function audio_args_to_object($args) {
     return $f;
 }
 
-// parse the *****FILES***** part of a composition.
+// parse the *****FILES***** part of a work.
 // this is a sequence of #fte:imslpfile template calls,
 // possibly interspersed with
 // ===Parts===
@@ -243,7 +243,7 @@ function parse_files($str) {
     return $files;
 }
 
-// parse the *****AUDIO***** arg of a composition page
+// parse the *****AUDIO***** arg of a work page
 //
 function parse_audio($str) {
     $pos = 0;
@@ -274,27 +274,27 @@ function parse_audio($str) {
     return $files;
 }
 
-// parse a composition page.
+// parse a work page.
 // Return an object containing most of the info.
 //
-function parse_composition($title, $body) {
+function parse_work($title, $body) {
     global $verbose;
     if ($verbose) {
         echo "\n------------------\nprocessing $title\n";
     }
-    $comp = new StdClass;
-    $comp->json_title = $title;
-    $comp->extra_text = [];
+    $work = new StdClass;
+    $work->json_title = $title;
+    $work->extra_text = [];
     if (starts_with($body, '#REDIRECT')) {
         $lines = explode("\n", $body);
-        $comp->redirect = $lines[0];
+        $work->redirect = $lines[0];
         for ($i=1; $i<count($lines); $i++) {
             $x = trim($lines[$i]);
             if ($x) {
-                $comp->extra_text[] = $x;
+                $work->extra_text[] = $x;
             }
         }
-        return $comp;
+        return $work;
     }
     $pos = 0;
     while (true) {
@@ -302,7 +302,7 @@ function parse_composition($title, $body) {
         $pos = $new_pos;
         if ($item === false) break;
         if (is_string($item)) {
-            $comp->extra_text[] = $item;
+            $work->extra_text[] = $item;
             //echo "non-template text: $item\n";
             continue;
         }
@@ -310,16 +310,16 @@ function parse_composition($title, $body) {
             echo "got template $item->name\n";
         }
         if (strtolower($item->name) == 'attrib') {
-            $comp->attrib = $item->args[0];
+            $work->attrib = $item->args[0];
         } else if ($item->name == 'WorkNonPD-USandEU') {
-            $comp->nonpd_us = true;
-            $comp->nonpd_eu = true;
+            $work->nonpd_us = true;
+            $work->nonpd_eu = true;
         } else if ($item->name == 'WorkNonPD-EU') {
-            $comp->nonpd_eu = true;
+            $work->nonpd_eu = true;
         } else if ($item->name == 'PopSection') {
-            $comp->pop_section = $item->args[0];
+            $work->pop_section = $item->args[0];
         } else if (!strcasecmp($item->name, 'Mbox')) {
-            $comp->mbox = $item->args[0];
+            $work->mbox = $item->args[0];
         } else if ($item->name == 'CollPage') {
             // meaning ??
         } else if ($item->name == 'CollabCat') {
@@ -334,85 +334,85 @@ function parse_composition($title, $body) {
         } else if ($item->name == 'fax') {
         } else if ($item->name == 'PMBSrp') {
         } else if ($item->name == '#fte:imslppage') {
-            $comp->imslppage = true;
+            $work->imslppage = true;
             foreach ($item->args as $name=>$arg) {
                 // MUST USE === in name comparisons (0 == 'foo' thing)
                 if ($verbose) {
                     echo "arg $name:\n";
                 }
                 if ($name === '*****AUDIO*****') {
-                    $comp->audios = parse_audio($arg);
+                    $work->audios = parse_audio($arg);
                 } else if ($name === '*****FILES*****') {
-                    $comp->files = parse_files($arg);
+                    $work->files = parse_files($arg);
                 } else if ($name === 'Alternative Title') {
-                    $comp->alternative_title = $arg;
+                    $work->alternative_title = $arg;
                 } else if ($name === 'Authorities') {
-                    $comp->authorities = $arg;
+                    $work->authorities = $arg;
                 } else if ($name === 'Average Duration') {
-                    $comp->average_duration = $arg;
+                    $work->average_duration = $arg;
                 } else if ($name === '*****COMMENTS*****') {
-                    $comp->comments = $arg;
+                    $work->comments = $arg;
                 } else if ($name === 'Dedication') {
-                    $comp->dedication = $arg;
+                    $work->dedication = $arg;
                 } else if ($name === 'Discography') {
-                    $comp->discography = $arg;
+                    $work->discography = $arg;
                 } else if ($name === 'External Links') {
-                    $comp->external_links = $arg;
+                    $work->external_links = $arg;
                 } else if ($name === 'Extra Information') {
-                    $comp->extra_info = $arg;
+                    $work->extra_info = $arg;
                 } else if ($name === 'First Performance') {
-                    $comp->first_performance = $arg;
+                    $work->first_performance = $arg;
                 } else if ($name === 'Incipit') {
-                    $comp->incipit = $arg;
+                    $work->incipit = $arg;
                 } else if ($name === 'InstrDetail') {
-                    $comp->instr_detail = $arg;
+                    $work->instr_detail = $arg;
                 } else if ($name === 'Instrumentation') {
-                    $comp->instrumentation = $arg;
+                    $work->instrumentation = $arg;
                 } else if ($name === 'Key') {
-                    $comp->key = $arg;
+                    $work->key = $arg;
                 } else if ($name === 'Language') {
-                    $comp->language = $arg;
+                    $work->language = $arg;
                 } else if ($name === 'Librettist') {
-                    $comp->librettist = $arg;
+                    $work->librettist = $arg;
                 } else if ($name === 'Manuscript Sources') {
-                    $comp->manuscript_sources = $arg;
+                    $work->manuscript_sources = $arg;
                 } else if ($name === 'Movements Header') {
-                    $comp->movements_header = $arg;
+                    $work->movements_header = $arg;
                 } else if ($name === 'NCRecordings') {
-                    $comp->ncrecordings = $arg;
+                    $work->ncrecordings = $arg;
                 } else if ($name === 'Number of Movements/Sections') {
-                    $comp->number_of_movements_sections = $arg;
+                    $work->number_of_movements_sections = $arg;
                 } else if ($name === 'Opus/Catalogue Number') {
-                    $comp->opus_catalogue = $arg;
+                    $work->opus_catalogue = $arg;
                 } else if ($name === 'Piece Style') {
-                    $comp->piece_style = $arg;
+                    $work->piece_style = $arg;
                 } else if ($name === 'Related Works') {
-                    $comp->related_works = $arg;
+                    $work->related_works = $arg;
                 } else if ($name === 'SearchKey') {
-                    $comp->searchkey = $arg;
+                    $work->searchkey = $arg;
                 } else if ($name === 'SearchKey-amarec') {
-                    $comp->searchkey_amarec = $arg;
+                    $work->searchkey_amarec = $arg;
                 } else if ($name === 'SearchKey-scores') {
-                    $comp->searchkey_scores = $arg;
+                    $work->searchkey_scores = $arg;
                 } else if ($name === 'Tags') {
-                    $comp->tags = $arg;
+                    $work->tags = $arg;
                 } else if ($name === 'Year/Date of Composition') {
-                    $comp->year_date_of_composition = $arg;
+                    $work->year_date_of_composition = $arg;
                 } else if ($name === 'Year of First Publication') {
-                    $comp->year_of_first_publication = $arg;
+                    $work->year_of_first_publication = $arg;
                 } else if ($name === 'Work Title') {
-                    $comp->work_title = $arg;
+                    $work->work_title = $arg;
                 } else if ($arg === '*****WORK INFO*****') {
                 } else if ($arg === '*****END OF TEMPLATE*****') {
                 } else {
-                    echo "unrecognized composition arg name: $name: $arg\n";
+                    echo "unrecognized work arg name: $name: $arg\n";
                 }
             }
         } else {
-            echo "unrecognized template in parse_composition(): $item->name\n";
+            echo "unrecognized template in parse_work(): $item->name\n";
         }
     }
-    return $comp;
+    return $work;
 }
 
 ///////////  parse performers, performer_categories in audio files

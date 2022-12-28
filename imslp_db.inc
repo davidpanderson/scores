@@ -121,24 +121,24 @@ class DB_publisher {
     }
 }
 
-class DB_composition {
+class DB_work {
     static function lookup_id($id) {
         $db = DB::get();
-        return $db->lookup_id($id, 'composition', 'DB_composition');
+        return $db->lookup_id($id, 'work', 'DB_work');
     }
     static function insert($clause) {
         $db = DB::get();
-        $ret = $db->insert('composition', $clause);
+        $ret = $db->insert('work', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
     function update($clause) {
         $db = DB::get();
-        return $db->update($this, 'composition', $clause);
+        return $db->update($this, 'work', $clause);
     }
     static function enum($where_clause, $order_clause=null) {
         $db = DB::get();
-        return $db->enum('composition', 'DB_composition', $where_clause, $order_clause);
+        return $db->enum('work', 'DB_work', $where_clause, $order_clause);
     }
 }
 

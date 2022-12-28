@@ -1,7 +1,5 @@
 <?php
 
-// read a JSON/mediawiki file and output in semi-readable form
-
 function main($file, $nlines) {
     $f = fopen($file, 'r');
     for ($i=0; $i<$nlines; $i++) {
@@ -18,12 +16,14 @@ function main($file, $nlines) {
             continue;
         }
         foreach ($y as $t => $z) {
-            echo "======= $t =========\n$z\n";
+            //echo "$t\n";
+            if (strpos($t, 'Category:') !== 0) continue;
+            $name = substr($t, 9);
+            $p = parse_person($z);
         }
     }
 }
 
-main('david_page_dump.txt', 100);
-//main('david_category_template_dump.txt', 10000);
+main('david_category_template_dump.txt', 10000);
 
 ?>

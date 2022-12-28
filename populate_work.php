@@ -1,196 +1,15 @@
 <?php
 
-// functions for creating database entries,
-// given the PHP data structures passed from parse.php
+// create database entries for works and relate items
 
 require_once("mediawiki.inc");
-require_once("parse.inc");
+require_once("parse_work.inc");
 require_once("imslp_db.inc");
 require_once("imslp_util.inc");
+require_once("populate_util.inc");
 
 $test = false;
-
-// look up person (e.g. composer), create if not there.
-// set composer/performer flags if needed
-// return ID
-//
-function get_person($first, $last, $is_composer, $is_performer) {
-    global $test;
-    $p = DB_person::lookup(
-        sprintf("first_name='%s' and last_name='%s'",
-            DB::escape($first),
-            DB::escape($last)
-        )
-    );
-    if ($p) {
-        if ($is_composer && !$p->is_composer) {
-            $p->update("is_composer=1");
-        }
-        if ($is_performer && !$p->is_performer) {
-            $p->update("is_performer=1");
-        }
-        return $p->id;
-    }
-    $q = sprintf("(first_name, last_name, is_composer, is_performer) values ('%s', '%s', %d, %d)",
-        DB::escape($first),
-        DB::escape($last),
-        $is_composer?1:0,
-        $is_performer?1:0
-    );
-    if ($test) {
-        echo "person insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_person::insert($q);
-        if (!$id) {
-            echo "person insert failed\n";
-            exit;
-        }
-    }
-    return $id;
-}
-
-function get_copyright($name) {
-    global $test;
-    if (!$name) return 0;
-    $p = DB_copyright::lookup(sprintf("name='%s'", DB::escape($name)));
-    if ($p) return $p->id;
-    $q = sprintf("(name) values ('%s')", DB::escape($name));
-    if ($test) {
-        echo "copyright insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_copyright::insert($q);
-        if (!$id) {
-            echo "copyright insert failed\n";
-            exit;
-        }
-    }
-    return $id;
-}
-
-function get_style($name) {
-    global $test;
-    if (!$name) return 0;
-    $name = str_replace('_', ' ', $name);
-        // e.g. Early_20th_century
-    $p = DB_style::lookup(sprintf("name='%s'", DB::escape($name)));
-    if ($p) return $p->id;
-    $q = sprintf("(name) values ('%s')", DB::escape($name));
-    if ($test) {
-        echo "style insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_style::insert($q);
-        if (!$id) {
-            echo "style insert failed\n";
-            exit;
-        }
-    }
-    return $id;
-}
-
-function get_publisher($name, $imprint, $location) {
-    global $test;
-    if (!$name) return 0;
-    $p = DB_publisher::lookup(
-        sprintf("name='%s' and imprint='%s' and location='%s'",
-            DB::escape($name),
-            DB::escape($imprint),
-            DB::escape($location)
-        )
-    );
-    if ($p) return $p->id;
-    $q = sprintf("(name, imprint, location) values ('%s', '%s', '%s')",
-        DB::escape($name),
-        DB::escape($imprint),
-        DB::escape($location)
-    );
-    if ($test) {
-        echo "publisher insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_publisher::insert($q);
-        if (!$id) {
-            echo "publisher insert failed\n";
-            exit;
-        }
-    }
-    return $id;
-}
-
-function get_ensemble($name, $type) {
-    global $test;
-    if (!$name) return 0;
-    $e = DB_ensemble::lookup(
-        sprintf("name='%s'", DB::escape($name))
-    );
-    if ($e) return $e->id;
-    $q = sprintf("(name, type) values ('%s', '%s')",
-        DB::escape($name),
-        DB::escape($type)
-    );
-    if ($test) {
-        echo "ensemble insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_ensemble::insert($q);
-        if (!$id) {
-            echo "ensemble insert failed\n";
-            exit;
-        }
-    }
-    return $id;
-}
-
-function get_arrangement_target($instruments) {
-    global $test;
-    if (!$instruments) return 0;
-    $e = DB_arrangement_target::lookup(
-        sprintf("instruments='%s'", DB::escape($instruments))
-    );
-    if ($e) return $e->id;
-    $q = sprintf("(instruments) values ('%s')",
-        DB::escape($instruments)
-    );
-    if ($test) {
-        echo "arrangement_target insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_arrangement_target::insert($q);
-        if (!$id) {
-            echo "arrangement_target insert failed\n";
-            exit;
-        }
-    }
-    return $id;
-}
-
-function get_performer_role($first, $last, $role) {
-    global $test;
-    $person_id = get_person($first, $last, false, true);
-    $p = DB_performer_role::lookup(
-        sprintf("person_id=%d and role='%s'",
-            $person_id, DB::escape($role)
-        )
-    );
-    if ($p) return $p->id;
-    $q = sprintf("(person_id, role) values (%d, '%s')",
-        $person_id,
-        DB::escape($role)
-    );
-    if ($test) {
-        echo "performer_role insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_performer_role::insert($q);
-        if (!$id) {
-            echo "performer_role insert failed\n";
-            exit;
-        }
-    }
-    return $id;
-}
+$exit_on_db_error = true;
 
 // given a string of the form ===FOO, return [3, 'FOO']
 //
@@ -276,7 +95,7 @@ function make_score_file($f, $i, $file_set_id) {
     }
 }
 
-function make_score_file_set($cid, $f, $hier) {
+function make_score_file_set($wid, $f, $hier) {
     global $test;
     $copyright_id = 0;
     if (!empty($f->copyright)) {
@@ -284,8 +103,8 @@ function make_score_file_set($cid, $f, $hier) {
     }
 
     $q = sprintf(
-        "(composition_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
-        $cid,
+        "(work_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
+        $wid,
         DB::escape($hier[0]),
         DB::escape($hier[1]),
         DB::escape($hier[2])
@@ -405,11 +224,11 @@ function make_score_file_set($cid, $f, $hier) {
     }
 }
 
-// create file sets for a composition
-// $cid is a composition ID
+// create file sets for a work
+// $wid is a work ID
 // $files is a list of strings and file objects
 //
-function make_score_file_sets($cid, $files) {
+function make_score_file_sets($wid, $files) {
     $hier = ['','',''];
     foreach ($files as $item) {
         if (is_string($item)) {
@@ -431,7 +250,7 @@ function make_score_file_sets($cid, $files) {
                 echo "unrecognized string in file list: $item\n";
             }
         } else {
-            make_score_file_set($cid, $item, $hier);
+            make_score_file_set($wid, $item, $hier);
         }
     }
 }
@@ -473,12 +292,12 @@ function make_audio_file($f, $i, $file_set_id) {
     }
 }
 
-function make_audio_set($cid, $f, $hier) {
+function make_audio_set($wid, $f, $hier) {
     global $test;
     $copyright_id = get_copyright($f->copyright);
     $q = sprintf(
-        "(composition_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
-        $cid,
+        "(work_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
+        $wid,
         DB::escape($hier[0]),
         DB::escape($hier[1]),
         DB::escape($hier[2])
@@ -568,10 +387,10 @@ function make_audio_set($cid, $f, $hier) {
     }
 }
 
-// $cid is a composition ID
+// $wid is a work ID
 // $audios is a list of strings and audio objects
 //
-function make_audio_file_sets($cid, $audios) {
+function make_audio_file_sets($wid, $audios) {
     $hier = ['','',''];
     foreach ($audios as $item) {
         if (is_string($item)) {
@@ -593,16 +412,16 @@ function make_audio_file_sets($cid, $audios) {
                 echo "unrecognized string in file list: $item\n";
             }
         } else {
-            make_audio_set($cid, $item, $hier);
+            make_audio_set($wid, $item, $hier);
         }
     }
 }
 
-///////////////// COMPOSITIONS /////////////////
+///////////////// WORK /////////////////
 
-// create DB records for composition and its files
+// create DB records for work and its files
 //
-function make_composition($c) {
+function make_work($c) {
     global $test;
     [$title, $composer_first, $composer_last] = parse_title($c->json_title);
     $composer_id = get_person($composer_first, $composer_last, true, false);
@@ -622,12 +441,12 @@ function make_composition($c) {
         DB::escape($c->opus_catalogue)
     );
     if ($test){
-        echo "composition insert: $q\n";
-        $composition_id = 1;
+        echo "work insert: $q\n";
+        $work_id = 1;
     } else {
-        $composition_id = DB_composition::insert($q);
-        if (!$composition_id) {
-            echo "composition insert failed\n";
+        $work_id = DB_work::insert($q);
+        if (!$work_id) {
+            echo "work insert failed\n";
             exit;
         }
     }
@@ -736,8 +555,8 @@ function make_composition($c) {
         if ($test) {
             echo "comp update: $query\n";
         } else {
-            $comp = new DB_composition;
-            $comp->id = $composition_id;
+            $comp = new DB_work;
+            $comp->id = $work_id;
             $ret = $comp->update($query);
             if (!$ret) {
                 echo "comp update failed\n";
@@ -746,10 +565,10 @@ function make_composition($c) {
     }
 
     if (!empty($c->files)) {
-        make_score_file_sets($composition_id, $c->files);
+        make_score_file_sets($work_id, $c->files);
     }
     if (!empty($c->audios)) {
-        make_audio_file_sets($composition_id, $c->audios);
+        make_audio_file_sets($work_id, $c->audios);
     }
 }
 
@@ -766,22 +585,20 @@ function main($nlines) {
         $y = json_decode($x);
         DB::begin_transaction();
         foreach ($y as $title => $body) {
-            $comp = parse_composition($title, $body);
+            $comp = parse_work($title, $body);
             if (empty($comp->imslppage)) {
                 // redirect, pop_section, link) work
                 continue;
             }
-            make_composition($comp);
+            make_work($comp);
             //break;
         }
         DB::commit_transaction();
     }
 }
 
-$exit_on_db_error = true;
-
 // there are 3079 lines
 
-main(100);
+main(1);
 
 ?>

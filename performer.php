@@ -27,9 +27,9 @@ function show_performer($p) {
     row_heading_array(['Composition']);
     foreach ($aps as $ap) {
         $afs = DB_audio_file_set::lookup_id($ap->audio_file_set_id);
-        $comp = DB_composition::lookup_id($afs->composition_id);
+        $comp = DB_work::lookup_id($afs->work_id);
         row_array([
-            "<a href=composition.php?id=$comp->id#afs_$afs->id>$comp->title</a>"
+            "<a href=work.php?id=$comp->id#afs_$afs->id>$comp->title</a>"
         ]);
     }
     end_table();

@@ -1,28 +1,28 @@
 <?php
 
-// create or edit a composition
+// create or edit a work
 
 require_once("web.inc");
 require_once("imslp_db.inc");
 require_once("imslp_util.inc");
 
-function form($comp) {
-    if ($comp) {
-        page_head("Edit composition $comp->title");
-        [$title, $first, $last] = parse_title($comp->title);
-        $opus = $comp->opus_catalogue;
+function form($work) {
+    if ($work) {
+        page_head("Edit work $work->title");
+        [$title, $first, $last] = parse_title($work->title);
+        $opus = $work->opus_catalogue;
     } else {
-        page_head("Create composition");
+        page_head("Create work");
         $title = '';
         $first = '';
         $last = '';
         $opus = '';
     }
 
-    form_start("edit_comp.php");
+    form_start("edit_work.php");
     form_input_text('Title', 'title', $title);
     form_input_text('Opus/Catalogue', 'opus', $opus);
-    if ($comp) {
+    if ($work) {
         form_submit('Update');
     } else {
         form_submit('Create');
@@ -39,11 +39,11 @@ function update() {
 
 $id = get_int('id', true);
 if ($id) {
-    $comp = DB_composition::lookup_id($id);
-    if (!$comp) {
-        error_page('no such composition');
+    $work = DB_work::lookup_id($id);
+    if (!$work) {
+        error_page('no such work');
     }
-    form($comp);
+    form($work);
 } else {
     form(null);
 }

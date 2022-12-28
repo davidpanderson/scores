@@ -44,7 +44,7 @@ create table copyright (
     primary key(id)
 );
 
-create table composition (
+create table work (
     id                      integer         not null auto_increment,
     redirect_id             integer         not null,
     title                   varchar(255)    not null,
@@ -87,7 +87,7 @@ create table composition (
     unique(title),
     primary key(id)
 );
-alter table composition add fulltext cindex (title, instrumentation);
+alter table work add fulltext cindex (title, instrumentation);
 
 create table publisher (
     id                      integer         not null auto_increment,
@@ -110,7 +110,7 @@ create table arrangement_target (
 #
 create table score_file_set (
     id                      integer         not null auto_increment,
-    composition_id          integer         not null,
+    work_id                 integer         not null,
     hier1                   text            not null,
         # none, Parts, Arrangements and Transcriptions
     hier2                   text            not null,
@@ -164,7 +164,7 @@ create table score_file (
 
 create table audio_file_set (
     id                      integer         not null auto_increment,
-    composition_id          integer         not null,
+    work_id                 integer         not null,
     hier1                   text            not null,
         # none, Synthesized/MIDI
     hier2                   text            not null,

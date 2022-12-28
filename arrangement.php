@@ -1,6 +1,6 @@
 <?php
 
-// show compositions that have been arranged for other instruments
+// show works that have been arranged for other instruments
 
 require_once("web.inc");
 require_once("imslp_db.inc");
@@ -21,19 +21,19 @@ function target_list() {
     page_tail();
 }
 
-// show the compositions with arrangements for a particular target
+// show the works with arrangements for a particular target
 //
-function target_comps($at) {
+function target_works($at) {
     page_head("Arrangements for $at->instruments");
     $fss = DB_score_file_set::enum("arrangement_target_id=$at->id");
     start_table('table-striped');
     row_heading_array([
-        "Composition", "Arrangement", "Selection"
+        "Work", "Arrangement", "Selection"
     ]);
     foreach ($fss as $fs) {
-        $comp = DB_composition::lookup_id($fs->composition_id);
+        $comp = DB_work::lookup_id($fs->work_id);
         row_array([
-            sprintf("<a href=composition.php?id=%d#sfs_%d>%s</a>",
+            sprintf("<a href=work.php?id=%d#sfs_%d>%s</a>",
                 $comp->id, $fs->id, $comp->title
             ),
             $fs->hier3,
@@ -47,7 +47,7 @@ $id = get_int('id', true);
 if ($id) {
     $at = DB_arrangement_target::lookup_id($id);
     if (!$at) error_page('no such arrangement target');
-    target_comps($at);
+    target_works($at);
 } else {
     target_list();
 }

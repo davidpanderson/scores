@@ -11,17 +11,17 @@ function show_composer($id) {
     $name = "$c->first_name $c->last_name";
     page_head("$name");
     echo "<h2>Compositions</h2>";
-    $compositions = DB_composition::enum("composer_id=$id", 'order by year_of_composition');
+    $works = DB_work::enum("composer_id=$id", 'order by year_of_composition');
     start_table('table-striped');
     row_heading_array(['Title', 'Year', 'Instrumentation']);
-    foreach ($compositions as $c) {
-        [$t, $first, $last] = parse_title($c->title);
+    foreach ($works as $w) {
+        [$t, $first, $last] = parse_title($w->title);
         row_array([
-            sprintf("<p><a href=composition.php?id=%d>%s</a>",
-                $c->id, $t
+            sprintf("<p><a href=work.php?id=%d>%s</a>",
+                $w->id, $t
             ),
-            $c->year_of_composition?$c->year_of_composition:'---',
-            $c->instrumentation
+            $w->year_of_composition?$w->year_of_composition:'---',
+            $w->instrumentation
         ]);
     }
     end_table();

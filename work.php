@@ -158,7 +158,7 @@ function show_files_hier($x, $level, $is_score) {
 }
 
 function show_score_files($cid) {
-    $fss = DB_score_file_set::enum("composition_id=$cid");
+    $fss = DB_score_file_set::enum("work_id=$cid");
     if (!$fss) return;
     echo "<h2>Score files</h2>\n";
     $x1 = sort_file_sets($fss);
@@ -166,7 +166,7 @@ function show_score_files($cid) {
 }
 
 function show_audio_files($cid) {
-    $fss = DB_audio_file_set::enum("composition_id=$cid");
+    $fss = DB_audio_file_set::enum("work_id=$cid");
     if (!$fss) return;
     echo "<h2>Audio files</h2>\n";
     $x1 = sort_file_sets($fss);
@@ -174,9 +174,9 @@ function show_audio_files($cid) {
 }
 
 function main($id) {
-    $c = DB_composition::lookup_id($id);
+    $c = DB_work::lookup_id($id);
     if (!$c) {
-        error_page('no such composition');
+        error_page('no such work');
     }
     page_head("$c->title");
     echo "<p>";
@@ -203,9 +203,9 @@ function main($id) {
         row2('Instrumentation', $c->instrumentation);
     }
     end_table();
-    show_button("edit_comp.php?id=$id", 'Edit composition');
-    show_button("edit_score.php?comp_id=$id", 'Add score file');
-    show_button("edit_audio.php?comp_id=$id", 'Add audio file');
+    show_button("edit_work.php?id=$id", 'Edit work');
+    show_button("edit_score.php?work_id=$id", 'Add score file');
+    show_button("edit_audio.php?work_id=$id", 'Add audio file');
     echo "<hr>";
     show_score_files($c->id);
     show_audio_files($c->id);

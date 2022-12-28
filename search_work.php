@@ -10,7 +10,7 @@ function style_name($id) {
     return "<nobr>$style->name</nobr>";
 }
 
-function composition_search_action($keywords, $style_id) {
+function work_search_action($keywords, $style_id) {
     // remove commas
     //
     $k = str_replace(',', ' ', $keywords);
@@ -30,30 +30,30 @@ function composition_search_action($keywords, $style_id) {
         $clause .= " and piece_style_id=$style_id";
     }
     $clause .= " limit 50";
-    $comps = DB_composition::enum($clause);
+    $works = DB_work::enum($clause);
     page_head('Search results');
-    if ($comps) {
+    if ($works) {
         start_table('table-striped');
         row_heading_array(['Title', 'Composer', 'Year', 'Style', 'Instruments']);
-        foreach ($comps as $comp) {
-            [$title, $first, $last] = parse_title($comp->title);
+        foreach ($works as $work) {
+            [$title, $first, $last] = parse_title($work->title);
             row_array([
-                "<a href=composition.php?id=$comp->id>$title</a>",
+                "<a href=work.php?id=$work->id>$title</a>",
                 "$first $last",
-                $comp->year_of_composition?$comp->year_of_composition:'---',
-                style_name($comp->piece_style_id),
-                $comp->instrumentation,
+                $work->year_of_composition?$work->year_of_composition:'---',
+                style_name($work->piece_style_id),
+                $work->instrumentation,
             ]);
         }
         end_table();
     } else {
-        echo "No compositions match '$keywords'.";
+        echo "No works match '$keywords'.";
     }
     page_tail();
 }
 
 $keywords = get_str('keywords');
 $style_id = get_int('style_id');
-composition_search_action($keywords, $style_id);
+work_search_action($keywords, $style_id);
 
 ?>
