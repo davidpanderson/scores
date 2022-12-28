@@ -1,6 +1,7 @@
 <?php
 
-// read a JSON/mediawiki file and output in semi-readable form
+// read the JSON/mediawiki category/template file
+// and output in semi-readable form
 
 function main($file, $nlines) {
     $f = fopen($file, 'r');
@@ -23,7 +24,6 @@ function main($file, $nlines) {
     }
 }
 
-main('david_page_dump.txt', 100);
-//main('david_category_template_dump.txt', 10000);
+main('david_category_template_dump.txt', 10000);
 
 ?>

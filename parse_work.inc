@@ -76,7 +76,7 @@ function parse_publisher($str) {
                 $pub->date = $n>3?$args[3]:'';
                 $pub->year = $n>4?(int)$args[4]:0;
                 $pub->edition_number = $n>5?$args[5]:'';
-                $pub->plate_number = $n>6?$args[6]:'';
+                $pub->plate_number = empty($args[6])?'':$args[6];
             }
         }
     }
@@ -416,36 +416,6 @@ function parse_work($title, $body) {
 }
 
 ///////////  parse performers, performer_categories in audio files
-
-// $str is of the form "first last" or "last, first".
-// Return [first, last]
-//
-function parse_name($str) {
-    $str = trim($str);
-    $n = strpos($str, ',');
-    if ($n) {
-        $last = substr2($str, 0, $n);
-        $first = substr2($str, $n+1, strlen($str));
-    } else {
-        $n = strrpos($str, ' ');
-        if ($n) {
-            $last = substr2($str, $n+1, strlen($str));
-            $first = substr2($str, 0, $n);
-        } else {
-            $last = $str;
-            $first = '';
-        }
-    }
-    return [trim($first), trim($last)];
-}
-
-if (0) {
-    print_r(parse_name('John Paul Jones'));
-    print_r(parse_name('Jones, John Paul'));
-    print_r(parse_name('Charo'));
-}
-
-//print_r(parse_title("Piano_Sonata_No.13,_Op.27_No.1_(suite)_(Beethoven,_Ludwig_van)"));
 
 function valid_instrument($str) {
     if (is_numeric(substr2($str, 0, 1))) return false;

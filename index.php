@@ -2,11 +2,11 @@
 require_once("web.inc");
 require_once("imslp_db.inc");
 
-function style_options() {
-    $styles = DB_style::enum('');
+function period_options() {
+    $periods = DB_period::enum('');
     $x  =[[0, 'Any']];
-    foreach ($styles as $style) {
-        $x[] = [$style->id, $style->name];
+    foreach ($periods as $period) {
+        $x[] = [$period->id, $period->name];
     }
     return $x;
 }
@@ -20,7 +20,7 @@ function search_form() {
         ',
         'keywords'
     );
-    form_select('Style', 'style_id', style_options());
+    form_select('Period', 'period_id', period_options());
     form_submit('Search');
     form_end();
 }

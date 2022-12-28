@@ -79,24 +79,45 @@ class DB_person {
     }
 }
 
-class DB_style {
+class DB_period {
     static function insert($clause) {
         $db = DB::get();
-        $ret = $db->insert('style', $clause);
+        $ret = $db->insert('period', $clause);
         if (!$ret) return 0;
         return $db->insert_id();
     }
     static function lookup_id($id) {
         $db = DB::get();
-        return $db->lookup_id($id, 'style', 'DB_style');
+        return $db->lookup_id($id, 'period', 'DB_period');
     }
     static function lookup($clause) {
         $db = DB::get();
-        return $db->lookup('style', 'DB_style', $clause);
+        return $db->lookup('period', 'DB_period', $clause);
     }
     static function enum($where_clause, $order_clause=null) {
         $db = DB::get();
-        return $db->enum('style', 'DB_style', $where_clause, $order_clause);
+        return $db->enum('period', 'DB_period', $where_clause, $order_clause);
+    }
+}
+
+class DB_nationality {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('nationality', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'nationality', 'DB_nationality');
+    }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('nationality', 'DB_nationality', $clause);
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('nationality', 'DB_nationality', $where_clause, $order_clause);
     }
 }
 
@@ -271,6 +292,10 @@ class DB_ensemble {
         $db = DB::get();
         return $db->enum('ensemble', 'DB_ensemble', $where_clause, $order_clause);
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'ensemble', $clause);
+    }
 }
 
 class DB_audio_performer {
@@ -304,6 +329,32 @@ class DB_arrangement_target {
     static function lookup_id($id) {
         $db = DB::get();
         return $db->lookup_id($id, 'arrangement_target', 'DB_arrangement_target');
+    }
+}
+
+class DB_person_period {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('person_period', $clause);
+        if (!$ret) return 0;
+        return 1;
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('person_period', 'DB_person_period', $where_clause, $order_clause);
+    }
+}
+
+class DB_person_nationality {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('person_nationality', $clause);
+        if (!$ret) return 0;
+        return 1;
+    }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('person_nationality', 'DB_person_nationality', $where_clause, $order_clause);
     }
 }
 

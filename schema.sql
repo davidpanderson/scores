@@ -10,16 +10,30 @@ create table person (
     id                      integer         not null auto_increment,
     first_name              varchar(255)    not null,
     last_name               varchar(255)    not null,
+    alternate_names         varchar(255)    not null,
+    birth_date              varchar(255)    not null,
+    birth_place             varchar(255)    not null,
+    born_year               integer         not null,
+    born_month              integer         not null,
+    born_day                integer         not null,
+    death_date              varchar(255)    not null,
+    death_place             varchar(255)    not null,
+    died_year               integer         not null,
+    died_month              integer         not null,
+    died_day                integer         not null,
+    flourished              varchar(255)    not null,
     is_composer             tinyint         not null,
     is_performer            tinyint         not null,
-    # birth/death dates, nationality, etc.
-    # link to Wikipedia page
+    picture                 varchar(255)    not null,
+    picture_caption         varchar(255)    not null,
+    sex                     varchar(255)    not null,
+    signature               varchar(255)    not null,
     unique(first_name, last_name),
     primary key(id)
 );
-alter table person add fulltext pindex (first_name, last_name);
+alter table person add fulltext index (first_name, last_name);
 
-create table language (
+create table nationality (
     id                      integer         not null auto_increment,
     name                    varchar(255)    not null,
     unique(name),
@@ -28,11 +42,21 @@ create table language (
 
 # classical, romantic etc.
 #
-create table style (
+create table period (
     id                      integer         not null auto_increment,
     name                    varchar(255)    not null,
     unique(name),
     primary key(id)
+);
+
+create table person_nationality (
+    person_id               integer         not null,
+    nationality_id          integer         not null
+);
+
+create table person_period (
+    person_id               integer         not null,
+    period_id               integer         not null
 );
 
 # actually license
@@ -74,7 +98,7 @@ create table work (
     nonpd_us                tinyint         not null,
     number_of_movements_sections     text         not null,
     opus_catalogue          text            not null,
-    piece_style_id          integer         not null,
+    period_id               integer         not null,
     related_works           text            not null,
     searchkey               text            not null,
     searchkey_amarec        text            not null,
@@ -204,8 +228,17 @@ create table performer_role (
 create table ensemble (
     id                      integer         not null auto_increment,
     name                    varchar(255)    not null,
-    type                    text            not null,
+    alternate_names         varchar(255)    not null,
+    born_year               integer         not null,
+    died_year               integer         not null,
+    nationality_id          integer         not null,
+        # could make this an association table
+    period_id               integer         not null,
+        # could make this an association table
+    picture                 varchar(255)    not null,
+    type                    varchar(255)    not null,
         # orchestra, piano trio, etc.
+        # could make this a separate table
     unique(name),
     primary key(id)
 );

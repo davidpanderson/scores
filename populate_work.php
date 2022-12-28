@@ -426,9 +426,9 @@ function make_work($c) {
     [$title, $composer_first, $composer_last] = parse_title($c->json_title);
     $composer_id = get_person($composer_first, $composer_last, true, false);
     if (!empty($c->piece_style)) {
-        $piece_style_id = get_style($c->piece_style);
+        $period_id = get_period(str_replace('_', ' ', $c->piece_style));
     } else {
-        $piece_style_id = 0;
+        $period_id = 0;
     }
 
     $json_title = str_replace('_', ' ', $c->json_title);
@@ -518,8 +518,8 @@ function make_work($c) {
     if (!empty($c->number_of_movements_sections)) {
         $x[] = sprintf("number_of_movements_sections='%s'", DB::escape($c->number_of_movements_sections));
     }
-    if ($piece_style_id) {
-        $x[] = sprintf("piece_style_id=%d", $piece_style_id);
+    if ($period_id) {
+        $x[] = sprintf("period_id=%d", $period_id);
     }
     if (!empty($c->related_works)) {
         $x[] = sprintf("related_works='%s'", DB::escape($c->related_works));
@@ -599,6 +599,6 @@ function main($nlines) {
 
 // there are 3079 lines
 
-main(1);
+main(100);
 
 ?>

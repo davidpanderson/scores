@@ -48,4 +48,37 @@ function parse_title($str) {
     return [$t, $first, $last];
 }
 
+if (0) {
+    print_r(parse_title(
+        "Piano_Sonata_No.13,_Op.27_No.1_(suite)_(Beethoven,_Ludwig_van)"
+    ));
+}
+
+// $str is of the form "first last" or "last, first".
+// Return [first, last]
+//
+function parse_name($str) {
+    $str = trim($str);
+    $n = strpos($str, ',');
+    if ($n) {
+        $last = substr2($str, 0, $n);
+        $first = substr2($str, $n+1, strlen($str));
+    } else {
+        $n = strrpos($str, ' ');
+        if ($n) {
+            $last = substr2($str, $n+1, strlen($str));
+            $first = substr2($str, 0, $n);
+        } else {
+            $last = $str;
+            $first = '';
+        }
+    }
+    return [trim($first), trim($last)];
+}
+
+if (0) {
+    print_r(parse_name('John Paul Jones'));
+    print_r(parse_name('Jones, John Paul'));
+    print_r(parse_name('Charo'));
+}
 ?>
