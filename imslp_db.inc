@@ -178,6 +178,10 @@ class DB_copyright {
         if (!$ret) return 0;
         return $db->insert_id();
     }
+    static function enum($where_clause, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('copyright', 'DB_copyright', $where_clause, $order_clause);
+    }
 }
 
 class DB_score_file_set {

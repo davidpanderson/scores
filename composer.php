@@ -1,6 +1,7 @@
 <?php
 require_once("imslp_util.inc");
 require_once("imslp_db.inc");
+require_once("imslp_web.inc");
 require_once("web.inc");
 
 function show_composer($id) {
@@ -31,11 +32,24 @@ function show_composer($id) {
 function composer_list() {
     page_head("Composers");
     $composers = DB_person::enum('is_composer=1', 'order by last_name');
+    start_table('table-striped');
+    row_heading_array([
+        'Name<br><small>click to view works</small>',
+        'Born', 'Died', 'Sex', 'Nationality', 'Period'
+    ]);
     foreach ($composers as $c) {
-        echo sprintf("<p><a href=composer.php?id=%d>%s, %s</a>\n",
-            $c->id, $c->last_name, $c->first_name
-        );
+        row_array([
+            sprintf("<p><a href=composer.php?id=%d>%s, %s</a>\n",
+                $c->id, $c->last_name, $c->first_name
+            ),
+            birth_string($c),
+            death_string($c),
+            $c->sex,
+            nationality_string($c),
+            period_string($c)
+        ]);
     }
+    end_table();
     page_tail();
 }
 

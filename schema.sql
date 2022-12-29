@@ -53,11 +53,15 @@ create table person_nationality (
     person_id               integer         not null,
     nationality_id          integer         not null
 );
+alter table person_nationality add index (person_id);
+alter table person_nationality add index (nationality_id);
 
 create table person_period (
     person_id               integer         not null,
     period_id               integer         not null
 );
+alter table person_period add index (person_id);
+alter table person_period add index (period_id);
 
 # actually license
 #
@@ -224,6 +228,7 @@ create table performer_role (
     role                    varchar(255)    not null,
     primary key(id)
 );
+alter table performer_role add index (person_id);
 
 create table ensemble (
     id                      integer         not null auto_increment,
@@ -247,3 +252,5 @@ create table audio_performer (
     audio_file_set_id       integer         not null,
     performer_role_id       integer         not null
 );
+alter table audio_performer add index (audio_file_set_id);
+alter table audio_performer add index (performer_role_id);
