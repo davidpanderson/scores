@@ -417,8 +417,98 @@ function parse_work($title, $body) {
 
 ///////////  parse performers, performer_categories in audio files
 
+$ensemble_types = ['orchestra', 'piano trio', 'ensemble'];
+
+// parse
+// {{GardnerPerf|Martina Filjak, Piano}}
+// {{GardnerPerf|Yunjie Chen (piano)}}
+// {{GardnerPerf|Mark Padmore (voice), Jonathan Biss (piano)}}
+// {{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}
+// {{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}
+//      (return ensemble)
+//
+// don't parse
+// {{GardnerPerf|Jeremy Denk}} (piano)
+// {{GardnerPerf|Chamber Music Society of Lincoln Center}}<br><small>{{GardnerPerf|Ida Kavafian, Ani Kavafian (violins), Paul Neubauer, Roberto Diaz (violas),<br>Ronald Thomas, Fred Sherry (cellos)}}
+// (gotta draw the line somewhere)
+
+
+function parse_gardner_perf($str) {
+    global $ensemble_types;
+    $ensemble = null;
+    $performers = [];
+    $i = strpos($str, '|');
+    if ($i === false) return;
+    $str = substr($str, $i+1);
+
+    // if there's a paren, accept only "first last (inst), first last (inst)"
+    //
+    if (strpos($str, '(') !== false) {
+        $parts = explode(',', $str);
+        foreach ($parts as $part) {
+            $p = parse_perf_paren($part);
+            if (!$p) {
+                return [null, []];
+            }
+            if (in_array($p[2], $ensemble_types)) {
+                $name = $p[0]." ".$p[1];
+                if (valid_ensemble_name($name)) {
+                    $ensemble = [$name , $p[2]];
+                }
+            } else {
+                $performers[] = $p;
+            }
+        }
+    } else {
+        $p = parse_perf_comma($str);
+        if (in_array($p[2], $ensemble_types)) {
+            $name = $p[0]." ".$p[1];
+            if (valid_ensemble_name($name)) {
+                $ensemble = [$name , $p[2]];
+            }
+        } else {
+            $performers[] = $p;
+        }
+    }
+    return [$ensemble, $performers];
+}
+
+function parse_gardner_perfs($str) {
+    $pos = 0;
+    $ensemble = null;
+    $performers = [];
+    while (1) {
+        $i = strpos($str, '{{GardnerPerf', $pos);
+        if ($i === false) break;
+        $j = strpos($str, '}}', $i);
+        if ($j === false) break;
+        [$ens, $perf] = parse_gardner_perf(substr2($str, $i, $j));
+        if ($ens) $ensemble = $ens;
+        $performers = array_merge($performers, $perf);
+        $pos = $j+2;
+    }
+    return [$ensemble, $performers];
+}
+
+if (0) {
+    //$str = '{{GardnerPerf|Martina Filjak, Piano}}';
+    //$str = '{{GardnerPerf|Yunjie Chen (piano)}}';
+    //$str = '{{GardnerPerf|Mark Padmore (voice), Jonathan Biss (piano)}}';
+    //$str = '{{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}';
+    $str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
+
+    print_r(parse_gardner_perfs($str));
+}
+
 function valid_instrument($str) {
-    if (is_numeric(substr2($str, 0, 1))) return false;
+    if (is_numeric($str[0])) return false;
+    if (strpos($str, ' ')) return false;
+    return true;
+}
+
+function valid_ensemble_name($str) {
+    if (strstr($str, '{{')) return false;
+    if (strstr($str, '[[')) return false;
     return true;
 }
 
@@ -428,16 +518,26 @@ function parse_perf_comma($str) {
     if (strpos($str, '[[') !== false) return null;
     if (strpos($str, '(') !== false) return null;
     if (strpos($str, ';') !== false) return null;
-    $n = strrpos($str, ',');
+
+    $n = strpos($str, ',');
     if (!$n) return null;
+
+    if (strpos($str, ',', $n+1)) return null;
+
     $left = trim(substr2($str, 0, $n));
     if (!$left) return null;
+
+    // get the name part
+    //
     if (count(explode(' ', $left))>3) return null;
     [$first, $last] = parse_name($left);
+    if (count(explode(' ', $first))>2) return null;
+
+    // get the instrument
     $right = trim(substr2($str, $n+1, strlen($str)));
     if (!$right) return null;
     if (!valid_instrument($right)) return null;
-    if (count(explode(' ', $first))>2) return null;
+
     return [$first, $last, $right];
 }
 
@@ -450,15 +550,21 @@ function parse_perf_paren($str) {
     $m = strpos($str, ')');
     if (!$m) return null;
     if ($n>$m) return null;
-    if (trim(substr2($str, $m+1, strlen($str)))) return null;  // nothing after )
+    if (trim(substr2($str, $m+1, strlen($str)))) return null;
+        // nothing after )
+
+    // get the name part
     $left = trim(substr2($str, 0, $n));
     if (!$left) return null;
     [$first, $last] = parse_name($left);
     if (count(explode(' ', $first))>2) return null;
     if (count(explode(' ', $last))>1) return null;
+
+    // get the instrument
     $inst = trim(substr2($str, $n+1, $m));
     if (!$inst) return null;
     if (!valid_instrument($inst)) return null;
+
     return [$first, $last, $inst];
 }
 
@@ -474,8 +580,6 @@ if (0) {
     print_r(parse_perf('Joe Smith piano'));
 }
 
-$ensemble_names = ['orchestra', 'piano trio'];
-
 // parse the performer_categories and performer args of audio file
 //
 // performer_categories has
@@ -487,14 +591,13 @@ $ensemble_names = ['orchestra', 'piano trio'];
 //     Joe Smith (piano)*
 //     Joe smith, piano ; john doe, violin
 //     joe smith (piano), john doe (violin)
-//     orchestra name (if performer_categories has =conductor)
 //
 // given the above fields, return
 // - an ensemble [name, type]
 // - a list of performers [first, last, instrument]
 //
 function parse_performers($perf, $perf_cat) {
-    global $ensemble_names;
+    global $ensemble_types;
 
     $ensemble = null;
     $performers = [];
@@ -507,74 +610,103 @@ function parse_performers($perf, $perf_cat) {
     // start with performer_categories
     //
     $fields = explode(';', $perf_cat);
-    foreach ($fields as $field) {
-        $parts = explode('=', $field);
-        if (count($parts) != 2) continue;
-        $inst = trim(strtolower($parts[1]));
-        if (in_array($inst, $ensemble_names)) {
-            $ensemble = [trim($parts[0]), $inst];
-        } else {
-            if ($inst == 'conductor') $got_conductor = true;
-            [$first, $last] = parse_name($parts[0]);
-            $performers[] = [$first, $last, $inst];
-        }
-    }
-    // now performer
-    //
-    if ($perf) {
-        if ($got_conductor && !$ensemble) {
-            $ensemble = [trim($perf), 'orchestra'];
-        } else {
-            $p = parse_perf($perf);
-            if ($p) {
-                if ($p[2] == 'orchestra') {
-                    $ensemble = [$p[0]." ".$p[1], $p[2]];
-                } else {
-                    $performers[] = $p;
+    // some operas list all the roles; skip these
+    if (count($fields) < 5) {
+        foreach ($fields as $field) {
+            $parts = explode('=', $field);
+            if (count($parts) != 2) continue;
+            $inst = trim(strtolower($parts[1]));
+            if (in_array($inst, $ensemble_types)) {
+                $name = trim($parts[0]);
+                if (valid_ensemble_name($name)) {
+                    $ensemble = [$name , $inst];
                 }
             } else {
-                $parts = explode(';', $perf);
-                if (count($parts) > 1) {
-                    foreach ($parts as $part) {
-                        $p = parse_perf($part);
-                        if ($p) {
-                            if (in_array($p[2], $ensemble_names)) {
-                                $ensemble = [$p[0]." ".$p[1], $p[2]];
-                            } else {
-                                $performers[] = $p;
-                            }
-                        }
-                    }
-                } else {
-                    $parts = explode(',', $perf);
-                    if (count($parts) > 1) {
-                        foreach ($parts as $part) {
-                            $p = parse_perf_paren($part);
-                            if ($p) {
-                                if (in_array($p[2], $ensemble_names)) {
-                                    $ensemble = [$p[0]." ".$p[1], $p[2]];
-                                } else {
-                                    $performers[] = $p;
-                                }
-                            }
-                        }
-                    }
-                }
+                if ($inst == 'conductor') $got_conductor = true;
+                [$first, $last] = parse_name($parts[0]);
+                $performers[] = [$first, $last, $inst];
             }
         }
     }
-    // skip bad ensemble names
-    if ($ensemble) {
-        $x = $ensemble[0];
-        if (strstr($x, '{{') || strstr($x, '[[')) {
-            $ensemble = null;
+
+    // now performer
+    //
+    if (!$perf) {
+        return [$ensemble, $performers];
+    }
+
+    // parse {{GardnerPerf
+    //
+    [$ens, $perfs] = parse_gardner_perfs($perf);
+    if ($ens || $perfs) {
+        if ($ens) $ensemble = $ens;
+        $performers = array_merge($performers, $perfs);
+        return [$ensemble, $performers];
+    }
+
+    // parse single performer
+    //
+    $p = parse_perf($perf);
+    if ($p) {
+        if ($p[2] == 'orchestra') {
+            // parse "NY Philharmonic (orchestra)"
+            //
+            $name = $p[0]." ".$p[1];
+            if (valid_ensemble_name($name)) {
+                $ensemble = [$name , $p[2]];
+            }
+        } else {
+            $performers[] = $p;
+        }
+        return [$ensemble, $performers];
+    }
+    // parse multiple performers separated by ;
+    // "Joe smith, piano ; john doe, violin"
+    //
+    $parts = explode(';', $perf);
+    if (count($parts) > 1) {
+        foreach ($parts as $part) {
+            $p = parse_perf($part);
+            if ($p) {
+                if (in_array($p[2], $ensemble_types)) {
+                    $name = $p[0]." ".$p[1];
+                    if (valid_ensemble_name($name)) {
+                        $ensemble = [$name , $p[2]];
+                    }
+                } else {
+                    $performers[] = $p;
+                }
+            }
+        }
+        return [$ensemble, $performers];
+    }
+    // parse multiple performers separated by ,
+    // parse "joe smith (piano), john doe (violin)"
+    //
+    $parts = explode(',', $perf);
+    if (count($parts) > 1) {
+        foreach ($parts as $part) {
+            $p = parse_perf_paren($part);
+            if ($p) {
+                if (in_array($p[2], $ensemble_types)) {
+                    $name = $p[0]." ".$p[1];
+                    if (valid_ensemble_name($name)) {
+                        $ensemble = [$name , $p[2]];
+                    }
+                } else {
+                    $performers[] = $p;
+                }
+            }
         }
     }
     return [$ensemble, $performers];
 }
 
-if (0) {
-    print_r(parse_performers('Orchestre Symphonique Munich (orchestra)',''));
+if (1) {
+    //$str = '{{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}';
+    $str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
+    //$str = 'Galaxy Bosendorfer 290 (Tatiana Kolesova)';
+    print_r(parse_performers($str ,''));
 }
 
 ////////////////  arrangement target (from score hiers)

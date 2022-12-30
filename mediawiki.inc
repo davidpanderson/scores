@@ -245,7 +245,7 @@ EOT;
     }
 }
 
-if (1) {
+if (0) {
     //$str = '{{#if:blah|foo}}';
     //$str = '{{P|Edition Peters|C.F. Peters|Leipzig|n.d.[{{{2|1902-07}}}]|{{{2|1902}}}|3100|{{{3|8800, 10037-38}}}}}';
     //$str = '{{#if:{{{3|}}}|{{{3}}}:<nowiki> </nowiki>|}}';
