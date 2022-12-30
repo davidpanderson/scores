@@ -10,6 +10,11 @@
 
 require_once("imslp_util.inc");
 
+// for debugging
+function str_head($str, $pos) {
+    return substr($str, $pos, 40);
+}
+
 // scan a template argument.
 // Ignore the contents of:
 //      {{...}} (template calls, which can contain |)
@@ -21,14 +26,26 @@ require_once("imslp_util.inc");
 //      template_end_pos: offset of top-level }} or -1
 //
 function scan_arg($str, $start_pos) {
+    echo sprintf("scan_arg(): %s...\n", str_head($str, $start_pos));
     $n = strlen($str);
     $template_depth = 0;
+    $arg_depth = 0;
     $link_depth = 0;
     $incipit_depth = 0;
     $eq_pos = -1;
     $arg_end_pos = -1;
     $template_end_pos = -1;
     for ($i=$start_pos; $i < $n; $i++) {
+        if (!$incipit_depth && substr($str, $i, 3) == '{{{') {
+            $arg_depth += 1;
+            $i += 2;
+            continue;
+        }
+        if (!$incipit_depth && $arg_depth && substr($str, $i, 3) == '}}}') {
+            $arg_depth -= 1;
+            $i += 2;
+            continue;
+        }
         if (!$incipit_depth && substr($str, $i, 2) == '{{') {
             $template_depth += 1;
             $i += 1;
@@ -66,7 +83,7 @@ function scan_arg($str, $start_pos) {
         }
         // look for | and =, but only if we're at top level
         //
-        if (!$template_depth && !$link_depth && !$incipit_depth) {
+        if (!$template_depth && !$link_depth && !$incipit_depth && !$arg_depth) {
             if (substr($str, $i, 1) == '|') {
                 $arg_end_pos = $i;
                 break;
@@ -104,19 +121,32 @@ function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
 
 // given a string of the form
 // {{tname | arg=val | arg=val ... }}
+// or
+// {{#ifx:arg|arg|arg}}
 // return
-//      - the template name
+//      - the template name (or #ifx:)
 //      - an array of argument names and values.
 //      - the offset of the position past the }}
 // The values may contain template calls.
 //
 function parse_template($str, $start_pos) {
+    echo sprintf("parse_template(): %s...\n", str_head($str, $start_pos));
     $i = $start_pos + 2;
     $args = [];
 
     // get the template name
     //
-    [$eq_pos, $arg_end_pos, $template_end_pos] = scan_arg($str, $i);
+    if (substr($str, $i, 3) == '#if') {
+        $n = strpos($str, ':', $i);
+        if ($n === false) {
+            echo "bad if construct: $str\n";
+            exit;
+        }
+        $template_end_pos = 0;
+        $arg_end_pos = $n;
+    } else {
+        [$eq_pos, $arg_end_pos, $template_end_pos] = scan_arg($str, $i);
+    }
 
     //echo "after scan template name: i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
 
@@ -138,14 +168,14 @@ function parse_template($str, $start_pos) {
                 add_arg($args, $str, $i, $eq_pos, $arg_end_pos);
                 $i = $arg_end_pos + 1;
             } else {
-                echo sprintf('malformed template call (no arg end): %s\n', substr($str, $start_pos));
-                debug_print_backtrace();
+                echo sprintf("malformed template call (no arg end): %s\n", substr($str, $start_pos));
+                //debug_print_backtrace();
                 exit;
             }
         }
     } else {
         echo sprintf('malformed template call (no name): %s\n', substr($str, $start_pos));
-        debug_print_backtrace();
+        //debug_print_backtrace();
         exit;
     }
     return [$template_name, $args, $template_end_pos+2];
@@ -183,7 +213,8 @@ function parse_item($str, $pos) {
 }
 
 if (0) {
-    $str = "{{#fte:imslppage
+    $str = <<<'EOT'
+    {{#fte:imslppage
     |Incipit=
     <score>\relative c'{   \key c \major \tempo \"Allegro maestoso\" \time 4/4 c8 r g r c r e r f4.( \tuplet 3/2 {e16 d c)} b4 r8. g16 b8 r d r f r d r g4.( \tuplet 3/2 {a16 g f)} e4 r}</score>
     <score>\relative c'' {   \key f \major \tempo \"Andante\" \time 4/4 f4..(  \p c16) a'4..( f16) c'2. bes16( a g f) fis4( g) r2 c,2( e4 g) bes2~( bes8 d c bes) gis( a) a4 r2    }</score>
@@ -192,7 +223,7 @@ if (0) {
      | *****COMMENTS***** =
      {{Piano Concertos (Mozart, Wolfgang Amadeus)}}
      | *****END OF TEMPLATE***** }}
-    ";
+EOT;
     $pos = 0;
     while (true) {
         [$item, $new_pos] = parse_item($str, $pos);
@@ -204,10 +235,18 @@ if (0) {
             echo "got template call\n";
             echo "  name: $item->name\n";
             foreach ($item->args as $n=>$v) {
-                echo "  arg $n => $v\n";
+                echo "  arg $n\n     $v\n";
             }
         }
     }
+}
+
+if (1) {
+    //$str = '{{#if:blah|foo}}';
+    //$str = '{{P|Edition Peters|C.F. Peters|Leipzig|n.d.[{{{2|1902-07}}}]|{{{2|1902}}}|3100|{{{3|8800, 10037-38}}}}}';
+    //$str = '{{#if:{{{3|}}}|{{{3}}}:<nowiki> </nowiki>|}}';
+    $str = '{{#if:{{{4|}}}|{{{4}}}|{{#if:{{{5|}}}|{{{5}}}|n.d}}}}';
+    print_r(parse_template($str, 0));
 }
 
 ?>
