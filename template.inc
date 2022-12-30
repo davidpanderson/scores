@@ -38,12 +38,12 @@ function parse_link($str, $pos) {
 //     template calls: {{foo|arg|arg}}
 //     links: [[text|url]]
 // and in the template case:
-//     params {{{...}}}
-//     {{if etc.
+//     params: {{{...}}}
+//     conditionals: {{#if: etc.
 //
-// expand these and return the result
+// expand these and return the resulting text
 //
-function expand_mw_text($str, $args) {
+function expand_mw_text($str, $args=null) {
     $pos = 0;
     $out = '';
     $n = strlen($str);
@@ -64,10 +64,11 @@ function expand_mw_text($str, $args) {
             }
         }
         if (substr($str, $pos, 2) === '{{') {
-            [$name, $inner_args, $new_pos] = parse_template($str, $pos);
+            [$name, $inner_args, $new_pos] = parse_template_call($str, $pos);
             echo "expand_mw_text(): got template $name\n";
             if ($name == '#if') {
-                if (count($inner_args) != 3) {
+                $nargs = count($inner_args);
+                if ($nargs < 2) {
                     echo "wrong # args for if\n";
                     print_r($inner_args);
                     exit;
@@ -78,7 +79,9 @@ function expand_mw_text($str, $args) {
                     $out .= expand_mw_text($inner_args[1], $args);
                 } else {
                     echo "if is false\n";
-                    $out .= expand_mw_text($inner_args[2], $args);
+                    if ($nargs>2) {
+                        $out .= expand_mw_text($inner_args[2], $args);
+                    }
                 }
             } else if ($name == '#ifeq') {
                 if (count($inner_args) != 4) {
@@ -128,7 +131,7 @@ function expand_mw_text($str, $args) {
 // expand a template, given a set of arguments.
 //
 function expand_template($name, $args) {
-    echo "expanding template $name\n";
+    echo "expand_template(): $name\n";
     echo "args:\n"; print_r($args);
     static $templates = null;
     if (!$templates) {
@@ -160,15 +163,27 @@ function get_template_arg($str, $pos, $args) {
     $parts = explode('|', $x);
     switch (count($parts)) {
     case 1:
-        if (!array_key_exists($parts[0], $args)) {
-            echo "missing arg: $parts[0]\n";
-            exit;
+        $key = $parts[0];
+        // mediawiki numbers arguments starting from 1 (boo!!)
+        if (is_numeric($key)) {
+            $key = (int)$key - 1;
         }
-        $ret = [$args[$parts[0]], $n+3];
+        if (!array_key_exists($key, $args)) {
+            // are missing args OK?
+            echo "missing arg: $parts[0]\n";
+            print_r($args);
+            return ['', $n+3];
+            //exit;
+        }
+        $ret = [$args[$key], $n+3];
         break;
     case 2:
-        if (array_key_exists($parts[0], $args)) {
-            $ret = [$args[$parts[0]], $n+3];
+        $key = $parts[0];
+        if (is_numeric($key)) {
+            $key = (int)$key - 1;
+        }
+        if (array_key_exists($key, $args)) {
+            $ret = [$args[$key], $n+3];
         } else {
             $ret = [$parts[1], $n+3];
         }
@@ -195,9 +210,11 @@ function expand_args($inner_args, $outer_args) {
 }
 
 if (1) {
-    //echo expand_mw_text("[[foo|bar]]");
-    $x = expand_mw_text("{{GriegKlavierwerke|foo|blah|x3|x4|x5}}", null);
-    //$x = expand_mw_text("{{P|a|b|c|d|e|f|g|h}}", null);
+    //$str = "[[foo|bar]]";
+    //$str = "{{GriegKlavierwerke|foo|blah|x3|x4|x5}}";
+    //$str = "{{P|a|b|c|d|e|f|g|h}}";
+    $str = "{{LinkArr|Charles-Valentin|Alkan|1813|1888}}";
+    $x = expand_mw_text($str);
     echo "output: $x\n";
 }
 

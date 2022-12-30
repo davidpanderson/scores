@@ -129,11 +129,15 @@ function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
 //      - the offset of the position past the }}
 // The values may contain template calls.
 //
-function parse_template($str, $start_pos) {
-    echo sprintf("parse_template(): %s...\n", str_head($str, $start_pos));
+function parse_template_call($str, $start_pos) {
+    echo sprintf("parse_template_call(): %s...\n", str_head($str, $start_pos));
     $i = $start_pos + 2;
     $args = [];
 
+    // skip blanks before template name
+    while ($str[$i]==' ') {
+        $i++;
+    }
     // get the template name
     //
     if (substr($str, $i, 3) == '#if') {
@@ -205,7 +209,7 @@ function parse_item($str, $pos) {
     }
     // if none, parse the template call
     //
-    [$template_name, $args, $end_pos] = parse_template($str, $tstart);
+    [$template_name, $args, $end_pos] = parse_template_call($str, $tstart);
     $x = new StdClass;
     $x->name = $template_name;
     $x->args = $args;
@@ -245,8 +249,14 @@ if (1) {
     //$str = '{{#if:blah|foo}}';
     //$str = '{{P|Edition Peters|C.F. Peters|Leipzig|n.d.[{{{2|1902-07}}}]|{{{2|1902}}}|3100|{{{3|8800, 10037-38}}}}}';
     //$str = '{{#if:{{{3|}}}|{{{3}}}:<nowiki> </nowiki>|}}';
-    $str = '{{#if:{{{4|}}}|{{{4}}}|{{#if:{{{5|}}}|{{{5}}}|n.d}}}}';
-    print_r(parse_template($str, 0));
+    //$str = '{{#if:{{{4|}}}|{{{4}}}|{{#if:{{{5|}}}|{{{5}}}|n.d}}}}';
+    $str = "{{#fte:mclink
+    |catname = {{ #if:{{{5|}}}|{{#if:{{{2|}}}|{{{2}}}, {{{1}}} @{{{5}}}^|{{{1}}} @{{{5}}}^}} | {{#if:{{{2|}}}|{{{2}}}, {{{1}}}|{{{1}}}}}}}
+    |sortkey = {{#worksortkey:}}
+    |mctype  = Arranger
+    |show    = {{{1}}}{{#if:{{{2|}}}|&#32;{{{2|}}}}}
+    }}{{ #ifeq: 0{{{3|}}} | 0 | {{ #ifeq: 0{{{4|}}} | 0 | {{#if: {{{5|}}} | &nbsp;({{{5}}}) | }} | &nbsp;({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}d. {{{4}}}) }} | &nbsp;{{ #ifeq: 0{{{4|}}} | 0 | ({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}b. {{{3}}}) | ({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}{{{3}}}-{{{4}}})}}}}";
+    print_r(parse_template_call($str, 0));
 }
 
 ?>
