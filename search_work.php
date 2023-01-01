@@ -2,15 +2,10 @@
 
 require_once('imslp_db.inc');
 require_once('imslp_util.inc');
+require_once('imslp_web.inc');
 require_once('web.inc');
 
-function style_name($id) {
-    if (!$id) return '---';
-    $style = DB_style::lookup_id($id);
-    return "<nobr>$style->name</nobr>";
-}
-
-function work_search_action($keywords, $style_id) {
+function work_search_action($keywords, $period_id) {
     // remove commas
     //
     $k = str_replace(',', ' ', $keywords);
@@ -26,22 +21,22 @@ function work_search_action($keywords, $style_id) {
     $clause = sprintf("match (title, instrumentation) against ('%s')",
         DB::escape($k3)
     );
-    if ($style_id) {
-        $clause .= " and piece_style_id=$style_id";
+    if ($period_id) {
+        $clause .= " and period_id=$period_id";
     }
     $clause .= " limit 50";
     $works = DB_work::enum($clause);
-    page_head('Search results');
+    page_head('Work search results');
     if ($works) {
         start_table('table-striped');
-        row_heading_array(['Title', 'Composer', 'Year', 'Style', 'Instruments']);
+        row_heading_array(['Title', 'Composer', 'Year', 'Period', 'Instruments']);
         foreach ($works as $work) {
             [$title, $first, $last] = parse_title($work->title);
             row_array([
                 "<a href=work.php?id=$work->id>$title</a>",
                 "$first $last",
                 $work->year_of_composition?$work->year_of_composition:'---',
-                style_name($work->piece_style_id),
+                $work->period_id?"<nobr>".period_name($work->period_id)."</nobr>":'',
                 $work->instrumentation,
             ]);
         }
@@ -53,7 +48,7 @@ function work_search_action($keywords, $style_id) {
 }
 
 $keywords = get_str('keywords');
-$style_id = get_int('style_id');
-work_search_action($keywords, $style_id);
+$period_id = get_int('period_id');
+work_search_action($keywords, $period_id);
 
 ?>

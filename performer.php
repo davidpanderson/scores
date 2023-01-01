@@ -3,6 +3,8 @@ require_once("imslp_db.inc");
 require_once("imslp_web.inc");
 require_once("web.inc");
 
+DEPRECATED
+
 function performer_list() {
     page_head("Performers");
     $persons = DB_person::enum('is_performer=1', 'order by last_name');
@@ -17,7 +19,7 @@ function performer_list() {
         }
         row_array([
             "<a href=performer.php?id=$person->id>$name</a>",
-            birth_string($person),
+            person_birth_string($person),
             implode(', ', $x)
         ]);
     }
@@ -26,7 +28,7 @@ function performer_list() {
 }
 
 function show_performer($person) {
-    page_head("$person->first_name $person->last_name");
+    page_head("Recordings by $person->first_name $person->last_name");
     $prs = DB_performer_role::enum("person_id=$person->id");
     foreach ($prs as $pr) {
         echo "<h2>$pr->role</h2>\n";

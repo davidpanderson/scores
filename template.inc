@@ -213,7 +213,9 @@ if (1) {
     //$str = "[[foo|bar]]";
     //$str = "{{GriegKlavierwerke|foo|blah|x3|x4|x5}}";
     //$str = "{{P|a|b|c|d|e|f|g|h}}";
-    $str = "{{LinkArr|Charles-Valentin|Alkan|1813|1888}}";
+    //$str = "{{LinkArr|Charles-Valentin|Alkan|1813|1888}}";
+    //$str = "{{FE}}";
+    $str = "{{P|Carl Simon||Berlin||||C.S. 1823}}";
     $x = expand_mw_text($str);
     echo "output: $x\n";
 }

@@ -140,6 +140,10 @@ function make_person($p) {
     if (!empty($p->nationality)) {
         foreach ($p->nationality as $nat) {
             $nat_id = get_nationality($nat);
+            if (!$nat_id) {
+                echo "no nat $nat\n";
+                exit;
+            }
             DB_person_nationality::insert(
                 sprintf("(person_id, nationality_id) values (%d, %d)",
                     $person_id, $nat_id

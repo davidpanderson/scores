@@ -1,44 +1,29 @@
 <?php
 require_once("web.inc");
-require_once("imslp_db.inc");
-
-function period_options() {
-    $periods = DB_period::enum('');
-    $x  =[[0, 'Any']];
-    foreach ($periods as $period) {
-        $x[] = [$period->id, $period->name];
-    }
-    return $x;
-}
-
-function search_form() {
-    echo "<h2>Composition search</h2>";
-    form_start('search_work.php');
-    form_input_text(
-        'Search terms
-            <br><small>Title, composer, and/or instrument</small>
-        ',
-        'keywords'
-    );
-    form_select('Period', 'period_id', period_options());
-    form_submit('Search');
-    form_end();
-}
+require_once("imslp_web.inc");
 
 function main() {
     page_head("IMSLP/DB", true);
-    search_form();
+    echo "<h2>Works</h2>";
+    work_search_form();
+    form_start('');
+    form_general(
+        "Arrangements", button_text("arrangement.php", "View all combos")
+    );
+    form_end();
 
-    echo "<h2>Composers</h2>";
-    show_button('composer.php', 'View all');
-    echo "<h2>Publishers</h2>";
-    show_button('publisher.php', 'View all');
-    echo "<h2>Performers</h2>";
-    show_button('performer.php', 'View all');
+    echo "<h2>People</h2>";
+    person_search_form();
+
     echo "<h2>Ensembles</h2>";
-    show_button('ensemble.php', 'View all');
-    echo "<h2>Arrangements</h2>";
-    show_button('arrangement.php', 'View all');
+    ensemble_search_form();
+
+    echo "<h2>Publishers</h2>";
+    form_start('');
+    form_general(
+        "", button_text('publisher.php', 'View all')
+    );
+    form_end();
     page_tail();
 }
 

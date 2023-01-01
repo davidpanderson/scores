@@ -4,6 +4,8 @@ require_once("imslp_db.inc");
 require_once("imslp_web.inc");
 require_once("web.inc");
 
+DEPRECATED
+
 function show_composer($id) {
     $c = DB_person::lookup_id($id);
     if (!$c) {
@@ -42,11 +44,11 @@ function composer_list() {
             sprintf("<p><a href=composer.php?id=%d>%s, %s</a>\n",
                 $c->id, $c->last_name, $c->first_name
             ),
-            birth_string($c),
-            death_string($c),
+            person_birth_string($c),
+            person_death_string($c),
             $c->sex,
-            nationality_string($c),
-            period_string($c)
+            person_nationality_string($c),
+            person_period_string($c)
         ]);
     }
     end_table();

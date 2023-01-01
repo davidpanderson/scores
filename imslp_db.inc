@@ -77,6 +77,43 @@ class DB_person {
         $db = DB::get();
         return $db->update($this, 'person', $clause);
     }
+
+    // enumerate, joined to period and/or nationality
+    static function enum_join(
+        $nationality_id, $period_id, $where_clause, $order_clause=null
+    ) {
+        $joins = [];
+        $ons = [];
+        $wheres = [];
+        if ($nationality_id) {
+            $joins[] = 'join person_nationality nat';
+            $ons[] = 'pers.id=nat.person_id';
+            $wheres[] = "nat.nationality_id=$nationality_id";
+        }
+        if ($period_id) {
+            $joins[] = 'join person_period per';
+            $ons[] = 'pers.id=per.person_id';
+            $wheres[] = "per.period_id=$period_id";
+        }
+        $q = sprintf('select * from person pers %s on %s where %s',
+            implode(' ', $joins),
+            implode(' and ', $ons),
+            implode(' and ', $wheres)
+        );
+        if ($where_clause) $q .= " and $where_clause";
+        if ($order_clause) $q .= " where $order_clause";
+        $db = DB::get();
+        $results = $db->do_query($q);
+        $persons = [];
+        while ($x = $results->fetch_object('DB_person')) {
+            $persons[] = $x;
+        }
+        return $persons;
+    }
+}
+
+if (0) {
+    print_r(DB_person::enum_join(1, 2, "sex='Female'"));
 }
 
 class DB_period {
@@ -299,6 +336,15 @@ class DB_ensemble {
     function update($clause) {
         $db = DB::get();
         return $db->update($this, 'ensemble', $clause);
+    }
+    static function types() {
+        $db = DB::get();
+        $result = $db->do_query('select distinct type from ensemble');
+        $types = [];
+        while ($x = $result->fetch_row()) {
+            $types[] = $x[0];
+        }
+        return $types;
     }
 }
 

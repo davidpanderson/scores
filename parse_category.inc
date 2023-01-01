@@ -70,26 +70,32 @@ function parse_aux($item, $template_name) {
         case 'flourished':
             $p->flourished = $arg; break;
         case 'instrument':
-            $p->instrument = $arg; break;
+            $p->instrument = strtolower($arg); break;
         case 'nationality':
         case 'nationality1':
         case 'nationality2':
         case 'nationality 2':
         case 'nationality3':
         case 'nationality4':
-            $p->nationality[] = $arg; break;
+            if ($arg) {
+                $p->nationality[] = $arg;
+            }
+            break;
         case 'picture':
             $p->picture = $arg; break;
         case 'picture caption':
             $p->picture_caption = $arg; break;
         case 'sex':
-            $p->sex = $arg; break;
+            $p->sex = strtolower($arg); break;
         case 'signature':
             $p->signature = $arg; break;
         case 'time period':
         case 'time period2':
         case 'era':
-            $p->time_period[] = $arg; break;
+            if ($arg) {
+                $p->time_period[] = $arg;
+            }
+            break;
         case 'type':
             $p->type = $arg; break;
         case 'biography link':
