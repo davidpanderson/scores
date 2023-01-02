@@ -1,6 +1,7 @@
 <?php
 require_once("imslp_db.inc");
 require_once("web.inc");
+require_once("imslp_web.inc");
 
 // $fss is a list of file sets (score or audio);
 // each one has fields hier1, hier2, and hier3.
@@ -43,7 +44,7 @@ function copyright($id) {
 
 function show_score_file_set($fs) {
     echo "<hr><a name=sfs_$fs->id></a>";
-    start_table('table-striped');
+    start_table('');
     if ($fs->amazon) row2("Amazon", $fs->amazon);
     if ($fs->arranger) row2("Arranger", $fs->arranger);
     if ($fs->copyright_id) row2("Copyright", copyright($fs->copyright_id));
@@ -77,7 +78,7 @@ function show_score_file_set($fs) {
 
 function show_audio_file_set($fs) {
     echo "<hr><a name=afs_$fs->id></a>";
-    start_table('table-striped');
+    start_table('');
     if ($fs->copyright_id) row2("Copyright", copyright($fs->copyright_id));
     if ($fs->date_submitted) row2("Date Submitted", $fs->date_submitted);
     if ($fs->misc_notes) row2("Misc. Notes", $fs->misc_notes);
@@ -180,29 +181,7 @@ function main($id) {
     }
     page_head("$c->title");
     echo "<p>";
-    start_table('table-striped');
-    $composer = DB_person::lookup_id($c->composer_id);
-    $name = "$composer->first_name $composer->last_name";
-    row2('Composer', "<a href=composer.php?id=$composer->id>$name</a>");
-    if ($c->opus_catalogue) {
-        row2('Opus', $c->opus_catalogue);
-    }
-    if ($c->_key) {
-        row2('Key', $c->_key);
-    }
-    if ($c->movements_header) {
-        row2('Movements', $c->movements_header);
-    }
-    if ($c->year_date_of_composition) {
-        row2('Composition date', $c->year_date_of_composition);
-    }
-    if ($c->year_of_first_publication) {
-        row2('Publication date', $c->year_of_first_publication);
-    }
-    if ($c->instrumentation) {
-        row2('Instrumentation', $c->instrumentation);
-    }
-    end_table();
+    show_work_detail($c);
     show_button("edit_work.php?id=$id", 'Edit work');
     show_button("edit_score.php?work_id=$id", 'Add score file');
     show_button("edit_audio.php?work_id=$id", 'Add audio file');

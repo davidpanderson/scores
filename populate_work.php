@@ -602,6 +602,6 @@ function main($start_line, $end_line) {
 
 // there are 3079 lines
 
-main(100, 4000);
+main(0, 4000);
 
 ?>

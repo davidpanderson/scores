@@ -6,9 +6,10 @@ require_once("imslp_web.inc");
 
 function ensemble_page($e) {
     page_head("$e->name");
+    show_ensemble_detail($e);
     echo "<h2>Performances</h2>\n";
     $afs = DB_audio_file_set::enum("ensemble_id=$e->id");
-    start_table('table-striped');
+    start_table();
     row_heading_array(['Composition', 'Categories']);
     foreach ($afs as $af) {
         $work_id = $af->work_id;

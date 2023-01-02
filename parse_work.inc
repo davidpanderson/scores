@@ -482,16 +482,24 @@ function parse_gardner_perfs($str) {
     return [$ensemble, $performers];
 }
 
-function valid_instrument($str) {
+// for instrument, ensemble person
+//
+function valid_name($str) {
+    if (!$str) return true;
+    if (strstr($str, '{')) return false;
+    if (strstr($str, '[')) return false;
+    if (strstr($str, '|')) return false;
     if (is_numeric($str[0])) return false;
-    if (strpos($str, ' ')) return false;
     return true;
 }
 
 function valid_ensemble_name($str) {
-    if (strstr($str, '{{')) return false;
-    if (strstr($str, '[[')) return false;
-    return true;
+    return valid_name($str);
+}
+
+function valid_person_name($str) {
+    if (strlen($str)>89) return false;
+    return valid_name($str);
 }
 
 // if str is of form "Joe Smith, piano" return [first, last, instr]
@@ -511,14 +519,16 @@ function parse_perf_comma($str) {
 
     // get the name part
     //
-    if (count(explode(' ', $left))>3) return null;
+    if (count(explode(' ', $left))>5) return null;
     [$first, $last] = parse_name($left);
-    if (count(explode(' ', $first))>2) return null;
+    if (count(explode(' ', $first))>4) return null;
+    if (!valid_person_name($first)) return null;
+    if (!valid_person_name($last)) return null;
 
     // get the instrument
     $right = trim(substr2($str, $n+1, strlen($str)));
     if (!$right) return null;
-    if (!valid_instrument($right)) return null;
+    if (!valid_name($right)) return null;
 
     return [$first, $last, $right];
 }
@@ -539,13 +549,15 @@ function parse_perf_paren($str) {
     $left = trim(substr2($str, 0, $n));
     if (!$left) return null;
     [$first, $last] = parse_name($left);
-    if (count(explode(' ', $first))>2) return null;
+    if (count(explode(' ', $first))>4) return null;
     if (count(explode(' ', $last))>1) return null;
+    if (!valid_person_name($first)) return null;
+    if (!valid_person_name($last)) return null;
 
     // get the instrument
     $inst = trim(substr2($str, $n+1, $m));
     if (!$inst) return null;
-    if (!valid_instrument($inst)) return null;
+    if (!valid_name($inst)) return null;
 
     return [$first, $last, $inst];
 }
@@ -600,7 +612,9 @@ function parse_performers($perf, $perf_cat) {
             } else {
                 if ($inst == 'conductor') $got_conductor = true;
                 [$first, $last] = parse_name($parts[0]);
-                $performers[] = [$first, $last, $inst];
+                if (valid_person_name($last) && valid_person_name($last)) {
+                    $performers[] = [$first, $last, $inst];
+                }
             }
         }
     }

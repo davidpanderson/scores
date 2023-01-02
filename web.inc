@@ -87,7 +87,7 @@ function start_table_str($class="", $style="") {
     ';
 }
 
-function start_table($class="", $style="") {
+function start_table($class="table-striped", $style="") {
     echo start_table_str($class, $style);
 }
 

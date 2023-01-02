@@ -8,8 +8,12 @@ function ensemble_search_action() {
     $type = get_str('type');
     $period_id = get_str('period_id');
     $nationality_id = get_str('nationality_id');
+    $name = strtolower(trim(get_str('name')));
 
     $wheres = [];
+    if ($name && $name != 'any') {
+        $wheres[] = sprintf("name like '%%%s%%'", DB::escape($name));
+    }
     if ($type != 'any') {
         $wheres[] = sprintf("type='%s'", DB::escape($type));
     }
@@ -23,7 +27,7 @@ function ensemble_search_action() {
     $es = DB_ensemble::enum($where);
 
     page_head("Ensembles");
-    start_table('table-striped');
+    start_table();
     row_heading_array(['Name', 'Type', 'Nationality', 'Period', 'Founded']);
     foreach ($es as $e) {
         row_array([

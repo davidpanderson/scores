@@ -180,10 +180,11 @@ if (0) {
     print_r(parse_perf('Joe Smith piano'));
 }
 
-if (0) {
+if (1) {
     //$str = '{{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}';
     $str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
     //$str = 'Galaxy Bosendorfer 290 (Tatiana Kolesova)';
+    $str = 'Daniel Guilet (violin)<br>{{Plain|http://www.rene-gagnaux.ch/tichman_herbert/courte_biographie.html#Ruth_Budnevich|Ruth Budnevich}} (piano)';
     print_r(parse_performers($str ,''));
 }
 

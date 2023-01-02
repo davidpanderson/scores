@@ -46,6 +46,7 @@ function show_recordings($person) {
 
 function show_person($person) {
     page_head("$person->first_name $person->last_name");
+    show_person_detail($person);
     show_works($person);
     show_recordings($person);
     page_tail();

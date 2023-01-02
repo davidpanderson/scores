@@ -8,7 +8,7 @@ DEPRECATED
 function performer_list() {
     page_head("Performers");
     $persons = DB_person::enum('is_performer=1', 'order by last_name');
-    start_table('table-striped');
+    start_table();
     row_heading_array(['Name', 'Born', 'Role']);
     foreach ($persons as $person) {
         $name = "$person->last_name, $person->first_name";

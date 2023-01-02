@@ -10,7 +10,7 @@ require_once("imslp_db.inc");
 function target_list() {
     page_head("Arrangements");
     $ats = DB_arrangement_target::enum('');
-    start_table('table-striped');
+    start_table();
     row_heading_array(['Instruments']);
     foreach ($ats as $at) {
         row_array([
@@ -26,7 +26,7 @@ function target_list() {
 function target_works($at) {
     page_head("Arrangements for $at->instruments");
     $fss = DB_score_file_set::enum("arrangement_target_id=$at->id");
-    start_table('table-striped');
+    start_table();
     row_heading_array([
         "Work", "Arrangement", "Selection"
     ]);

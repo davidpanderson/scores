@@ -7,7 +7,7 @@ require_once("web.inc");
 function publisher_list() {
     $pubs = DB_publisher::enum('', 'order by name');
     page_head("Publishers");
-    start_table('table-striped');
+    start_table();
     row_heading_array([
         'Name<br><small>Click to view scores</small>',
         'Imprint', 'Location'
@@ -28,7 +28,7 @@ function scores_by_publisher($id) {
     $pub = DB_publisher::lookup_id($id);
     page_head("Scores published by $pub->name");
     $sets = DB_score_file_set::enum("publisher_id=$id");
-    start_table('table-striped');
+    start_table();
     row_heading_array([
         'Composition', 'Categories', 'Publication date'
     ]);

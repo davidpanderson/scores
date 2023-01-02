@@ -78,6 +78,8 @@ function parse_aux($item, $template_name) {
         case 'nationality3':
         case 'nationality4':
             if ($arg) {
+                // one entry has garbage after 'American'
+                if (starts_with($arg, 'American')) $arg = 'American';
                 $p->nationality[] = $arg;
             }
             break;

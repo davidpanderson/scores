@@ -15,7 +15,7 @@ function show_composer($id) {
     page_head("$name");
     echo "<h2>Compositions</h2>";
     $works = DB_work::enum("composer_id=$id", 'order by year_of_composition');
-    start_table('table-striped');
+    start_table();
     row_heading_array(['Title', 'Year', 'Instrumentation']);
     foreach ($works as $w) {
         [$t, $first, $last] = parse_title($w->title);
@@ -34,7 +34,7 @@ function show_composer($id) {
 function composer_list() {
     page_head("Composers");
     $composers = DB_person::enum('is_composer=1', 'order by last_name');
-    start_table('table-striped');
+    start_table();
     row_heading_array([
         'Name<br><small>click to view works</small>',
         'Born', 'Died', 'Sex', 'Nationality', 'Period'

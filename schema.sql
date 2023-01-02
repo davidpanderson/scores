@@ -3,13 +3,17 @@
 # To avoid confusion, field names are same of mediawiki template param names;
 # in some cases these are not ideal.
 
+create database imslp character set utf8mb4 collate utf8mb4_unicode_ci;
+
+use imslp;
+
 # person: composer, performer, librettist, etc.
 # May want a way to allow 2 people with same name
 #
 create table person (
     id                      integer         not null auto_increment,
-    first_name              varchar(255)    not null,
-    last_name               varchar(255)    not null,
+    first_name              varchar(90)     not null,
+    last_name               varchar(90)     not null,
     alternate_names         varchar(255)    not null,
     birth_date              varchar(255)    not null,
     birth_place             varchar(255)    not null,
@@ -35,7 +39,7 @@ alter table person add fulltext index (first_name, last_name);
 
 create table nationality (
     id                      integer         not null auto_increment,
-    name                    varchar(255)    not null,
+    name                    varchar(190)    not null,
     unique(name),
     primary key(id)
 );
@@ -44,7 +48,7 @@ create table nationality (
 #
 create table period (
     id                      integer         not null auto_increment,
-    name                    varchar(255)    not null,
+    name                    varchar(190)    not null,
     unique(name),
     primary key(id)
 );
@@ -67,7 +71,7 @@ alter table person_period add index (period_id);
 #
 create table copyright (
     id                      integer         not null auto_increment,
-    name                    varchar(255)    not null,
+    name                    varchar(190)    not null,
     unique(name),
     primary key(id)
 );
@@ -75,7 +79,7 @@ create table copyright (
 create table work (
     id                      integer         not null auto_increment,
     redirect_id             integer         not null,
-    title                   varchar(255)    not null,
+    title                   varchar(190)    not null,
         # from JSON key; includes title, opus, composer
     composer_id             integer         not null,
     alternative_title       text            not null,
@@ -128,7 +132,7 @@ create table publisher (
 # e.g. Viola and Piano, etc.
 create table arrangement_target (
     id                      integer         not null auto_increment,
-    instruments             varchar(255)    not null,
+    instruments             varchar(190)    not null,
     unique(instruments),
     primary key(id)
 );
@@ -232,7 +236,7 @@ alter table performer_role add index (person_id);
 
 create table ensemble (
     id                      integer         not null auto_increment,
-    name                    varchar(255)    not null,
+    name                    varchar(190)    not null,
     alternate_names         varchar(255)    not null,
     born_year               integer         not null,
     died_year               integer         not null,

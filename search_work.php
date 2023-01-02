@@ -10,16 +10,41 @@ function work_search_action($keywords, $period_id) {
     //
     $k = str_replace(',', ' ', $keywords);
 
+    // MariaDB's fulltext search system is deficient:
+    // 1) With two search terms,
+    //      it ranks some entries that match one of them higher than
+    //      entries that match both!
+    //      "natural language mode" doesn't seem to do anything useful.
+    //      We may need to use a search system outside of MariaDB
+    // 2) It doesn't deal with diacritical marks
+    // 3) It doesn't deal with plurals
+
     // add the plural of each word
+    // (this didn't really work)
     //
-    $k2 = explode(' ', $k);
-    $k3 = $k2;
-    foreach ($k2 as $k) {
-        $k3[] = $k.'s';
+    if (0) {
+        $k2 = explode(' ', $k);
+        $k3 = $k2;
+        foreach ($k2 as $w) {
+            $k3[] = $w.'s';
+        }
+        $k = implode(' ', $k3);
     }
-    $k3 = implode(' ', $k3);
-    $clause = sprintf("match (title, instrumentation) against ('%s')",
-        DB::escape($k3)
+
+    // make each word mandatory
+    // (non-ideal but fixes the above wonkiness)
+    if (1) {
+        $k2 = explode(' ', $k);
+        $k = [];
+        foreach ($k2 as $w) {
+            if ($w) {
+                $k[] = "+$w";
+            }
+        }
+        $k = implode(' ', $k);
+    }
+    $clause = sprintf("match (title, instrumentation) against ('%s' in boolean mode)",
+        DB::escape($k)
     );
     if ($period_id) {
         $clause .= " and period_id=$period_id";
@@ -28,7 +53,7 @@ function work_search_action($keywords, $period_id) {
     $works = DB_work::enum($clause);
     page_head('Work search results');
     if ($works) {
-        start_table('table-striped');
+        start_table();
         row_heading_array(['Title', 'Composer', 'Year', 'Period', 'Instruments']);
         foreach ($works as $work) {
             [$title, $first, $last] = parse_title($work->title);

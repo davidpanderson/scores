@@ -125,6 +125,98 @@ function person_table_row($p) {
     ]);
 }
 
+function show_person_detail($p) {
+    start_table();
+    row2('First name', $p->first_name);
+    row2('Last name', $p->last_name);
+    if ($p->alternate_names) {
+        row2('Alternate names', $p->alternate_names);
+    }
+    $x = person_birth_string($p);
+    if ($x) {
+        row2('Born', $x);
+    }
+    if ($p->birth_place) {
+        row2('Birth place', $p->birth_place);
+    }
+    $x = person_death_string($p);
+    if ($x) {
+        row2('Died', $x);
+    }
+    if ($p->death_place) {
+        row2('Death place', $p->death_place);
+    }
+    if ($p->flourished) {
+        row2('Flourished', $p->flourished);
+    }
+    if ($p->picture) {
+        row2('Picture', $p->picture);
+    }
+    if ($p->picture_caption) {
+        row2('Picture caption', $p->picture_caption);
+    }
+    if ($p->sex) {
+        row2('Sex', $p->sex);
+    }
+    if ($p->signature) {
+        row2('Signature', $p->signature);
+    }
+    end_table();
+}
+
+function show_work_detail($c) {
+    start_table('');
+    $composer = DB_person::lookup_id($c->composer_id);
+    $name = "$composer->first_name $composer->last_name";
+    row2('Composer', "<a href=person.php?id=$composer->id>$name</a>");
+    if ($c->opus_catalogue) {
+        row2('Opus', $c->opus_catalogue);
+    }
+    if ($c->_key) {
+        row2('Key', $c->_key);
+    }
+    if ($c->movements_header) {
+        row2('Movements', $c->movements_header);
+    }
+    if ($c->year_date_of_composition) {
+        row2('Composition date', $c->year_date_of_composition);
+    }
+    if ($c->year_of_first_publication) {
+        row2('Publication date', $c->year_of_first_publication);
+    }
+    if ($c->instrumentation) {
+        row2('Instrumentation', $c->instrumentation);
+    }
+    end_table();
+}
+
+function show_ensemble_detail($e) {
+    start_table();
+    row2('Name', $e->name);
+    if ($e->alternate_names) {
+        row2('Alternate names', $e->alternate_names);
+    }
+    if ($e->born_year) {
+        row2('Start year', $e->born_year);
+    }
+    if ($e->died_year) {
+        row2('End year', $e->died_year);
+    }
+    if ($e->nationality_id) {
+        row2('Nationality', nationality_name($e->nationality_id));
+    }
+    if ($e->period_id) {
+        row2('Period', period_name($e->period_id));
+    }
+    if ($e->picture) {
+        row2('Picture', $e->picture);
+    }
+    if ($e->type) {
+        row2('Type', $e->type);
+    }
+    end_table();
+}
+
 ////////////   Search-related stuff //////////////
 
 function period_options() {
@@ -187,9 +279,10 @@ function work_search_form() {
 
 function person_search_form() {
     form_start('search_person.php');
-    form_radio_buttons('Type', 'person_type', person_type_options(), 'either');
+    form_input_text('Last name', 'last_name', 'Any');
     form_select('Period', 'period_id', period_options());
     form_select('Nationality', 'nationality_id', nationality_options());
+    form_radio_buttons('Type', 'person_type', person_type_options(), 'either');
     form_radio_buttons('Sex', 'sex', sex_options(), 'either');
     form_submit('Find people');
     form_end();
@@ -197,6 +290,7 @@ function person_search_form() {
 
 function ensemble_search_form() {
     form_start('search_ensemble.php');
+    form_input_text('Name', 'name', 'Any');
     form_select('Type', 'type', ensemble_type_options(), 'any');
     form_select('Period', 'period_id', period_options());
     form_select('Nationality', 'nationality_id', nationality_options());
