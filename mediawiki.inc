@@ -8,9 +8,12 @@
 //      {{templatename | name=val | name=val}}
 // and the arguments can contain template calls.
 
+$mw_verbose = false;
+
 require_once("imslp_util.inc");
 
-// for debugging
+// get first part of line (for debugging)
+//
 function str_head($str, $pos) {
     return substr($str, $pos, 40);
 }
@@ -20,13 +23,18 @@ function str_head($str, $pos) {
 //      {{...}} (template calls, which can contain |)
 //      [[...]] (wiki links, which can contain |)
 //      <score>...</score> (incipit strings, which can contain { {, }} etc.)
+//          can also be <score raw=1> (ugh).
 // Return
 //      eq_pos: offset of top-level = or -1
 //      arg_end_pos: offset of top-level | or -1
 //      template_end_pos: offset of top-level }} or -1
 //
 function scan_arg($str, $start_pos) {
-    echo sprintf("scan_arg(): %s...\n", str_head($str, $start_pos));
+    global $mw_verbose;
+
+    if ($mw_verbose) {
+        echo sprintf("scan_arg(): %s...\n", str_head($str, $start_pos));
+    }
     $n = strlen($str);
     $template_depth = 0;
     $arg_depth = 0;
@@ -71,7 +79,9 @@ function scan_arg($str, $start_pos) {
             continue;
         }
         // Aaargh!!  sometimes they spell it <Score>
-        if (strtolower(substr($str, $i, 7)) == '<score>') {
+        // And it can also be <score raw=1>
+        $x = strtolower(substr($str, $i, 7));
+        if ($x == '<score>' || $x == '<score ') {
             $incipit_depth += 1;
             $i += 6;
             continue;
@@ -95,14 +105,6 @@ function scan_arg($str, $start_pos) {
     }
     return [$eq_pos, $arg_end_pos, $template_end_pos];
 }
-
-if (0) {
-    $x = "Copyright=Public Domain
-|Thumb Filename=Contenu neutre.jpg|200px|thumb|left
-|Misc. Notes=";
-    print_r(scan_arg($x, 0));
-}
-
 
 // append an argument (named or positional) to the array $args
 //
@@ -130,7 +132,11 @@ function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
 // The values may contain template calls.
 //
 function parse_template_call($str, $start_pos) {
-    echo sprintf("parse_template_call(): %s...\n", str_head($str, $start_pos));
+    global $mw_verbose;
+
+    if ($mw_verbose) {
+        echo sprintf("parse_template_call(): %s...\n", str_head($str, $start_pos));
+    }
     $i = $start_pos + 2;
     $args = [];
 
@@ -172,15 +178,13 @@ function parse_template_call($str, $start_pos) {
                 add_arg($args, $str, $i, $eq_pos, $arg_end_pos);
                 $i = $arg_end_pos + 1;
             } else {
-                echo sprintf("malformed template call (no arg end): %s\n", substr($str, $start_pos));
-                //debug_print_backtrace();
-                exit;
+                echo sprintf("ERROR: malformed template call (no arg end): %s\n", substr($str, $start_pos));
+                return null;
             }
         }
     } else {
-        echo sprintf('malformed template call (no name): %s\n', substr($str, $start_pos));
-        //debug_print_backtrace();
-        exit;
+        echo sprintf('ERROR: malformed template call (no name): %s\n', substr($str, $start_pos));
+        return null;
     }
     return [$template_name, $args, $template_end_pos+2];
 }
@@ -210,53 +214,13 @@ function parse_item($str, $pos) {
     // if none, parse the template call
     //
     [$template_name, $args, $end_pos] = parse_template_call($str, $tstart);
+    if ($template_name === null) {
+        return null;
+    }
     $x = new StdClass;
     $x->name = $template_name;
     $x->args = $args;
     return [$x, $end_pos];
-}
-
-if (0) {
-    $str = <<<'EOT'
-    {{#fte:imslppage
-    |Incipit=
-    <score>\relative c'{   \key c \major \tempo \"Allegro maestoso\" \time 4/4 c8 r g r c r e r f4.( \tuplet 3/2 {e16 d c)} b4 r8. g16 b8 r d r f r d r g4.( \tuplet 3/2 {a16 g f)} e4 r}</score>
-    <score>\relative c'' {   \key f \major \tempo \"Andante\" \time 4/4 f4..(  \p c16) a'4..( f16) c'2. bes16( a g f) fis4( g) r2 c,2( e4 g) bes2~( bes8 d c bes) gis( a) a4 r2    }</score>
-    <br><score>\relative c'' {   \key c\major \tempo \"Allegro vivace assai\" \time 2/4 e8-. f-. fis-. g-. a( g) f-. e-. d \appoggiatura {e16} d16( c d8) d-. d4( e8) c  | e8-. f-. fis-. g-. a( g) f-. e-. d \appoggiatura {e16} d16( c d8) e-. c4 r    }
-     </Score>
-     | *****COMMENTS***** =
-     {{Piano Concertos (Mozart, Wolfgang Amadeus)}}
-     | *****END OF TEMPLATE***** }}
-EOT;
-    $pos = 0;
-    while (true) {
-        [$item, $new_pos] = parse_item($str, $pos);
-        $pos = $new_pos;
-        if ($item === false) break;
-        if (is_string($item)) {
-            echo "got text: $item\n";
-        } else {
-            echo "got template call\n";
-            echo "  name: $item->name\n";
-            foreach ($item->args as $n=>$v) {
-                echo "  arg $n\n     $v\n";
-            }
-        }
-    }
-}
-
-if (0) {
-    //$str = '{{#if:blah|foo}}';
-    //$str = '{{P|Edition Peters|C.F. Peters|Leipzig|n.d.[{{{2|1902-07}}}]|{{{2|1902}}}|3100|{{{3|8800, 10037-38}}}}}';
-    //$str = '{{#if:{{{3|}}}|{{{3}}}:<nowiki> </nowiki>|}}';
-    //$str = '{{#if:{{{4|}}}|{{{4}}}|{{#if:{{{5|}}}|{{{5}}}|n.d}}}}';
-    $str = "{{#fte:mclink
-    |catname = {{ #if:{{{5|}}}|{{#if:{{{2|}}}|{{{2}}}, {{{1}}} @{{{5}}}^|{{{1}}} @{{{5}}}^}} | {{#if:{{{2|}}}|{{{2}}}, {{{1}}}|{{{1}}}}}}}
-    |sortkey = {{#worksortkey:}}
-    |mctype  = Arranger
-    |show    = {{{1}}}{{#if:{{{2|}}}|&#32;{{{2|}}}}}
-    }}{{ #ifeq: 0{{{3|}}} | 0 | {{ #ifeq: 0{{{4|}}} | 0 | {{#if: {{{5|}}} | &nbsp;({{{5}}}) | }} | &nbsp;({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}d. {{{4}}}) }} | &nbsp;{{ #ifeq: 0{{{4|}}} | 0 | ({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}b. {{{3}}}) | ({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}{{{3}}}-{{{4}}})}}}}";
-    print_r(parse_template_call($str, 0));
 }
 
 ?>

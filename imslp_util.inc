@@ -48,12 +48,6 @@ function parse_title($str) {
     return [$t, $first, $last];
 }
 
-if (0) {
-    print_r(parse_title(
-        "Piano_Sonata_No.13,_Op.27_No.1_(suite)_(Beethoven,_Ludwig_van)"
-    ));
-}
-
 // $str is of the form "first last" or "last, first".
 // Return [first, last]
 //
@@ -76,9 +70,4 @@ function parse_name($str) {
     return [trim($first), trim($last)];
 }
 
-if (0) {
-    print_r(parse_name('John Paul Jones'));
-    print_r(parse_name('Jones, John Paul'));
-    print_r(parse_name('Charo'));
-}
 ?>

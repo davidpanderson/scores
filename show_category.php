@@ -17,8 +17,10 @@ function main($nlines) {
         $n = 0;
         foreach ($y as $title => $body) {
             if (!strstr($title, 'Category:')) continue;
-            $person = parse_person($title, $body);
-            print_r($person);
+            $p = parse_person($title, $body);
+            if (!$p) continue;
+            echo "main(): got ".$p->template_name."\n";
+            //print_r($p);
             $n++;
         }
         $npeople[$i] = $n;
@@ -28,6 +30,7 @@ function main($nlines) {
     print_r($npeople);
 }
 
-$verbose = true;
-main(100000);
+$verbose = false;
+// 480 lines
+main(500);
 ?>

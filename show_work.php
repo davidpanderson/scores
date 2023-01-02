@@ -18,16 +18,22 @@ function main($nlines) {
         foreach ($y as $title => $body) {
             //if ($title != 'Piano_Concerto_No.21_in_C_major,_K.467_(Mozart,_Wolfgang_Amadeus)') continue;
             $work = parse_work($title, $body);
-            print_r($work);
+            if (!$work) {
+                echo "failed to parse $title\n";
+            } else {
+                echo "parsed $title\n";
+                //print_r($work);
+            }
             $n++;
         }
         $nworks[$i] = $n;
-        echo "works: $n\n";
+        echo "#works: $n\n";
     }
     echo "totals:\n";
     print_r($nworks);
 }
 
-$verbose = true;
-main(100);
+$verbose = false;
+// 3079 lines
+main(4000);
 ?>

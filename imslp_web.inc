@@ -147,9 +147,9 @@ function nationality_options() {
 
 function sex_options() {
     return [
-        ["any", "Any"],
         ["male", "Male"],
-        ["female", "Female"]
+        ["female", "Female"],
+        ["either", "Either"]
     ];
 }
 
@@ -157,9 +157,9 @@ function sex_options() {
 //
 function person_type_options() {
     return [
-        ["either", "Either"],
         ["composer", "Composer"],
-        ["performer", "Performer"]
+        ["performer", "Performer"],
+        ["either", "Either"]
     ];
 }
 
@@ -190,7 +190,7 @@ function person_search_form() {
     form_radio_buttons('Type', 'person_type', person_type_options(), 'either');
     form_select('Period', 'period_id', period_options());
     form_select('Nationality', 'nationality_id', nationality_options());
-    form_radio_buttons('Sex', 'sex', sex_options(), 'Any');
+    form_radio_buttons('Sex', 'sex', sex_options(), 'either');
     form_submit('Find people');
     form_end();
 }

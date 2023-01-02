@@ -136,7 +136,6 @@ function parse_person($title, $str) {
         if (is_string($item)) {
             $other_text .= " $item";
         } else {
-            echo "got $item->name\n";
             if ($item->name === '#fte:performer') {
                 $p = parse_aux($item, 'performer');
             } else if ($item->name === '#fte:person') {

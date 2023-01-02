@@ -23,6 +23,6 @@ function main($file, $nlines) {
     }
 }
 
-main('david_page_dump.txt', 100);
+main('david_page_dump.txt', 200);
 
 ?>

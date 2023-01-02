@@ -42,14 +42,6 @@ function add_elements($name, $val, &$arr) {
     }
 }
 
-if (0) {
-    $x = [];
-    //add_elements('xxx 4,5,8', 'foo', $x);
-    add_elements('xxx 1-3,5,8', 'foo', $x);
-    print_r($x);
-    exit;
-}
-
 // $x is the publisher_information arg for a score file.
 // If it contains a {{P template call,
 // parse the args and return a PHP object.
@@ -63,6 +55,7 @@ function parse_publisher($str) {
         [$item, $new_pos] = parse_item($str, $pos);
         $pos = $new_pos;
         if ($item === false) break;
+        if ($item === null) break;
         if (is_string($item)) {
             $other_text .= " $item";
         } else {
@@ -81,11 +74,6 @@ function parse_publisher($str) {
         }
     }
     return $pub;
-}
-
-if (0) {
-    $x = "''[[Haydn - Piano Sonatas (Martienssen)|Sonaten f▒~C¼r Klavier zu zwei H▒~CC¤nden]]''<br>{{P|Edition Peters|C.F. Peters|Leipzig||1937||11261}}";
-    print_r(parse_publisher($x));
 }
 
 // convert a #fte:imslpfile template call to an object
@@ -222,6 +210,7 @@ function parse_files($str) {
     while (true) {
         [$item, $new_pos] = parse_item($str, $pos);
         if ($item === false) break;
+        if ($item === null) break;
         $pos = $new_pos;
         if (is_string($item)) {
             $x = explode("\n", $item);
@@ -253,6 +242,7 @@ function parse_audio($str) {
     while (true) {
         [$item, $new_pos] = parse_item($str, $pos);
         if ($item === false) break;
+        if ($item === null) break;
         $pos = $new_pos;
         if (is_string($item)) {
             $x = explode("\n", $item);
@@ -276,6 +266,7 @@ function parse_audio($str) {
 
 // parse a work page.
 // Return an object containing most of the info.
+// Return null if error
 //
 function parse_work($title, $body) {
     global $verbose;
@@ -301,6 +292,7 @@ function parse_work($title, $body) {
         [$item, $new_pos] = parse_item($body, $pos);
         $pos = $new_pos;
         if ($item === false) break;
+        if ($item === null) break;
         if (is_string($item)) {
             $work->extra_text[] = $item;
             //echo "non-template text: $item\n";
@@ -490,16 +482,6 @@ function parse_gardner_perfs($str) {
     return [$ensemble, $performers];
 }
 
-if (0) {
-    //$str = '{{GardnerPerf|Martina Filjak, Piano}}';
-    //$str = '{{GardnerPerf|Yunjie Chen (piano)}}';
-    //$str = '{{GardnerPerf|Mark Padmore (voice), Jonathan Biss (piano)}}';
-    //$str = '{{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}';
-    $str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
-
-    print_r(parse_gardner_perfs($str));
-}
-
 function valid_instrument($str) {
     if (is_numeric($str[0])) return false;
     if (strpos($str, ' ')) return false;
@@ -572,12 +554,6 @@ function parse_perf($str) {
     $x = parse_perf_comma($str);
     if ($x) return $x;
     return parse_perf_paren($str);
-}
-
-if (0) {
-    print_r(parse_perf('Joe Smith, piano'));
-    print_r(parse_perf('Joe Smith (piano)'));
-    print_r(parse_perf('Joe Smith piano'));
 }
 
 // parse the performer_categories and performer args of audio file
@@ -700,13 +676,6 @@ function parse_performers($perf, $perf_cat) {
         }
     }
     return [$ensemble, $performers];
-}
-
-if (1) {
-    //$str = '{{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}';
-    $str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
-    //$str = 'Galaxy Bosendorfer 290 (Tatiana Kolesova)';
-    print_r(parse_performers($str ,''));
 }
 
 ////////////////  arrangement target (from score hiers)

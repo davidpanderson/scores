@@ -9,7 +9,7 @@ require_once("imslp_util.inc");
 require_once("populate_util.inc");
 
 $test = false;
-$exit_on_db_error = true;
+//$exit_on_db_error = true;
 
 // given a string of the form ===FOO, return [3, 'FOO']
 //
@@ -447,7 +447,8 @@ function make_work($c) {
         $work_id = DB_work::insert($q);
         if (!$work_id) {
             echo "work insert failed\n";
-            exit;
+            //exit;
+            return;
         }
     }
 
@@ -572,15 +573,17 @@ function make_work($c) {
     }
 }
 
-function main($nlines) {
+function main($start_line, $end_line) {
     $f = fopen('david_page_dump.txt', 'r');
-    for ($i=0; $i<$nlines; $i++) {
-        echo "JSON record $i\n";
+    for ($i=0; ; $i++) {
         $x = fgets($f);
         if (!$x) {
             echo "Reached end of file\n";
             break;
         }
+        if ($i<$start_line) continue;
+        if ($i>=$end_line) continue;
+        echo "JSON record $i\n";
         if (!trim($x)) continue;    // skip blank lines
         $y = json_decode($x);
         DB::begin_transaction();
@@ -599,6 +602,6 @@ function main($nlines) {
 
 // there are 3079 lines
 
-main(100);
+main(100, 4000);
 
 ?>

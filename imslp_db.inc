@@ -112,10 +112,6 @@ class DB_person {
     }
 }
 
-if (0) {
-    print_r(DB_person::enum_join(1, 2, "sex='Female'"));
-}
-
 class DB_period {
     static function insert($clause) {
         $db = DB::get();
