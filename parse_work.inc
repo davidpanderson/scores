@@ -453,13 +453,15 @@ function parse_gardner_perf($str) {
         }
     } else {
         $p = parse_perf_comma($str);
-        if (in_array($p[2], $ensemble_types)) {
-            $name = $p[0]." ".$p[1];
-            if (valid_ensemble_name($name)) {
-                $ensemble = [$name , $p[2]];
+        if ($p) {
+            if (in_array($p[2], $ensemble_types)) {
+                $name = $p[0]." ".$p[1];
+                if (valid_ensemble_name($name)) {
+                    $ensemble = [$name , $p[2]];
+                }
+            } else {
+                $performers[] = $p;
             }
-        } else {
-            $performers[] = $p;
         }
     }
     return [$ensemble, $performers];

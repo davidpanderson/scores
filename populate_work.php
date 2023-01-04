@@ -60,7 +60,7 @@ function make_score_file($f, $i, $file_set_id) {
         $id = DB_score_file::insert($q);
         if (!$id) {
             echo "score_file insert failed\n";
-            exit;
+            return;
         }
     }
 
@@ -115,8 +115,8 @@ function make_score_file_set($wid, $f, $hier) {
     } else {
         $file_set_id = DB_score_file_set::insert($q);
         if (!$file_set_id) {
-            echo "score_file insert failed\n";
-            exit;
+            echo "score_file_set insert failed\n";
+            return;
         }
     }
     $x = [];
@@ -273,7 +273,7 @@ function make_audio_file($f, $i, $file_set_id) {
         $id = DB_audio_file::insert($q);
         if (!$id) {
             echo "audio_file insert failed\n";
-            exit;
+            return;
         }
     }
     $x = [];
@@ -309,7 +309,7 @@ function make_audio_set($wid, $f, $hier) {
         $file_set_id = DB_audio_file_set::insert($q);
         if (!$file_set_id) {
             echo "audio_file_set insert failed\n";
-            exit;
+            return;
         }
     }
     $x = [];
@@ -435,9 +435,26 @@ function make_work($c) {
     if (empty($c->opus_catalogue)) {
         $c->opus_catalogue = '';
     }
+    // check for works with same title
+    //
+    $w = DB_work::lookup(
+        sprintf("title='%s'", DB::escape($json_title))
+    );
+    if ($w) {
+        for ($i=2; ; $i++) {
+            $title = sprintf('%s (%d)', $json_title, $i);
+            echo "DUP FOUND: trying $title\n";
+            $w = DB_work::lookup(
+                sprintf("title='%s'", DB::escape($title))
+            );
+            if (!$w) break;
+        }
+    } else {
+        $title = $json_title;
+    }
     $q = sprintf("(composer_id, title, opus_catalogue) values (%d, '%s', '%s')",
         $composer_id,
-        DB::escape($json_title),
+        DB::escape($title),
         DB::escape($c->opus_catalogue)
     );
     if ($test){
@@ -447,7 +464,6 @@ function make_work($c) {
         $work_id = DB_work::insert($q);
         if (!$work_id) {
             echo "work insert failed\n";
-            //exit;
             return;
         }
     }

@@ -22,6 +22,7 @@ class DbConn {
         } else {
             $port = null;
         }
+        mysqli_report(MYSQLI_REPORT_ERROR);
         $this->db_conn = @new mysqli($host, $user, $passwd, $name, $port);
 
         // mysqli returns an object even if the connection is not established
@@ -46,14 +47,13 @@ class DbConn {
         }
         $ret = $this->db_conn->query($q);
         if (!$ret) {
+            echo "Database Error\n";
+            echo "Query: $q\n";
+            echo  $this->base_error(), "\n";
             if ($exit_on_db_error) {
-                echo "Database Error\n";
-                echo "Query: $q\n";
-                echo  $this->base_error(), "\n";
                 debug_print_backtrace();
                 exit;
             } else {
-                echo "Database Error: $q<br>\n";
                 return null;
             }
         }

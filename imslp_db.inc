@@ -180,6 +180,10 @@ class DB_work {
         $db = DB::get();
         return $db->lookup_id($id, 'work', 'DB_work');
     }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('work', 'DB_work', $clause);
+    }
     static function insert($clause) {
         $db = DB::get();
         $ret = $db->insert('work', $clause);
