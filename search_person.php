@@ -25,12 +25,15 @@ function person_search_action() {
     } else if ($sex == 'female') {
         $wheres[] = "sex='female'";
     }
-    $where = implode(' and ', $wheres);
-    if ($nationality_id || $period_id) {
-        $persons = DB_person::enum_join($nationality_id, $period_id, $where);
-    } else {
-        $persons = DB_person::enum($where);
+    if ($nationality_id) {
+        $wheres[] = "$nationality_id member of (nationality_ids->'$')";
     }
+    if ($period_id) {
+        $wheres[] = "$period_id member of (period_ids->'$')";
+    }
+
+    $where = implode(' and ', $wheres);
+    $persons = DB_person::enum($where);
     page_head("Person search results");
     start_table();
     person_table_heading();

@@ -30,6 +30,8 @@ create table person (
     flourished              text,
     is_composer             tinyint         not null default 0,
     is_performer            tinyint         not null default 0,
+    nationality_ids         JSON,
+    period_ids              JSON,
     picture                 text,
     picture_caption         text,
     sex                     text,
@@ -38,6 +40,8 @@ create table person (
     primary key(id)
 );
 alter table person add fulltext index (first_name, last_name);
+alter table person add index inat( (cast(nationality_ids->'$' as unsigned array)) );
+alter table person add index iper( (cast(period_ids->'$' as unsigned array)) );
 
 create table nationality (
     id                      integer         not null auto_increment,
@@ -54,20 +58,6 @@ create table period (
     unique(name),
     primary key(id)
 );
-
-create table person_nationality (
-    person_id               integer         not null,
-    nationality_id          integer         not null
-);
-alter table person_nationality add index (person_id);
-alter table person_nationality add index (nationality_id);
-
-create table person_period (
-    person_id               integer         not null,
-    period_id               integer         not null
-);
-alter table person_period add index (person_id);
-alter table person_period add index (period_id);
 
 # actually license
 #
@@ -211,11 +201,13 @@ create table audio_file_set (
     misc_notes              text,
     performer_categories    text,
     performers              text,
+    performer_role_ids      JSON,
     publisher_information   text,
     thumb_filename          text,
     uploader                text,
     primary key(id)
 );
+alter table audio_file_set add index ipr( (cast(performer_role_ids->'$' as unsigned array)) );
 
 create table audio_file (
     id                      integer         not null auto_increment,
@@ -253,10 +245,3 @@ create table ensemble (
     unique(name),
     primary key(id)
 );
-
-create table audio_performer (
-    audio_file_set_id       integer         not null,
-    performer_role_id       integer         not null
-);
-alter table audio_performer add index (audio_file_set_id);
-alter table audio_performer add index (performer_role_id);

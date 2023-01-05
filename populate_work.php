@@ -344,6 +344,25 @@ function make_audio_set($wid, $f, $hier) {
         $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
     }
 
+    // create the performer records
+    //
+    [$ensemble, $performers] = parse_performers(
+        empty($f->performers)?'':$f->performers,
+        empty($f->performer_categories)?'':$f->performer_categories
+    );
+    if ($ensemble) {
+        $ens_id = get_ensemble($ensemble[0], $ensemble[1]);
+        $x[] = "ensemble_id=$ens_id";
+    }
+
+    $perf_role_ids = [];
+    foreach ($performers as $perf) {
+        $perf_role_ids[] = get_performer_role($perf[0], $perf[1], $perf[2]);
+    }
+    if ($perf_role_ids) {
+        $x[] = sprintf("performer_role_ids='%s'", json_encode($perf_role_ids));
+    }
+
     $afs = new DB_audio_file_set;
     $afs->id = $file_set_id;
 
@@ -361,32 +380,6 @@ function make_audio_set($wid, $f, $hier) {
     $n = count($f->file_names);
     for ($i=0; $i<$n; $i++) {
         make_audio_file($f, $i, $file_set_id);
-    }
-
-    // create the performer records
-    //
-    [$ensemble, $performers] = parse_performers(
-        empty($f->performers)?'':$f->performers,
-        empty($f->performer_categories)?'':$f->performer_categories
-    );
-    if ($ensemble) {
-        $ens_id = get_ensemble($ensemble[0], $ensemble[1]);
-        $query = "ensemble_id=$ens_id";
-        if ($test) {
-            echo "file set update: $query\n";
-        } else {
-            $afs->update($query);
-        }
-    }
-
-    foreach ($performers as $perf) {
-        $perf_role_id = get_performer_role($perf[0], $perf[1], $perf[2]);
-        $query = "(audio_file_set_id, performer_role_id) values ($file_set_id, $perf_role_id)";
-        if ($test) {
-            echo "audio_performer insert: $query\n";
-        } else {
-            DB_audio_performer::insert($query);
-        }
     }
 }
 
@@ -621,6 +614,6 @@ function main($start_line, $end_line) {
 
 // there are 3079 lines
 
-main(0, 4000);
+main(0, 1);
 
 ?>

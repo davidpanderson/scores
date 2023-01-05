@@ -85,10 +85,11 @@ function nationality_name($id) {
 // nationality(ies) of a person as string
 //
 function person_nationality_string($person) {
-    $pns = DB_person_nationality::enum("person_id = $person->id");
+    if (!$person->nationality_ids) return '';
     $x = [];
-    foreach ($pns as $pn) {
-        $x[] = nationality_name($pn->nationality_id);
+    $nat_ids = json_decode($person->nationality_ids);
+    foreach ($nat_ids as $id) {
+        $x[] = nationality_name($id);
     }
     return implode(', ', $x);
 }
@@ -96,10 +97,11 @@ function person_nationality_string($person) {
 // period(s) of a person as string
 //
 function person_period_string($person) {
-    $pps = DB_person_period::enum("person_id = $person->id");
+    if (!$person->period_ids) return '';
     $x = [];
-    foreach ($pps as $pp) {
-        $x[] = period_name($pp->period_id);
+    $per_ids = json_decode($person->period_ids);
+    foreach ($per_ids as $id) {
+        $x[] = period_name($id);
     }
     return implode(', ', $x);
 }
@@ -130,7 +132,7 @@ function show_person_detail($p) {
     row2('First name', $p->first_name);
     row2('Last name', $p->last_name);
     if ($p->alternate_names) {
-        row2('Alternate names', $p->alternate_names);
+        row2('Alternate names', str_replace(';', '<br>', $p->alternate_names));
     }
     $x = person_birth_string($p);
     if ($x) {
@@ -148,6 +150,12 @@ function show_person_detail($p) {
     }
     if ($p->flourished) {
         row2('Flourished', $p->flourished);
+    }
+    if ($p->nationality_ids) {
+        row2('Nationality', person_nationality_string($p));
+    }
+    if ($p->period_ids) {
+        row2('Period', person_period_string($p));
     }
     if ($p->picture) {
         row2('Picture',

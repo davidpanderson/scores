@@ -32,9 +32,11 @@ function show_recordings($person) {
         echo "<h2>$pr->role</h2>\n";
         start_table();
         row_heading_array(['Work']);
-        $aps = DB_audio_performer::enum("performer_role_id=$pr->id");
-        foreach ($aps as $ap) {
-            $afs = DB_audio_file_set::lookup_id($ap->audio_file_set_id);
+        $afss = DB_audio_file_set::enum(
+            "$pr->id member of (performer_role_ids->'$')"
+        );
+        foreach ($afss as $afs) {
+            // TODO: use a join?
             $comp = DB_work::lookup_id($afs->work_id);
             row_array([
                 "<a href=work.php?id=$comp->id#afs_$afs->id>$comp->title</a>"

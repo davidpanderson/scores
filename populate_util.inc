@@ -121,6 +121,30 @@ function make_person($p) {
     if (!empty($p->signature)) {
         $x[] = sprintf("signature='%s'", DB::escape($p->signature));
     }
+    if (!empty($p->nationality)) {
+        $nat_ids = [];
+        foreach ($p->nationality as $nat) {
+            $nat_id = get_nationality($nat);
+            if (!$nat_id) {
+                echo "ERROR: no nat $nat\n";
+                exit;
+            }
+            $nat_ids[] = $nat_id;
+        }
+        $x[] = sprintf("nationality_ids='%s'", json_encode($nat_ids));
+    }
+    if (!empty($p->time_period)) {
+        $per_ids = [];
+        foreach ($p->time_period as $per) {
+            $per_id = get_period($per);
+            if (!$per_id) {
+                echo "ERROR: no per $per\n";
+                exit;
+            }
+            $per_ids[] = $per_id;
+        }
+        $x[] = sprintf("period_ids='%s'", json_encode($per_ids));
+    }
     if ($x) {
         $query = implode(',', $x);
         if ($test) {
@@ -132,33 +156,6 @@ function make_person($p) {
             if (!$ret) {
                 echo "person update failed\n";
             }
-        }
-    }
-
-    // add nationalities and periods, and link them
-    //
-    if (!empty($p->nationality)) {
-        foreach ($p->nationality as $nat) {
-            $nat_id = get_nationality($nat);
-            if (!$nat_id) {
-                echo "no nat $nat\n";
-                exit;
-            }
-            DB_person_nationality::insert(
-                sprintf("(person_id, nationality_id) values (%d, %d)",
-                    $person_id, $nat_id
-                )
-            );
-        }
-    }
-    if (!empty($p->time_period)) {
-        foreach ($p->time_period as $per) {
-            $per_id = get_period($per);
-            DB_person_period::insert(
-                sprintf("(person_id, period_id) values (%d, %d)",
-                    $person_id, $per_id
-                )
-            );
         }
     }
 }
@@ -234,7 +231,7 @@ function get_copyright($name) {
     global $test;
     if (!$name) return 0;
     $p = DB_copyright::lookup(sprintf("name='%s'", DB::escape($name)));
-    if ($p) return $p->id;
+    if ($p) return (int)$p->id;
     $q = sprintf("(name) values ('%s')", DB::escape($name));
     if ($test) {
         echo "copyright insert: $q\n";
@@ -253,7 +250,7 @@ function get_period($name) {
     global $test;
     if (!$name) return 0;
     $p = DB_period::lookup(sprintf("name='%s'", DB::escape($name)));
-    if ($p) return $p->id;
+    if ($p) return (int)$p->id;
     $q = sprintf("(name) values ('%s')", DB::escape($name));
     if ($test) {
         echo "period insert: $q\n";
@@ -279,7 +276,7 @@ function get_nationality($name) {
 
     if (!$name) return 0;
     $p = DB_nationality::lookup(sprintf("name='%s'", DB::escape($name)));
-    if ($p) return $p->id;
+    if ($p) return (int)$p->id;
     $q = sprintf("(name) values ('%s')", DB::escape($name));
     if ($test) {
         echo "nationality insert: $q\n";
@@ -304,7 +301,7 @@ function get_publisher($name, $imprint, $location) {
             DB::escape($location)
         )
     );
-    if ($p) return $p->id;
+    if ($p) return (int)$p->id;
     $q = sprintf("(name, imprint, location) values ('%s', '%s', '%s')",
         DB::escape($name),
         DB::escape($imprint),
@@ -331,7 +328,7 @@ function get_ensemble($name, $type) {
     $e = DB_ensemble::lookup(
         sprintf("name='%s'", DB::escape($name))
     );
-    if ($e) return $e->id;
+    if ($e) return (int)$e->id;
     $q = sprintf("(name, type) values ('%s', '%s')",
         DB::escape($name),
         DB::escape($type)
@@ -355,7 +352,7 @@ function get_arrangement_target($instruments) {
     $e = DB_arrangement_target::lookup(
         sprintf("instruments='%s'", DB::escape($instruments))
     );
-    if ($e) return $e->id;
+    if ($e) return (int)$e->id;
     $q = sprintf("(instruments) values ('%s')",
         DB::escape($instruments)
     );
@@ -380,7 +377,7 @@ function get_performer_role($first, $last, $role) {
             $person_id, DB::escape($role)
         )
     );
-    if ($p) return $p->id;
+    if ($p) return (int)$p->id;
     $q = sprintf("(person_id, role) values (%d, '%s')",
         $person_id,
         DB::escape($role)
