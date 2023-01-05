@@ -219,6 +219,10 @@ class DB_copyright {
         $db = DB::get();
         return $db->enum('copyright', 'DB_copyright', $where_clause, $order_clause);
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'copyright', $clause);
+    }
 }
 
 class DB_score_file_set {

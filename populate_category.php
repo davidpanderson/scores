@@ -58,6 +58,8 @@ function main($file, $nlines) {
                 case 'vocal ensemble':
                     make_ensemble($p);
                     break;
+                default:
+                    echo "unrecognized organization type: $p->instrument\n";
                 }
             } else {
                 make_person($p);

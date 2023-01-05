@@ -294,7 +294,10 @@ function make_audio_file($f, $i, $file_set_id) {
 
 function make_audio_set($wid, $f, $hier) {
     global $test;
-    $copyright_id = get_copyright($f->copyright);
+    $copyright_id = 0;
+    if (!empty($f->copyright)) {
+        $copyright_id = get_copyright($f->copyright);
+    }
     $q = sprintf(
         "(work_id, hier1, hier2, hier3) values (%d, '%s', '%s', '%s')",
         $wid,

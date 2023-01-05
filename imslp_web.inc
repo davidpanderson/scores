@@ -150,7 +150,11 @@ function show_person_detail($p) {
         row2('Flourished', $p->flourished);
     }
     if ($p->picture) {
-        row2('Picture', $p->picture);
+        row2('Picture',
+            sprintf('<a href="https://imslp.org/wiki/File:%s">%s</a>',
+                $p->picture, $p->picture
+            )
+        );
     }
     if ($p->picture_caption) {
         row2('Picture caption', $p->picture_caption);
@@ -159,7 +163,11 @@ function show_person_detail($p) {
         row2('Sex', $p->sex);
     }
     if ($p->signature) {
-        row2('Signature', $p->signature);
+        row2('Signature',
+            sprintf('<a href="https://imslp.org/wiki/File:%s">%s</a>',
+                $p->signature, $p->signature
+            )
+        );
     }
     end_table();
 }
@@ -172,11 +180,26 @@ function show_work_detail($c) {
     if ($c->opus_catalogue) {
         row2('Opus', $c->opus_catalogue);
     }
+    if ($c->comments) {
+        row2('Comments', $c->comments);
+    }
+    if ($c->dedication) {
+        row2('Dedication', $c->dedication);
+    }
+    if ($c->external_links) {
+        row2('External links', $c->external_links);
+    }
+    if ($c->first_performance) {
+        row2('First performance', $c->first_performance);
+    }
     if ($c->_key) {
         row2('Key', $c->_key);
     }
     if ($c->movements_header) {
         row2('Movements', $c->movements_header);
+    }
+    if ($c->tags) {
+        row2('Tags', $c->tags);
     }
     if ($c->year_date_of_composition) {
         row2('Composition date', $c->year_date_of_composition);

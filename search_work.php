@@ -10,14 +10,16 @@ function work_search_action($keywords, $period_id) {
     //
     $k = str_replace(',', ' ', $keywords);
 
-    // MariaDB's fulltext search system is deficient:
+    // MySQL's fulltext search system is deficient:
     // 1) With two search terms,
     //      it ranks some entries that match one of them higher than
     //      entries that match both!
     //      "natural language mode" doesn't seem to do anything useful.
-    //      We may need to use a search system outside of MariaDB
-    // 2) It doesn't deal with diacritical marks
+    // 2) MariaDB doesn't deal with diacritical marks
+    //      (MySQL fixes this)
     // 3) It doesn't deal with plurals
+    //
+    // We may need to use a search system outside of MySQL
 
     // add the plural of each word
     // (this didn't really work)
