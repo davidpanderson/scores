@@ -1,0 +1,127 @@
+<?php
+
+// parse a string of the form
+// sonatas ; 2vn 2va viol vlne bc ; 2vn 2va viol vlne org
+// requiems ; masses ; sop mez ten bass ch orch ; la ; grc
+// and return
+// 1) a list of work type codes
+// 2) a list of inst combos
+//      (An inst combo is a list of [count, inst code])
+// 3) a list of arrangement inst combos
+// 4) a list of language codes
+//
+
+$work_type_names = unserialize(file_get_contents('work_type_names.ser'));
+$inst_names = unserialize(file_get_contents('inst_names.ser'));
+$language_names = unserialize(file_get_contents('lang_names.ser'));
+
+function parse_tags($tags) {
+    global $work_type_names, $inst_names, $language_names;
+    $work_types = [];
+    $inst_combos = [];
+    $arr_inst_combos = [];
+    $languages = [];
+    $parts = explode(';', $tags);
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if (array_key_exists($part, $work_type_names)) {
+            $work_types[] = $part;
+            continue;
+        }
+        if (array_key_exists($part, $language_names)) {
+            $languages[] = $part;
+            continue;
+        }
+        // must be an instrument combo
+        $combo = [];
+        $arr = false;
+        $insts = explode(' ', $part);
+        foreach ($insts as $inst) {
+            [$count, $code] = parse_count_str($inst);
+            if ($inst == '(arr)') {
+                $arr = true;
+                continue;
+            }
+            if ($inst == 'open') continue;
+            if (!array_key_exists($code, $inst_names)) {
+                echo "unknown inst code $code in $tags\n";
+            } else {
+                $combo[] = [$count, $code];
+            }
+        }
+        if ($combo) {
+            if ($arr) {
+                $arr_inst_combos[] = $combo;
+            } else {
+                $inst_combos[] = $combo;
+            }
+        }
+    }
+    return [$work_types, $inst_combos, $arr_inst_combos, $languages];
+}
+
+function combo_str($combo) {
+    global $inst_names;
+    $x = [];
+    foreach ($combo as $inst) {
+        $count = $inst[0];
+        $name = $inst_names[$inst[1]];
+        if ($count == 1) {
+            $x[] = "$name";
+        } else {
+            $plu = substr($name, -1, 1) == 's'?'es':'s';
+            $x[] = "$count $name$plu";
+        }
+    }
+    return implode(' + ', $x);
+}
+
+// $combo is a list of [count, code]
+//
+function combo_hash($combo) {
+    return md5(json_encode($combo));
+}
+
+function test() {
+    $lines = file('tags.out');
+    $unique_inst_combos = [];
+    foreach ($lines as $line) {
+        [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($line);
+        foreach ($inst_combos as $combo) {
+            $h = combo_hash($combo);
+            if (!array_key_exists($h, $unique_inst_combos)) {
+                $unique_inst_combos[$h] = $combo;
+            }
+        }
+    }
+    foreach ($unique_inst_combos as $h=>$combo) {
+        echo combo_str($combo)."\n";
+    }
+}
+
+test();
+
+if (0) {
+    //$str = 'sonatas ; 2vn 2va viol vlne bc ; 2vn 2va viol vlne org';
+    $str = 'requiems ; masses ; sop mez ten bass ch orch ; la ; grc';
+    print_r(parse_tags($str));
+}
+
+// for a string like '2vn' return [2, 'vn']
+// for 'vn' return [1, 'vn']
+//
+function parse_count_str($str) {
+    if (!is_numeric($str[0])) return [1, $str];
+    $n = (int)$str;
+    $i = 1;
+    while (is_numeric($str[$i])) $i++;
+    return [$n, substr($str, $i)];
+}
+
+if (0) {
+    //$str = '2vn';
+    $str = 'vn';
+    print_r(parse_count_str($str));
+}
+
+?>
