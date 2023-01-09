@@ -340,4 +340,20 @@ class DB_arrangement_target {
     }
 }
 
+class DB_work_type {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('work_type', $clause);
+        if (!$ret) return 0;
+        return $db->insert_id();
+    }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'work_type', $clause);
+    }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('work_type', 'DB_work_type', $clause);
+    }
+}
 ?>

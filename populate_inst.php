@@ -6,6 +6,8 @@
 //
 // output: serialized array like
 // 'acc' => 'according'
+//
+// TODO: populate instrument table
 
 function main() {
     $lines = file('inst.txt');

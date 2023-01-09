@@ -11,12 +11,40 @@
 // 4) a list of language codes
 //
 
-$work_type_names = unserialize(file_get_contents('work_type_names.ser'));
-$inst_names = unserialize(file_get_contents('inst_names.ser'));
-$language_names = unserialize(file_get_contents('lang_names.ser'));
+function work_type_by_code($code) {
+    static $wts_by_code = null;
+    if (!$wts_by_code) {
+        $wts_by_code = unserialize(file_get_contents('work_type_by_code.ser'));
+    }
+    if (array_key_exists($code, $wts_by_code)) {
+        return $wts_by_code[$code];
+    }
+    return null;
+}
+
+function inst_name_by_code($code) {
+    static $insts_by_code = null;
+    if (!$insts_by_code) {
+        $insts_by_code = unserialize(file_get_contents('inst_names.ser'));
+    }
+    if (array_key_exists($code, $insts_by_code)) {
+        return insts_by_code[$code];
+    }
+    return null;
+}
+
+function lang_name_by_code($code) {
+    static $langs_by_code = null;
+    if (!$langs_by_code) {
+        $langs_by_code = unserialize(file_get_contents('lang_names.ser'));
+    }
+    if (array_key_exists($code, $langs_by_code)) {
+        return langs_by_code[$code];
+    }
+    return null;
+}
 
 function parse_tags($tags) {
-    global $work_type_names, $inst_names, $language_names;
     $work_types = [];
     $inst_combos = [];
     $arr_inst_combos = [];
@@ -24,11 +52,11 @@ function parse_tags($tags) {
     $parts = explode(';', $tags);
     foreach ($parts as $part) {
         $part = trim($part);
-        if (array_key_exists($part, $work_type_names)) {
+        if (work_type_by_code($part)) {
             $work_types[] = $part;
             continue;
         }
-        if (array_key_exists($part, $language_names)) {
+        if (lang_name_by_code($part)) {
             $languages[] = $part;
             continue;
         }
@@ -43,10 +71,10 @@ function parse_tags($tags) {
                 continue;
             }
             if ($inst == 'open') continue;
-            if (!array_key_exists($code, $inst_names)) {
-                echo "unknown inst code $code in $tags\n";
-            } else {
+            if (inst_name_by_code($code)) {
                 $combo[] = [$count, $code];
+            } else {
+                echo "unknown inst code $code in $tags\n";
             }
         }
         if ($combo) {
@@ -61,11 +89,10 @@ function parse_tags($tags) {
 }
 
 function combo_str($combo) {
-    global $inst_names;
     $x = [];
     foreach ($combo as $inst) {
         $count = $inst[0];
-        $name = $inst_names[$inst[1]];
+        $name = inst_name_by_code($inst[1]);
         if ($count == 1) {
             $x[] = "$name";
         } else {

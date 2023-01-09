@@ -245,3 +245,14 @@ create table ensemble (
     unique(name),
     primary key(id)
 );
+
+create table work_type (
+    id                      integer         not null auto_increment,
+    code                    varchar(190)    not null,
+    name                    varchar(190)    not null,
+    descendant_ids          json,
+    nworks                  integer         not null default 0,
+    unique(name),
+    unique(code),
+    primary key(id)
+);

@@ -1,0 +1,59 @@
+To populate the database:
+
+mysql < schema.sql
+    create empty DB
+
+populate_lang.php
+    inputs
+        lang.tags
+    generates
+        lang_names.ser
+    populates
+        language
+
+populate_inst.php
+    inputs
+        inst.txt
+    generates
+        inst_names.ser
+    populates
+        instrument
+
+populate_work_type.php
+    inputs
+        work_types.tags
+        work_types_hier.tags
+    generates
+        work_type_by_code.ser
+        work_type_name_by_id.ser
+    populates
+        work_type
+
+populate_category.php
+    populates
+        person
+        ensemble
+        nationality
+        period
+
+populate_work.php
+    requires
+        work_type_by_code.ser
+        inst_names.ser
+        lang_names.ser
+    populates
+        work
+        score_file_set, score_file
+        audio_file_set, audio_file
+        ensemble
+        person
+        copyright
+        publisher
+        arrangement_target (deprecated?)
+
+populate_inst_combo.php
+    inputs
+        inst.txt
+    populates
+        instrument
+        instrument_combo

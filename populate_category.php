@@ -1,5 +1,12 @@
 <?php
 
+// read category dump file
+// populate tables:
+//      person
+//      ensemble
+//      nationality
+//      period
+
 require_once("parse_category.inc");
 require_once("populate_util.inc");
 

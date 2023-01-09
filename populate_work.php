@@ -1,9 +1,27 @@
 <?php
 
-// create database entries for works and relate items
+// create database entries for works and related items:
+//      work
+//      person
+//      score_file_set
+//      score_file
+//      audio_file_set
+//      audio_file
+//      copyright
+//      publisher
+//      ensemble
+//
+// input: a file in which each line is a JSON record
+//      with roughly 100 wiki pages, each name=>contents
+//      also .ser files from populate_work_type.php
+// For each page:
+// - parse it using parse_work()
+// - skip if it doesn't contain a #pfe:imslppage call
+// - call make_work() to write DB entries
 
 require_once("mediawiki.inc");
 require_once("parse_work.inc");
+require_once("parse_tags.inc");
 require_once("imslp_db.inc");
 require_once("imslp_util.inc");
 require_once("populate_util.inc");
@@ -548,6 +566,7 @@ function make_work($c) {
     }
     if (!empty($c->tags)) {
         $x[] = sprintf("tags='%s'", DB::escape($c->tags));
+        process_tags_work($x, $c->tags);
     }
     if (!empty($c->year_date_of_composition)) {
         $x[] = sprintf("year_date_of_composition='%s'", DB::escape($c->year_date_of_composition));
@@ -582,6 +601,20 @@ function make_work($c) {
     }
     if (!empty($c->audios)) {
         make_audio_file_sets($work_id, $c->audios);
+    }
+}
+
+// process a work's tags.
+// append update clauses to array $x
+//
+function process_tags_work(&$x, $tags) {
+    [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($tags);
+    $wt_ids = [];
+    foreach ($work_types as $wt) {
+        $wt_ids[] = work_type_by_code($wt);
+    }
+    if ($wt_ids) {
+        $x[] = sprintf("work_type_ids='%s'", json_encode($wt_ids));
     }
 }
 
