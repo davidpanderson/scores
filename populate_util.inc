@@ -395,4 +395,58 @@ function get_performer_role($first, $last, $role) {
     return $id;
 }
 
+// Get DB ID of an inst combo.
+// Create new record if needed.
+// For efficiency, cache the table in memory
+//
+function get_inst_combo($ic) {
+    static $first = true;
+    static $inst_combos;
+    static $insts_by_code;
+    if ($first) {
+        // make an array keyed by md5
+        $ics = DB_instrument_combo::enum();
+        $inst_combos = [];
+        foreach ($ics as $i) {
+            $inst_combos[$i->md5] = $i;
+        }
+        $insts_by_code = unserialize(file_get_contents('inst_by_code.ser'));
+        $first = false;
+    }
+
+    // $ic is [count, code].  change to [count, ID]
+    //
+    foreach ($ic as $pair) {
+        $code = $pair[1];
+        $pair[1] = $insts_by_code[$code]->id;
+    }
+
+    // convert to JSON and get MD5
+    //
+    $ic_json = json_encode($ic);
+    $ic_md5 = md5($ic_json);
+
+    // see if in cache
+    //
+    if (array_key_exists($ic_md5, $inst_combos)) {
+        $ic = $inst_combos[$ic_md5];
+        return $ic->id;
+    }
+
+    // no - create new entry
+    //
+    $id = DB_instrument_combo::insert(
+        sprintf("(instruments, md5) values ('%s', '%s')",
+            DB::escape($ic_json),
+            DB::escape($ic_md5)
+        )
+    );
+
+    // add new entry to cache
+    //
+    $ic_rec = DB_instrument_combo::lookup_id($id);
+    $inst_combos[$ic_md5] = $ic_rec;
+    return $id;
+}
+
 ?>

@@ -1,14 +1,16 @@
-<?php
+#! /usr/bin/env php
 
-require_once('imslp_util.inc');
+<?php
 
 // input: lang.tags, e.g.
 // # af = Afrikaans language
 //
-// output: lang_names.ser, serialized array like
-// 'af' => 'Afrikaans'
-//
-// TODO: populate language table
+// output:
+//      lang_names.ser, serialized array like 'af' => 'Afrikaans'
+//      populate language table
+
+require_once('imslp_util.inc');
+require_once('imslp_db.inc');
 
 function main() {
     $lines = file('lang.tags');
@@ -19,11 +21,34 @@ function main() {
         $i = strpos($line, '=');
         $j = strpos($line, 'language');
         $name = substr2($line, $i+2, $j-1);
-        echo "$code: $name\n";
+        //echo "$code: $name\n";
         $langs[$code] = $name;
     }
-    $f = fopen('lang_names.ser', 'w');
-    fwrite($f, serialize($langs));
+    echo count($langs)." languages\n";
+
+    echo "populating language table\n";
+    $lang_by_code = [];
+    $lang_by_id = [];
+    foreach ($langs as $code=>$name) {
+        $id = DB_language::insert(
+            sprintf("(code, name) values('%s', '%s')",
+                DB::escape($code),
+                DB::escape($name)
+            )
+        );
+        $rec = DB_language::lookup_id($id);
+        $lang_by_code[$code] = $rec;
+        $lang_by_id[$id] = $rec;
+    }
+
+    echo "writing lang_by_code.ser\n";
+    $f = fopen('lang_by_code.ser', 'w');
+    fwrite($f, serialize($lang_by_code));
+    fclose($f);
+
+    echo "writing lang_by_id.ser\n";
+    $f = fopen('lang_by_id.ser', 'w');
+    fwrite($f, serialize($lang_by_id));
     fclose($f);
 }
 

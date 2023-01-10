@@ -1,3 +1,5 @@
+#! /usr/bin/env php
+
 <?php
 
 // create database entries for works and related items:
@@ -158,6 +160,7 @@ function make_score_file_set($wid, $f, $hier) {
     }
     if (!empty($f->file_tags)) {
         $x[] = sprintf("file_tags='%s'", DB::escape($f->file_tags));
+        process_tags_score($x, $f->file_tags);
     }
     if (!empty($f->image_type)) {
         $x[] = sprintf("image_type='%s'", DB::escape($f->image_type));
@@ -609,12 +612,50 @@ function make_work($c) {
 //
 function process_tags_work(&$x, $tags) {
     [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($tags);
+
+    // work types
+
     $wt_ids = [];
-    foreach ($work_types as $wt) {
-        $wt_ids[] = work_type_by_code($wt);
+    foreach ($work_types as $code) {
+        $wt = work_type_by_code($code);
+        $wt_ids[] = $wt->id;
     }
     if ($wt_ids) {
-        $x[] = sprintf("work_type_ids='%s'", json_encode($wt_ids));
+        // without the JSON_NUMERIC_CHECK,
+        // ids randomly get represented as strings - WTF???
+        //
+        $x[] = sprintf("work_type_ids='%s'",
+            json_encode($wt_ids, JSON_NUMERIC_CHECK)
+        );
+    }
+
+    // instrument combos
+    //
+    $ic_ids = [];
+    foreach ($inst_combos as $ic) {
+        // $ic is a list of [count, code]
+        $ic_ids[] = get_inst_combo($ic);
+    }
+    if ($ic_ids) {
+        $x[] = sprintf("instrument_combo_ids='%s'",
+            json_encode($ic_ids, JSON_NUMERIC_CHECK)
+        );
+    }
+}
+
+// process a score file's tags
+//
+function process_tags_score(&$x, $tags) {
+    [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($tags);
+    $ic_ids = [];
+    foreach ($arr_inst_combos as $ic) {
+        // $ic is a list of [count, code]
+        $ic_ids[] = get_inst_combo($ic);
+    }
+    if ($ic_ids) {
+        $x[] = sprintf("instrument_combo_ids='%s'",
+            json_encode($ic_ids, JSON_NUMERIC_CHECK)
+        );
     }
 }
 
@@ -647,6 +688,6 @@ function main($start_line, $end_line) {
 
 // there are 3079 lines
 
-main(1, 20);
+main(0, 1);
 
 ?>

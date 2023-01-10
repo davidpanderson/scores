@@ -7,7 +7,8 @@ populate_lang.php
     inputs
         lang.tags
     generates
-        lang_names.ser
+        lang_by_code.ser
+        lang_by_id.ser
     populates
         language
 
@@ -15,7 +16,8 @@ populate_inst.php
     inputs
         inst.txt
     generates
-        inst_names.ser
+        inst_by_code.ser
+        inst_by_id.ser
     populates
         instrument
 
@@ -25,7 +27,7 @@ populate_work_type.php
         work_types_hier.tags
     generates
         work_type_by_code.ser
-        work_type_name_by_id.ser
+        work_type_by_id.ser
     populates
         work_type
 
@@ -50,10 +52,11 @@ populate_work.php
         copyright
         publisher
         arrangement_target (deprecated?)
+        instrument_combos
 
-populate_inst_combo.php
-    inputs
-        inst.txt
-    populates
-        instrument
-        instrument_combo
+make_ser.php
+    generates
+        nationality.ser
+        period.ser
+        copyright.ser
+        arrangement_target.ser

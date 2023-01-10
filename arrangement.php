@@ -9,7 +9,7 @@ require_once("imslp_db.inc");
 //
 function target_list() {
     page_head("Arrangements");
-    $ats = DB_arrangement_target::enum('');
+    $ats = DB_arrangement_target::enum();
     start_table();
     row_heading_array(['Instruments']);
     foreach ($ats as $at) {

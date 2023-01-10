@@ -1,3 +1,5 @@
+#! usr/bin/env php
+
 <?php
 
 // make serialized arrays for various small tables,
@@ -7,7 +9,7 @@ require_once('imslp_db.inc');
 
 function do_table($name) {
     $tname = "DB_$name";
-    $x = $tname::enum('');
+    $x = $tname::enum();
     $arr = [];
     foreach ($x as $y) {
         $arr[$y->id] = (object)(array) $y;

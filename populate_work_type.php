@@ -1,3 +1,5 @@
+#! /usr/bin/env php
+
 <?php
 
 // parse work_types.tags, e.g.
@@ -9,8 +11,8 @@
 //      - work_type_by_code.ser
 //          maps code=>wt struct (with descendants)
 //          used by populate_work.php
-//      - work_type_name_by_id.ser
-//          maps id=>name
+//      - work_type_by_id.ser
+//          maps id=>struct
 //          used by web code
 
 require_once('imslp_db.inc');
@@ -66,20 +68,18 @@ function populate($wts) {
 // make the serialized files
 //
 function write_ser($wts) {
-    $x = [];
+    $wts_by_code = [];
+    $wts_by_id = [];
     foreach ($wts as $wt) {
-        $x[$wt->code] = $wt;
+        $wts_by_code[$wt->code] = $wt;
+        $wts_by_id[$wt->id] = $wt;
     }
     $f = fopen('work_type_by_code.ser', 'w');
-    fwrite($f, serialize($x));
+    fwrite($f, serialize($wts_by_code));
     fclose($f);
 
-    $x = [];
-    foreach ($wts as $wt) {
-        $x[$wt->id] = $wt->name;
-    }
-    $f = fopen('work_type_name_by_id.ser', 'w');
-    fwrite($f, serialize($x));
+    $f = fopen('work_type_by_id.ser', 'w');
+    fwrite($f, serialize($wts_by_id));
     fclose($f);
 }
 
@@ -124,10 +124,15 @@ function update_descendants($wts) {
 }
 
 $wts = get_work_types();
+echo count($wts)." work types\n";
+echo "populating work_type table\n";
 populate($wts);
-//print_r($wts);
+echo "computing descendants\n";
 parse_hier($wts);
+//print_r($wts);
+echo "updating table\n";
 update_descendants($wts);
+echo "writing .ser files\n";
 write_ser($wts);
 
 ?>

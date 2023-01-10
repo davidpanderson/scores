@@ -11,6 +11,8 @@
 // 4) a list of language codes
 //
 
+require_once('imslp_db.inc');
+
 function work_type_by_code($code) {
     static $wts_by_code = null;
     if (!$wts_by_code) {
@@ -22,24 +24,24 @@ function work_type_by_code($code) {
     return null;
 }
 
-function inst_name_by_code($code) {
+function inst_by_code($code) {
     static $insts_by_code = null;
     if (!$insts_by_code) {
-        $insts_by_code = unserialize(file_get_contents('inst_names.ser'));
+        $insts_by_code = unserialize(file_get_contents('inst_by_code.ser'));
     }
     if (array_key_exists($code, $insts_by_code)) {
-        return insts_by_code[$code];
+        return $insts_by_code[$code];
     }
     return null;
 }
 
-function lang_name_by_code($code) {
+function lang_by_code($code) {
     static $langs_by_code = null;
     if (!$langs_by_code) {
-        $langs_by_code = unserialize(file_get_contents('lang_names.ser'));
+        $langs_by_code = unserialize(file_get_contents('lang_by_code.ser'));
     }
     if (array_key_exists($code, $langs_by_code)) {
-        return langs_by_code[$code];
+        return $langs_by_code[$code];
     }
     return null;
 }
@@ -56,7 +58,7 @@ function parse_tags($tags) {
             $work_types[] = $part;
             continue;
         }
-        if (lang_name_by_code($part)) {
+        if (lang_by_code($part)) {
             $languages[] = $part;
             continue;
         }
@@ -71,7 +73,7 @@ function parse_tags($tags) {
                 continue;
             }
             if ($inst == 'open') continue;
-            if (inst_name_by_code($code)) {
+            if (inst_by_code($code)) {
                 $combo[] = [$count, $code];
             } else {
                 echo "unknown inst code $code in $tags\n";
@@ -92,7 +94,8 @@ function combo_str($combo) {
     $x = [];
     foreach ($combo as $inst) {
         $count = $inst[0];
-        $name = inst_name_by_code($inst[1]);
+        $inst = inst_by_code($inst[1]);
+        $name = $inst->name;
         if ($count == 1) {
             $x[] = "$name";
         } else {
@@ -126,7 +129,7 @@ function test() {
     }
 }
 
-test();
+//test();
 
 if (0) {
     //$str = 'sonatas ; 2vn 2va viol vlne bc ; 2vn 2va viol vlne org';

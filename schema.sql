@@ -87,9 +87,11 @@ create table work (
     incipit                 text,
     instrdetail             text,
     instrumentation         text,
+    instrument_combo_ids    JSON,
     _key                    text,
         # 'key' is a reserved word in SQL
     language                text,
+    language_ids            JSON,
     librettist              text,
     manuscript_sources      text,
     movements_header        text,
@@ -108,6 +110,7 @@ create table work (
     year_of_composition     integer         not null default 0,
     year_of_first_publication text,
     work_title              text,
+    work_type_ids           JSON,
     unique(title),
     primary key(id)
 );
@@ -151,6 +154,8 @@ create table score_file_set (
     file_tags               text,
     image_type              text,
         # Normal Scan, Typeset, Manuscript Scan
+    instrument_combo_ids    JSON,
+        # if different from work (e.g. arrangement)
     misc_notes              text,
     publisher_information   text,
         # the following populated if {{P was used
@@ -254,5 +259,26 @@ create table work_type (
     nworks                  integer         not null default 0,
     unique(name),
     unique(code),
+    primary key(id)
+);
+
+create table instrument (
+    id                      integer         not null auto_increment,
+    code                    varchar(190)    not null,
+    name                    varchar(190)    not null,
+    primary key(id)
+);
+
+create table instrument_combo (
+    id                      integer         not null auto_increment,
+    instruments             json,               # array of [count, id]
+    md5                     varchar(64),        # hash of instruments
+    primary key(id)
+);
+
+create table language (
+    id                      integer         not null auto_increment,
+    code                    varchar(190)    not null,
+    name                    varchar(190)    not null,
     primary key(id)
 );

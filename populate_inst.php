@@ -1,13 +1,18 @@
+#! /usr/bin/env php
+
 <?php
 
 // input: list of instrument names, e.g.
 // # acc = For accordion + Scores featuring the accordion
 // # acc gtr = For accordion, guitar + Scores featuring the accordion + Scores featuring the guitar
 //
-// output: serialized array like
-// 'acc' => 'according'
-//
-// TODO: populate instrument table
+// output:
+//      inst_by_code.ser
+//          serialized array like 'acc' => struct
+//      inst_by_id.ser
+//      populate instrument table
+
+require_once('imslp_db.inc');
 
 function main() {
     $lines = file('inst.txt');
@@ -45,11 +50,34 @@ function main() {
             $name = trim($name);
         }
 
-        echo "$code : $name\n";
+        //echo "$code : $name\n";
         $insts[$code] = $name;
     }
-    $f = fopen('inst_names.ser', 'w');
-    fwrite($f, serialize($insts));
+    echo count($insts)." instruments\n";
+
+    echo "populating instrument table\n";
+    $inst_by_code = [];
+    $inst_by_id = [];
+    foreach ($insts as $code=>$name) {
+        $id = DB_instrument::insert(
+            sprintf("(code, name) values('%s', '%s')",
+                DB::escape($code),
+                DB::escape($name)
+            )
+        );
+        $rec = DB_instrument::lookup_id($id);
+        $inst_by_code[$code] = $rec;
+        $inst_by_id[$id] = $rec;
+    }
+
+    echo "writing inst_by_code.ser\n";
+    $f = fopen('inst_by_code.ser', 'w');
+    fwrite($f, serialize($inst_by_code));
+    fclose($f);
+
+    echo "writing inst_by_id.ser\n";
+    $f = fopen('inst_by_id.ser', 'w');
+    fwrite($f, serialize($inst_by_id));
     fclose($f);
 }
 

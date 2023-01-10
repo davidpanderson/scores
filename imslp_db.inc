@@ -69,7 +69,7 @@ class DB_person {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('person', 'DB_person', $where_clause, $order_clause);
     }
@@ -94,7 +94,7 @@ class DB_period {
         $db = DB::get();
         return $db->lookup('period', 'DB_period', $clause);
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('period', 'DB_period', $where_clause, $order_clause);
     }
@@ -115,7 +115,7 @@ class DB_nationality {
         $db = DB::get();
         return $db->lookup('nationality', 'DB_nationality', $clause);
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('nationality', 'DB_nationality', $where_clause, $order_clause);
     }
@@ -136,7 +136,7 @@ class DB_publisher {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('publisher', 'DB_publisher', $where_clause, $order_clause);
     }
@@ -161,7 +161,7 @@ class DB_work {
         $db = DB::get();
         return $db->update($this, 'work', $clause);
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('work', 'DB_work', $where_clause, $order_clause);
     }
@@ -182,7 +182,7 @@ class DB_copyright {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('copyright', 'DB_copyright', $where_clause, $order_clause);
     }
@@ -203,7 +203,7 @@ class DB_score_file_set {
         $db = DB::get();
         return $db->update($this, 'score_file_set', $clause);
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('score_file_set', 'DB_score_file_set', $where_clause, $order_clause);
     }
@@ -216,7 +216,7 @@ class DB_score_file {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('score_file', 'DB_score_file', $where_clause, $order_clause);
     }
@@ -237,7 +237,7 @@ class DB_audio_file_set {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('audio_file_set', 'DB_audio_file_set', $where_clause, $order_clause);
     }
@@ -254,7 +254,7 @@ class DB_audio_file {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('audio_file', 'DB_audio_file', $where_clause, $order_clause);
     }
@@ -279,7 +279,7 @@ class DB_performer_role {
         $db = DB::get();
         return $db->lookup('performer_role', 'DB_performer_role', $clause);
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('performer_role', 'DB_performer_role', $where_clause, $order_clause);
     }
@@ -300,7 +300,7 @@ class DB_ensemble {
         $db = DB::get();
         return $db->lookup('ensemble', 'DB_ensemble', $clause);
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('ensemble', 'DB_ensemble', $where_clause, $order_clause);
     }
@@ -326,7 +326,7 @@ class DB_arrangement_target {
         if (!$ret) return 0;
         return $db->insert_id();
     }
-    static function enum($where_clause, $order_clause=null) {
+    static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('arrangement_target', 'DB_arrangement_target', $where_clause, $order_clause);
     }
@@ -356,4 +356,45 @@ class DB_work_type {
         return $db->lookup('work_type', 'DB_work_type', $clause);
     }
 }
+
+class DB_instrument {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('instrument', $clause);
+        return $ret ? $db->insert_id() : 0;
+    }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'instrument', 'DB_instrument');
+    }
+}
+
+class DB_instrument_combo {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('instrument_combo', $clause);
+        return $ret ? $db->insert_id() : 0;
+    }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'instrument_combo', 'DB_instrument_combo');
+    }
+    static function enum($where_clause=null, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('instrument_combo', 'DB_instrument_combo', $where_clause, $order_clause);
+    }
+}
+
+class DB_language {
+    static function insert($clause) {
+        $db = DB::get();
+        $ret = $db->insert('language', $clause);
+        return $ret ? $db->insert_id() : 0;
+    }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'language', 'DB_language');
+    }
+}
+
 ?>
