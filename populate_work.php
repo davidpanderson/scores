@@ -381,7 +381,9 @@ function make_audio_set($wid, $f, $hier) {
         $perf_role_ids[] = get_performer_role($perf[0], $perf[1], $perf[2]);
     }
     if ($perf_role_ids) {
-        $x[] = sprintf("performer_role_ids='%s'", json_encode($perf_role_ids));
+        $x[] = sprintf("performer_role_ids='%s'",
+            json_encode($perf_role_ids, JSON_NUMERIC_CHECK)
+        );
     }
 
     $afs = new DB_audio_file_set;
@@ -619,10 +621,11 @@ function process_tags_work(&$x, $tags) {
     foreach ($work_types as $code) {
         $wt = work_type_by_code($code);
         $wt_ids[] = $wt->id;
+        $wt->nworks++;
     }
     if ($wt_ids) {
         // without the JSON_NUMERIC_CHECK,
-        // ids randomly get represented as strings - WTF???
+        // ids sometimes get represented as strings - WTF???
         //
         $x[] = sprintf("work_type_ids='%s'",
             json_encode($wt_ids, JSON_NUMERIC_CHECK)
@@ -634,11 +637,27 @@ function process_tags_work(&$x, $tags) {
     $ic_ids = [];
     foreach ($inst_combos as $ic) {
         // $ic is a list of [count, code]
-        $ic_ids[] = get_inst_combo($ic);
+        $ic_rec = get_inst_combo($ic);
+        $ic_ids[] = $ic_rec->id;
+        $ic_rec->nworks++;
     }
     if ($ic_ids) {
         $x[] = sprintf("instrument_combo_ids='%s'",
             json_encode($ic_ids, JSON_NUMERIC_CHECK)
+        );
+    }
+
+    // languages
+    //
+    $lang_ids = [];
+    foreach ($langs as $lang) {
+        $rec = lang_by_code($lang);
+        $lang_ids[] = $rec->id;
+        $rec->nworks++;
+    }
+    if ($lang_ids) {
+        $x[] = sprintf("language_ids='%s'",
+            json_encode($lang_ids, JSON_NUMERIC_CHECK)
         );
     }
 }
@@ -650,7 +669,9 @@ function process_tags_score(&$x, $tags) {
     $ic_ids = [];
     foreach ($arr_inst_combos as $ic) {
         // $ic is a list of [count, code]
-        $ic_ids[] = get_inst_combo($ic);
+        $ic_rec = get_inst_combo($ic);
+        $ic_ids[] = $ic_rec->id;
+        $ic_rec->nscores++;
     }
     if ($ic_ids) {
         $x[] = sprintf("instrument_combo_ids='%s'",
@@ -684,6 +705,9 @@ function main($start_line, $end_line) {
         }
         DB::commit_transaction();
     }
+    flush_inst_combo_cache();
+    flush_work_type_cache();
+    flush_lang_cache();
 }
 
 // there are 3079 lines

@@ -9,12 +9,11 @@
 //      (An inst combo is a list of [count, inst code])
 // 3) a list of arrangement inst combos
 // 4) a list of language codes
-//
 
-require_once('imslp_db.inc');
-
+$wts_by_code = null;
+$langs_by_code = null;
 function work_type_by_code($code) {
-    static $wts_by_code = null;
+    global $wts_by_code;
     if (!$wts_by_code) {
         $wts_by_code = unserialize(file_get_contents('work_type_by_code.ser'));
     }
@@ -36,7 +35,7 @@ function inst_by_code($code) {
 }
 
 function lang_by_code($code) {
-    static $langs_by_code = null;
+    global $langs_by_code;
     if (!$langs_by_code) {
         $langs_by_code = unserialize(file_get_contents('lang_by_code.ser'));
     }

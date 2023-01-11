@@ -115,6 +115,8 @@ create table work (
     primary key(id)
 );
 alter table work add fulltext cindex (title, instrumentation);
+alter table work add index wlang( (cast(language_ids->'$' as unsigned array)) );
+alter table work add index wwt( (cast(work_type_ids->'$' as unsigned array)) );
 
 create table publisher (
     id                      integer         not null auto_increment,
@@ -175,6 +177,7 @@ create table score_file_set (
     uploader                text,
     primary key(id)
 );
+alter table score_file_set add index sfic( (cast(instrument_combo_ids->'$' as unsigned array)) );
 
 # a single score file
 create table score_file (
@@ -190,6 +193,7 @@ create table score_file (
     uploader                text,
     primary key(id)
 );
+alter table score_file add index sfsfs(score_file_set_id);
 
 create table audio_file_set (
     id                      integer         not null auto_increment,
@@ -212,6 +216,7 @@ create table audio_file_set (
     uploader                text,
     primary key(id)
 );
+alter table audio_file_set add index afsw(work_id);
 alter table audio_file_set add index ipr( (cast(performer_role_ids->'$' as unsigned array)) );
 
 create table audio_file (
@@ -222,6 +227,7 @@ create table audio_file (
     file_description        text,
     primary key(id)
 );
+alter table audio_file add index afi(audio_file_set_id);
 
 # the combination of a person and a musical role
 # (instrument name(s) or conductor)
@@ -273,6 +279,9 @@ create table instrument_combo (
     id                      integer         not null auto_increment,
     instruments             json,               # array of [count, id]
     md5                     varchar(64),        # hash of instruments
+    nworks                  integer         not null default 0,
+    nscores                 integer         not null default 0,
+    unique(md5),
     primary key(id)
 );
 
@@ -280,5 +289,6 @@ create table language (
     id                      integer         not null auto_increment,
     code                    varchar(190)    not null,
     name                    varchar(190)    not null,
+    nworks                  integer         not null default 0,
     primary key(id)
 );

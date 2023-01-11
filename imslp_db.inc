@@ -383,6 +383,10 @@ class DB_instrument_combo {
         $db = DB::get();
         return $db->enum('instrument_combo', 'DB_instrument_combo', $where_clause, $order_clause);
     }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'instrument_combo', $clause);
+    }
 }
 
 class DB_language {
@@ -394,6 +398,10 @@ class DB_language {
     static function lookup_id($id) {
         $db = DB::get();
         return $db->lookup_id($id, 'language', 'DB_language');
+    }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'language', $clause);
     }
 }
 

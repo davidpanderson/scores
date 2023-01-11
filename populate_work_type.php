@@ -18,9 +18,10 @@
 require_once('imslp_db.inc');
 
 function make_wt($code, $name) {
-    $wt = new StdClass;
+    $wt = new DB_work_type;
     $wt->code = $code;
     $wt->name = $name;
+    $wt->nworks = 0;
     return $wt;
 }
 
@@ -118,7 +119,9 @@ function update_descendants($wts) {
         $w = DB_work_type::lookup("code='$wt->code'");
         if (!$w) echo "no $wt->code\n";
         $w->update(
-            sprintf("descendant_ids='%s'", DB::escape(json_encode($wt->desc)))
+            sprintf("descendant_ids='%s'",
+                DB::escape(json_encode($wt->desc, JSON_NUMERIC_CHECK))
+            )
         );
     }
 }

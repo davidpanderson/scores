@@ -131,7 +131,7 @@ function make_person($p) {
             }
             $nat_ids[] = $nat_id;
         }
-        $x[] = sprintf("nationality_ids='%s'", json_encode($nat_ids));
+        $x[] = sprintf("nationality_ids='%s'", json_encode($nat_ids, JSON_NUMERIC_CHECK));
     }
     if (!empty($p->time_period)) {
         $per_ids = [];
@@ -143,7 +143,7 @@ function make_person($p) {
             }
             $per_ids[] = $per_id;
         }
-        $x[] = sprintf("period_ids='%s'", json_encode($per_ids));
+        $x[] = sprintf("period_ids='%s'", json_encode($per_ids, JSON_NUMERIC_CHECK));
     }
     if ($x) {
         $query = implode(',', $x);
@@ -399,16 +399,16 @@ function get_performer_role($first, $last, $role) {
 // Create new record if needed.
 // For efficiency, cache the table in memory
 //
+$inst_combo_cache = [];
 function get_inst_combo($ic) {
     static $first = true;
-    static $inst_combos;
     static $insts_by_code;
+    global $inst_combo_cache;
     if ($first) {
         // make an array keyed by md5
         $ics = DB_instrument_combo::enum();
-        $inst_combos = [];
         foreach ($ics as $i) {
-            $inst_combos[$i->md5] = $i;
+            $inst_combo_cache[$i->md5] = $i;
         }
         $insts_by_code = unserialize(file_get_contents('inst_by_code.ser'));
         $first = false;
@@ -416,21 +416,21 @@ function get_inst_combo($ic) {
 
     // $ic is [count, code].  change to [count, ID]
     //
-    foreach ($ic as $pair) {
+    foreach ($ic as $i=>$pair) {
         $code = $pair[1];
-        $pair[1] = $insts_by_code[$code]->id;
+        $ic[$i] = [$pair[0], $insts_by_code[$code]->id];
     }
 
     // convert to JSON and get MD5
     //
-    $ic_json = json_encode($ic);
+    $ic_json = json_encode($ic, JSON_NUMERIC_CHECK);
     $ic_md5 = md5($ic_json);
 
     // see if in cache
     //
-    if (array_key_exists($ic_md5, $inst_combos)) {
-        $ic = $inst_combos[$ic_md5];
-        return $ic->id;
+    if (array_key_exists($ic_md5, $inst_combo_cache)) {
+        $ic_rec = $inst_combo_cache[$ic_md5];
+        return $ic_rec;
     }
 
     // no - create new entry
@@ -445,8 +445,38 @@ function get_inst_combo($ic) {
     // add new entry to cache
     //
     $ic_rec = DB_instrument_combo::lookup_id($id);
-    $inst_combos[$ic_md5] = $ic_rec;
-    return $id;
+    $inst_combo_cache[$ic_md5] = $ic_rec;
+    return $ic_rec;
+}
+
+// at the end of populate_works.php,
+// update the count fields of instrument_combo, work_type, language
+//
+function flush_inst_combo_cache() {
+    global $inst_combo_cache;
+
+    foreach ($inst_combo_cache as $ic) {
+        if ($ic->nworks==0 && $ic->nscores==0) continue;
+        $ic->update(
+            sprintf("nworks=%d, nscores=%d", $ic->nworks, $ic->nscores)
+        );
+    }
+}
+
+function flush_work_type_cache() {
+    global $wts_by_code;
+    foreach ($wts_by_code as $wt) {
+        if ($wt->nworks==0) continue;
+        $wt->update(sprintf("nworks=%d", $wt->nworks));
+    }
+}
+
+function flush_lang_cache() {
+    global $langs_by_code;
+    foreach ($langs_by_code as $lang) {
+        if ($lang->nworks==0) continue;
+        $lang->update(sprintf("nworks=%d", $lang->nworks));
+    }
 }
 
 ?>
