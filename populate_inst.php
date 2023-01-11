@@ -9,7 +9,6 @@
 // output:
 //      inst_by_code.ser
 //          serialized array like 'acc' => struct
-//      inst_by_id.ser
 //      populate instrument table
 
 require_once('imslp_db.inc');
@@ -57,7 +56,6 @@ function main() {
 
     echo "populating instrument table\n";
     $inst_by_code = [];
-    $inst_by_id = [];
     foreach ($insts as $code=>$name) {
         $id = DB_instrument::insert(
             sprintf("(code, name) values('%s', '%s')",
@@ -67,17 +65,11 @@ function main() {
         );
         $rec = DB_instrument::lookup_id($id);
         $inst_by_code[$code] = $rec;
-        $inst_by_id[$id] = $rec;
     }
 
     echo "writing inst_by_code.ser\n";
     $f = fopen('inst_by_code.ser', 'w');
     fwrite($f, serialize($inst_by_code));
-    fclose($f);
-
-    echo "writing inst_by_id.ser\n";
-    $f = fopen('inst_by_id.ser', 'w');
-    fwrite($f, serialize($inst_by_id));
     fclose($f);
 }
 

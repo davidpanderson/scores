@@ -1,5 +1,9 @@
 <?php
 
+// parse tag strings
+
+require_once('ser.inc');
+
 // parse a string of the form
 // sonatas ; 2vn 2va viol vlne bc ; 2vn 2va viol vlne org
 // requiems ; masses ; sop mez ten bass ch orch ; la ; grc
@@ -9,41 +13,6 @@
 //      (An inst combo is a list of [count, inst code])
 // 3) a list of arrangement inst combos
 // 4) a list of language codes
-
-$wts_by_code = null;
-$langs_by_code = null;
-function work_type_by_code($code) {
-    global $wts_by_code;
-    if (!$wts_by_code) {
-        $wts_by_code = unserialize(file_get_contents('work_type_by_code.ser'));
-    }
-    if (array_key_exists($code, $wts_by_code)) {
-        return $wts_by_code[$code];
-    }
-    return null;
-}
-
-function inst_by_code($code) {
-    static $insts_by_code = null;
-    if (!$insts_by_code) {
-        $insts_by_code = unserialize(file_get_contents('inst_by_code.ser'));
-    }
-    if (array_key_exists($code, $insts_by_code)) {
-        return $insts_by_code[$code];
-    }
-    return null;
-}
-
-function lang_by_code($code) {
-    global $langs_by_code;
-    if (!$langs_by_code) {
-        $langs_by_code = unserialize(file_get_contents('lang_by_code.ser'));
-    }
-    if (array_key_exists($code, $langs_by_code)) {
-        return $langs_by_code[$code];
-    }
-    return null;
-}
 
 function parse_tags($tags) {
     $work_types = [];
@@ -89,46 +58,32 @@ function parse_tags($tags) {
     return [$work_types, $inst_combos, $arr_inst_combos, $languages];
 }
 
-function combo_str($combo) {
-    $x = [];
-    foreach ($combo as $inst) {
-        $count = $inst[0];
-        $inst = inst_by_code($inst[1]);
-        $name = $inst->name;
-        if ($count == 1) {
-            $x[] = "$name";
-        } else {
-            $plu = substr($name, -1, 1) == 's'?'es':'s';
-            $x[] = "$count $name$plu";
-        }
-    }
-    return implode(' + ', $x);
-}
-
 // $combo is a list of [count, code]
 //
 function combo_hash($combo) {
     return md5(json_encode($combo));
 }
 
-function test() {
-    $lines = file('tags.out');
-    $unique_inst_combos = [];
-    foreach ($lines as $line) {
-        [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($line);
-        foreach ($inst_combos as $combo) {
-            $h = combo_hash($combo);
-            if (!array_key_exists($h, $unique_inst_combos)) {
-                $unique_inst_combos[$h] = $combo;
+if (0) {
+    require_once('imslp_web.inc');
+    function test() {
+        $lines = file('tags.out');
+        $unique_inst_combos = [];
+        foreach ($lines as $line) {
+            [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($line);
+            foreach ($inst_combos as $combo) {
+                $h = combo_hash($combo);
+                if (!array_key_exists($h, $unique_inst_combos)) {
+                    $unique_inst_combos[$h] = $combo;
+                }
             }
         }
+        foreach ($unique_inst_combos as $h=>$combo) {
+            echo inst_combo_str($combo, false)."\n";
+        }
     }
-    foreach ($unique_inst_combos as $h=>$combo) {
-        echo combo_str($combo)."\n";
-    }
+    test();
 }
-
-//test();
 
 if (0) {
     //$str = 'sonatas ; 2vn 2va viol vlne bc ; 2vn 2va viol vlne org';

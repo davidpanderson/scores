@@ -3,6 +3,10 @@
 // IMSLP-specific web utility functions
 
 require_once("imslp_db.inc");
+require_once("imslp_util.inc");
+require_once("ser.inc");
+
+//////////////// DISPLAY UTILITIES: strings /////////////////
 
 // hierarchy terms (Complete etc.) as a/b/c
 //
@@ -54,34 +58,6 @@ function person_death_string($person) {
     return $person->death_date;
 }
 
-function get_periods() {
-    static $p = null;
-    if ($p === null) {
-        $p = unserialize(file_get_contents('period.ser'));
-    }
-    return $p;
-}
-
-// map period id to name using serialized table
-//
-function period_name($id) {
-    $p = get_periods();
-    return $p[$id]->name;
-}
-
-function get_nationalities() {
-    static $n = null;
-    if ($n === null) {
-        $n = unserialize(file_get_contents('nationality.ser'));
-    }
-    return $n;
-}
-
-function nationality_name($id) {
-    $n = get_nationalities();
-    return $n[$id]->name;
-}
-
 // nationality(ies) of a person as string
 //
 function person_nationality_string($person) {
@@ -105,6 +81,26 @@ function person_period_string($person) {
     }
     return implode(', ', $x);
 }
+
+// $combo is a list of [count, code] or [count, id]
+//
+function inst_combo_str($combo, $is_id) {
+    $x = [];
+    foreach ($combo as $inst) {
+        $count = $inst[0];
+        $inst = $is_id ? inst_by_id($inst[1]) : inst_by_code($inst[1]);
+        $name = $inst->name;
+        if ($count == 1) {
+            $x[] = "$name";
+        } else {
+            $plu = substr($name, -1, 1) == 's'?'es':'s';
+            $x[] = "$count $name$plu";
+        }
+    }
+    return implode(' + ', $x);
+}
+
+//////////////// DISPLAY UTILITIES: table /////////////////
 
 function person_table_heading() {
     row_heading_array([
@@ -246,6 +242,33 @@ function show_ensemble_detail($e) {
         row2('Type', $e->type);
     }
     end_table();
+}
+
+function work_table_header() {
+     row_heading_array(['Title', 'Composer', 'Year', 'Period', 'Instruments']);
+}
+
+function work_table_row($work) {
+    [$title, $first, $last] = parse_title($work->title);
+    row_array([
+        "<a href=work.php?id=$work->id>$title</a>",
+        "$first $last",
+        $work->year_of_composition?$work->year_of_composition:'---',
+        $work->period_id?"<nobr>".period_name($work->period_id)."</nobr>":'',
+        $work->instrumentation,
+    ]);
+}
+
+function score_table_header() {
+    row_heading_array(['Work', 'Categories']);
+}
+
+function score_table_row($fs) {
+    $work = DB_work::lookup_id($fs->work_id);
+    row_array([
+        "<a href=work.php?id=$fs->work_id>$work->title</a>",
+        hier_string($fs)
+    ]);
 }
 
 ////////////   Search-related stuff //////////////

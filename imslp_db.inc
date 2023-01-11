@@ -355,6 +355,10 @@ class DB_work_type {
         $db = DB::get();
         return $db->lookup('work_type', 'DB_work_type', $clause);
     }
+    static function enum($where_clause=null, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('work_type', 'DB_work_type', $where_clause, $order_clause);
+    }
 }
 
 class DB_instrument {
@@ -366,6 +370,10 @@ class DB_instrument {
     static function lookup_id($id) {
         $db = DB::get();
         return $db->lookup_id($id, 'instrument', 'DB_instrument');
+    }
+    static function enum($where_clause=null, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('instrument', 'DB_instrument', $where_clause, $order_clause);
     }
 }
 
@@ -402,6 +410,10 @@ class DB_language {
     function update($clause) {
         $db = DB::get();
         return $db->update($this, 'language', $clause);
+    }
+    static function enum($where_clause=null, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum('language', 'DB_language', $where_clause, $order_clause);
     }
 }
 

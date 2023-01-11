@@ -28,7 +28,6 @@ function main() {
 
     echo "populating language table\n";
     $lang_by_code = [];
-    $lang_by_id = [];
     foreach ($langs as $code=>$name) {
         $id = DB_language::insert(
             sprintf("(code, name) values('%s', '%s')",
@@ -38,17 +37,11 @@ function main() {
         );
         $rec = DB_language::lookup_id($id);
         $lang_by_code[$code] = $rec;
-        $lang_by_id[$id] = $rec;
     }
 
     echo "writing lang_by_code.ser\n";
     $f = fopen('lang_by_code.ser', 'w');
     fwrite($f, serialize($lang_by_code));
-    fclose($f);
-
-    echo "writing lang_by_id.ser\n";
-    $f = fopen('lang_by_id.ser', 'w');
-    fwrite($f, serialize($lang_by_id));
     fclose($f);
 }
 

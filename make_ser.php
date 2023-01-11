@@ -1,4 +1,4 @@
-#! usr/bin/env php
+#! /usr/bin/env php
 
 <?php
 
@@ -23,5 +23,9 @@ do_table('nationality');
 do_table('period');
 do_table('copyright');
 do_table('arrangement_target');
+do_table('work_type');
+do_table('instrument');
+do_table('language');
+do_table('instrument_combo');
 
 ?>

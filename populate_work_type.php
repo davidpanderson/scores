@@ -7,13 +7,9 @@
 // and work_types_hier.tags
 //
 // 1) populate work_type table
-// 2) create serialized files
-//      - work_type_by_code.ser
-//          maps code=>wt struct (with descendants)
-//          used by populate_work.php
-//      - work_type_by_id.ser
-//          maps id=>struct
-//          used by web code
+// 2) create serialized file work_type_by_code.ser
+//      maps code=>wt struct (with descendants)
+//      used by populate_work.php
 
 require_once('imslp_db.inc');
 
@@ -70,17 +66,11 @@ function populate($wts) {
 //
 function write_ser($wts) {
     $wts_by_code = [];
-    $wts_by_id = [];
     foreach ($wts as $wt) {
         $wts_by_code[$wt->code] = $wt;
-        $wts_by_id[$wt->id] = $wt;
     }
     $f = fopen('work_type_by_code.ser', 'w');
     fwrite($f, serialize($wts_by_code));
-    fclose($f);
-
-    $f = fopen('work_type_by_id.ser', 'w');
-    fwrite($f, serialize($wts_by_id));
     fclose($f);
 }
 

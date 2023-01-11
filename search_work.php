@@ -56,16 +56,9 @@ function work_search_action($keywords, $period_id) {
     page_head('Work search results');
     if ($works) {
         start_table();
-        row_heading_array(['Title', 'Composer', 'Year', 'Period', 'Instruments']);
+        work_table_header();
         foreach ($works as $work) {
-            [$title, $first, $last] = parse_title($work->title);
-            row_array([
-                "<a href=work.php?id=$work->id>$title</a>",
-                "$first $last",
-                $work->year_of_composition?$work->year_of_composition:'---',
-                $work->period_id?"<nobr>".period_name($work->period_id)."</nobr>":'',
-                $work->instrumentation,
-            ]);
+            work_table_row();
         }
         end_table();
     } else {
