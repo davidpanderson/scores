@@ -8,7 +8,6 @@ populate_lang.php
         lang.tags
     generates
         lang_by_code.ser
-        lang_by_id.ser
     populates
         language
 
@@ -17,7 +16,6 @@ populate_inst.php
         inst.txt
     generates
         inst_by_code.ser
-        inst_by_id.ser
     populates
         instrument
 
@@ -27,7 +25,6 @@ populate_work_type.php
         work_types_hier.tags
     generates
         work_type_by_code.ser
-        work_type_by_id.ser
     populates
         work_type
 
@@ -41,8 +38,8 @@ populate_category.php
 populate_work.php
     requires
         work_type_by_code.ser
-        inst_names.ser
-        lang_names.ser
+        inst_by_code.ser
+        lang_by_code.ser
     populates
         work
         score_file_set, score_file
@@ -60,3 +57,6 @@ make_ser.php
         period.ser
         copyright.ser
         arrangement_target.ser
+        instrument.ser
+        language.ser
+        instrument_combo.ser

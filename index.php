@@ -2,8 +2,21 @@
 require_once("web.inc");
 require_once("imslp_web.inc");
 
+function tags() {
+    echo "
+        <p>
+        <a href=tags.php?action=ic_form>Instrument combinations</a>
+        <p>
+        <a href=tags.php?action=wt_form>Work types</a>
+        <p>
+        <a href=tags.php?action=lang_form>Languages</a>
+    ";
+}
+
 function main() {
     page_head("IMSLP/DB", true);
+
+    tags();
     echo "<h2>Works</h2>";
     work_search_form();
     form_start('');

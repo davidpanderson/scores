@@ -58,7 +58,7 @@ function work_search_action($keywords, $period_id) {
         start_table();
         work_table_header();
         foreach ($works as $work) {
-            work_table_row();
+            work_table_row($work);
         }
         end_table();
     } else {
