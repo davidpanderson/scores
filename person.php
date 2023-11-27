@@ -10,16 +10,9 @@ function show_works($person) {
     if (!$works) return;
     echo "<h2>Works</h2>\n";
     start_table('table-striped');
-    row_heading_array(['Title', 'Year', 'Instrumentation']);
+    work_table_header();
     foreach ($works as $w) {
-        [$t, $first, $last] = parse_title($w->title);
-        row_array([
-            sprintf("<p><a href=work.php?id=%d>%s</a>",
-                $w->id, $t
-            ),
-            $w->year_of_composition?$w->year_of_composition:'---',
-            $w->instrumentation
-        ]);
+        work_table_row($w);
     }
     end_table();
 }
@@ -31,16 +24,13 @@ function show_recordings($person) {
     foreach ($prs as $pr) {
         echo "<h2>$pr->role</h2>\n";
         start_table();
-        row_heading_array(['Work']);
+        recording_table_header();
+        // TODO: use a join to get work?
         $afss = DB_audio_file_set::enum(
             "$pr->id member of (performer_role_ids->'$')"
         );
         foreach ($afss as $afs) {
-            // TODO: use a join?
-            $comp = DB_work::lookup_id($afs->work_id);
-            row_array([
-                "<a href=work.php?id=$comp->id#afs_$afs->id>$comp->title</a>"
-            ]);
+            recording_table_row($afs);
         }
         end_table();
     }

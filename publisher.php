@@ -4,8 +4,20 @@ require_once("imslp_db.inc");
 require_once("imslp_web.inc");
 require_once("web.inc");
 
-function publisher_list() {
-    $pubs = DB_publisher::enum('', 'order by name');
+define('RESULTS_PER_PAGE', 50);
+
+function limit_clause($offset) {
+    return sprintf('limit %d, %d', $offset, RESULTS_PER_PAGE);
+}
+
+function next_link($offset) {
+    echo sprintf("<p><a href=publisher.php?offset=%d>Next %d</a>",
+        $offset+RESULTS_PER_PAGE, RESULTS_PER_PAGE
+    );
+}
+
+function publisher_list($offset) {
+    $pubs = DB_publisher::enum('', 'order by name '.limit_clause($offset));
     page_head("Publishers");
     start_table();
     row_heading_array([
@@ -19,6 +31,9 @@ function publisher_list() {
         ]);
     }
     end_table();
+    if (count($pubs)==RESULTS_PER_PAGE) {
+        next_link($offset);
+    }
     page_tail();
 }
 
@@ -29,32 +44,22 @@ function scores_by_publisher($id) {
     page_head("Scores published by $pub->name");
     $sets = DB_score_file_set::enum("publisher_id=$id");
     start_table();
-    row_heading_array([
-        'Composition', 'Categories', 'Publication date'
-    ]);
+    score_table_header();
     foreach ($sets as $set) {
-        $c = DB_work::lookup_id($set->work_id);
-        $date = '---';
-        if ($set->pub_date) {
-            $date = $set->pub_date;
-        } else if ($set->pub_year) {
-            $date = $set->pub_year;
-        }
-        row_array([
-            "<a href=work.php?id=$c->id#sfs_$set->id>$c->title</a>",
-            hier_string($set),
-            $date
-        ]);
+        score_table_row($set);
     }
     end_table();
     page_tail();
 }
 
+$offset = get_int('offset', true);
+if (!$offset) $offset = 0;
+
 $id = get_int('id', true);
 if ($id) {
     scores_by_publisher($id);
 } else {
-    publisher_list();
+    publisher_list($offset);
 }
 
 ?>

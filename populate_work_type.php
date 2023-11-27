@@ -24,7 +24,7 @@ function make_wt($code, $name) {
 // read MW data, return list of structs
 //
 function get_work_types() {
-    $lines = file('work_types.tags');
+    $lines = file('data/work_types.tags');
 
     $wts = [];
     foreach ($lines as $line) {
@@ -69,7 +69,7 @@ function write_ser($wts) {
     foreach ($wts as $wt) {
         $wts_by_code[$wt->code] = $wt;
     }
-    $f = fopen('work_type_by_code.ser', 'w');
+    $f = fopen('data/work_type_by_code.ser', 'w');
     fwrite($f, serialize($wts_by_code));
     fclose($f);
 }
@@ -85,7 +85,7 @@ function parse_hier($wts) {
         $wts_by_name[$wt->name] = $n;
         $wt->desc = [];     // indices of descendants
     }
-    $lines = file('work_types_hier.tags');
+    $lines = file('data/work_types_hier.tags');
     $level = 0;
     $anc = [];      // indices of ancestors
     foreach ($lines as $line) {

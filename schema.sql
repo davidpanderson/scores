@@ -34,7 +34,7 @@ create table person (
     period_ids              JSON,
     picture                 text,
     picture_caption         text,
-    sex                     text,
+    sex                     varchar(64)     not null default'',
     signature               text,
     unique(first_name, last_name),
     primary key(id)
@@ -42,6 +42,7 @@ create table person (
 alter table person add fulltext index (first_name, last_name);
 alter table person add index inat( (cast(nationality_ids->'$' as unsigned array)) );
 alter table person add index iper( (cast(period_ids->'$' as unsigned array)) );
+alter table person add index psex (sex);
 
 create table nationality (
     id                      integer         not null auto_increment,
@@ -102,10 +103,15 @@ create table work (
     opus_catalogue          text,
     period_id               integer         not null default 0,
     related_works           text,
+    sample_audio_file_name  text,
+        # a representative recording of this work
+    sample_audio_file_id    integer         not null default 0,
     searchkey               text,
     searchkey_amarec        text,
     searchkey_scores        text,
     tags                    text,
+    year_pub                integer         not null default 0,
+        # first pub if given, else year of comp
     year_date_of_composition text,
     year_of_composition     integer         not null default 0,
     year_of_first_publication text,
@@ -117,6 +123,8 @@ create table work (
 alter table work add fulltext cindex (title, instrumentation);
 alter table work add index wlang( (cast(language_ids->'$' as unsigned array)) );
 alter table work add index wwt( (cast(work_type_ids->'$' as unsigned array)) );
+alter table work add index wic( (cast(instrument_combo_ids->'$' as unsigned array)) );
+alter table work add index wperiod (period_id);
 
 create table publisher (
     id                      integer         not null auto_increment,
@@ -133,7 +141,6 @@ create table arrangement_target (
     unique(instruments),
     primary key(id)
 );
-
 
 # a group of 1 or more score files (e.g. parts)
 #
@@ -157,7 +164,7 @@ create table score_file_set (
     image_type              text,
         # Normal Scan, Typeset, Manuscript Scan
     instrument_combo_ids    JSON,
-        # if different from work (e.g. arrangement)
+        # if different from work (i.e. arrangement)
     misc_notes              text,
     publisher_information   text,
         # the following populated if {{P was used
@@ -169,7 +176,11 @@ create table score_file_set (
     pub_year                integer         not null default 0,
 
     reprint                 text,
+    sample_audio_file_name  text,
+        # for arrangements, a representative recording in same instrumentation
+    sample_audio_file_id    integer         not null default 0,
     sample_filename         text,
+        # an image file
     scanner                 text,
     sm_plus                 text,
     thumb_filename          text,
@@ -178,6 +189,7 @@ create table score_file_set (
     primary key(id)
 );
 alter table score_file_set add index sfic( (cast(instrument_combo_ids->'$' as unsigned array)) );
+alter table score_file_set add index sfwid(work_id);
 
 # a single score file
 create table score_file (
@@ -207,6 +219,8 @@ create table audio_file_set (
     copyright_id            integer         not null default 0,
     date_submitted          text,
     ensemble_id             integer         not null default 0,
+    instrument_combo_id     integer         not null default 0,
+        # populated for recordings of arrangements
     misc_notes              text,
     performer_categories    text,
     performers              text,
@@ -272,18 +286,25 @@ create table instrument (
     id                      integer         not null auto_increment,
     code                    varchar(190)    not null,
     name                    varchar(190)    not null,
+    ncombos                 integer         not null default 0,
     primary key(id)
 );
 
 create table instrument_combo (
     id                      integer         not null auto_increment,
-    instruments             json,               # array of [count, id]
+    instruments             json,
+        # a structure consisting of 2 same-size lists:
+        # count => array of counts (always >0)
+        # ids => array of instrument ids
+        # this lets us search with member/overlap/contain
+        # on (sets of) instrument IDs
     md5                     varchar(64),        # hash of instruments
     nworks                  integer         not null default 0,
     nscores                 integer         not null default 0,
     unique(md5),
     primary key(id)
 );
+alter table instrument_combo add index icinst( (cast(instruments->'$.id' as unsigned array)) );
 
 create table language (
     id                      integer         not null auto_increment,

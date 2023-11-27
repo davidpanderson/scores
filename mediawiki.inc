@@ -15,7 +15,11 @@ require_once("imslp_util.inc");
 // get first part of line (for debugging)
 //
 function str_head($str, $pos) {
-    return substr($str, $pos, 40);
+    $str = str_replace("\n", ' ', $str);
+    if ($pos + 800 > strlen($str)) {
+        return substr($str, $pos);
+    }
+    return substr($str, $pos, 80).' ...';
 }
 
 // scan a template argument.
@@ -33,9 +37,9 @@ function scan_arg($str, $start_pos) {
     global $mw_verbose;
 
     if ($mw_verbose) {
-        echo sprintf("scan_arg(): %s...\n", str_head($str, $start_pos));
+        echo sprintf("scan_arg(): %s\n", str_head($str, $start_pos));
     }
-    $n = strlen($str);
+    $len = strlen($str);
     $template_depth = 0;
     $arg_depth = 0;
     $link_depth = 0;
@@ -43,7 +47,7 @@ function scan_arg($str, $start_pos) {
     $eq_pos = -1;
     $arg_end_pos = -1;
     $template_end_pos = -1;
-    for ($i=$start_pos; $i < $n; $i++) {
+    for ($i=$start_pos; $i < $len; $i++) {
         if (!$incipit_depth && substr($str, $i, 3) == '{{{') {
             $arg_depth += 1;
             $i += 2;
@@ -121,12 +125,29 @@ function add_arg(&$args, $str, $start_pos, $eq_pos, $end_pos) {
     }
 }
 
+// return true if $str starts with a MW function name
+// (#alpha: or alpha:, where alpha is alphabetic).
+//
+function is_mw_function($str, $pos) {
+    $n = strlen($str);
+    while ($pos < $n) {
+        $c = $str[$pos];
+        if ($c == ':') return true;
+        if ($c!='#' && !ctype_alpha($c)) return false;
+        $pos++;
+    }
+    return false;
+}
+
 // given a string of the form
 // {{tname | arg=val | arg=val ... }}
 // or
-// {{#ifx:arg|arg|arg}}
+// {{#if:arg|arg|arg}}
+// or
+// {{padleft:foo|bar}}
+//
 // return
-//      - the template name (or #ifx:)
+//      - the template or function name
 //      - an array of argument names and values.
 //      - the offset of the position past the }}
 // The values may contain template calls.
@@ -135,56 +156,59 @@ function parse_template_call($str, $start_pos) {
     global $mw_verbose;
 
     if ($mw_verbose) {
-        echo sprintf("parse_template_call(): %s...\n", str_head($str, $start_pos));
+        echo sprintf("parse_template_call(): %s\n", str_head($str, $start_pos));
     }
     $i = $start_pos + 2;
-    $args = [];
 
     // skip blanks before template name
     while ($str[$i]==' ') {
         $i++;
     }
-    // get the template name
+    // get the template name.  Check for Mediawiki functions first
     //
-    if (substr($str, $i, 3) == '#if') {
+    if (is_mw_function($str, $i)) {
         $n = strpos($str, ':', $i);
         if ($n === false) {
-            echo "bad if construct: $str\n";
+            echo "bad mediawiki function: $str\n";
             exit;
         }
-        $template_end_pos = 0;
-        $arg_end_pos = $n;
+        $template_name = substr2($str, $i, $n+1);
+        $i = $n+1;
     } else {
-        [$eq_pos, $arg_end_pos, $template_end_pos] = scan_arg($str, $i);
-    }
-
-    //echo "after scan template name: i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
-
-    if ($template_end_pos > 0) {
-        $template_name = trim(substr2($str, $i, $template_end_pos));
-    } else if ($arg_end_pos > 0) {
-        // if there are arguments, parse them
-        //
-        $template_name = trim(substr2($str, $i, $arg_end_pos));
-        //echo "template name $template_name\n";
-        $i = $arg_end_pos + 1;
-        while (true) {
-            [$eq_pos, $arg_end_pos, $template_end_pos] = scan_arg($str, $i);
-            //echo "after scan template arg: i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
-            if ($template_end_pos > 0) {
-                add_arg($args, $str, $i, $eq_pos, $template_end_pos);        
-                break;
-            } else if ($arg_end_pos > 0) {
-                add_arg($args, $str, $i, $eq_pos, $arg_end_pos);
-                $i = $arg_end_pos + 1;
-            } else {
-                echo sprintf("ERROR: malformed template call (no arg end): %s\n", substr($str, $start_pos));
-                return null;
-            }
+        $n = strpos($str, '|', $i);
+        $m = strpos($str, '}}', $i);
+        if (!$m) {
+            echo "unterminated template call: $str\n";
+            return null;
         }
-    } else {
-        echo sprintf('ERROR: malformed template call (no name): %s\n', substr($str, $start_pos));
-        return null;
+        if ($n && $n<$m) {
+            // ... | ... }}
+            $template_name = trim(substr2($str, $i, $n));
+            $i = $n+1;
+        } else {
+            // no args
+            $template_name = trim(substr2($str, $i, $m));
+            return [$template_name, [], $m+2];
+        }
+    }
+    //echo "template name $template_name\n";
+
+    // parse arguments
+    //
+    $args = [];
+    while (true) {
+        [$eq_pos, $arg_end_pos, $template_end_pos] = scan_arg( $str, $i);
+        //echo "after scan template arg: i $i eq_pos $eq_pos arg_end_pos $arg_end_pos temp_end_pos $template_end_pos\n";
+        if ($template_end_pos > 0) {
+            add_arg($args, $str, $i, $eq_pos, $template_end_pos);
+            break;
+        } else if ($arg_end_pos > 0) {
+            add_arg($args, $str, $i, $eq_pos, $arg_end_pos);
+            $i = $arg_end_pos + 1;
+        } else {
+            echo sprintf("ERROR: malformed template call (no arg end): %s\n", substr($str, $start_pos));
+            return null;
+        }
     }
     return [$template_name, $args, $template_end_pos+2];
 }

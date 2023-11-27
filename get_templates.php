@@ -1,3 +1,5 @@
+#! /usr/bin/env php
+
 <?php
 
 require_once("imslp_util.inc");
@@ -46,17 +48,17 @@ function main($file, $nlines) {
         foreach ($y as $t => $z) {
             //echo "$t\n";
             if (strpos($t, 'Template:') !== 0) continue;
-            $name = substr($t, 9);
+            $name = strtolower(substr($t, 9));
             $z = strip_noinclude($z);
             $z = strip_includeonly($z);
             $templates[$name] = $z;
         }
     }
-    $f = fopen('templates.ser', 'w');
+    $f = fopen('data/templates.ser', 'w');
     fwrite($f, serialize($templates));
     fclose($f);
 }
 
-main('david_category_template_dump.txt', 10000);
+main('data/david_category_template_dump.txt', 10000);
 
 ?>

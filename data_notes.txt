@@ -1,0 +1,58 @@
+#fte:imslpaudio template calls sometimes have
+
+...
+|Thumb Filename=Contenu neutre.jpg|200px|thumb|left
+|Misc. Notes=
+...
+
+But | is the separator for template call arguments,
+so the 200px, thumb etc. are separate positional arguments.
+I don't think this is what was intended.
+
+Some template call has 'Date Submittedn 2' arg
+
+--------------------
+Publisher info
+
+The publisher_information field of imslpfile can have various values:
+
+1) a {{P template call, e.g.
+    {{P|Edition Peters|C. F. Peters|Leipzig||||6536}}
+
+2) a {{P call, with other stuff:
+    ''[[Haydn - Piano Sonatas (Martienssen)|Sonaten fÃ¼r Klavier zu zwei HÃ¤nden]]''<br>{{P|Edition Peters|C.F. Peters|Leipzig||1937||11261}}
+
+3) A call to a publisher-specific template, e.g.
+    {{HaydnPnSonatasPasler|1||No.10|}}
+    There are hundreds of such templates.
+
+It's important that we preserve and display this info
+a) to uniquely identify the source of scores
+b) to avoid upsetting contributors
+
+Proposal:
+
+{{P case:
+    new table "publisher"
+        id
+        name
+        imprint
+        location
+
+    new fields for score_file_set (populate if {{P used)
+        pub_id
+        pub_date
+        pub_year
+        pub_edition_number
+        pub_plate_number
+        pub_extra (e.g. the [[...]] in 2))
+
+publisher-specific templates:
+    develop PHP code that expands template calls
+    create a new table "template"
+        name
+        value
+    Note: mediawiki itself is written in PHP,
+    and uses MySQL to store everything.
+    In theory we could borrow their code.
+    But it might be better to do it ourselves.

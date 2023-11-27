@@ -5,6 +5,7 @@
 ini_set('display_errors', 1);
 
 require_once("bootstrap.inc");
+require_once("audio.inc");
 
 function page_head($title, $is_front=false) {
     echo sprintf('
@@ -20,6 +21,7 @@ function page_head($title, $is_front=false) {
 ',
     "$title"
     );
+    audio_enable();
     echo '<div class="container-fluid">';
 
     echo sprintf(
@@ -34,7 +36,7 @@ function page_head($title, $is_front=false) {
 }
 
 function page_tail() {
-    echo "</div></body></html>";
+    echo "<hr>Copyright 2023 Project Petrucci LLC</div></body></html>";
 }
 
 function error_page($msg) {
@@ -78,7 +80,72 @@ function post_str($key, $optional=false) {
     error_page("missing arg: $key");
 }
 
+// Display lots of checkboxes divided into columns.
+// Returns text for a table with $ncols columns.
+// for each item in $items:
+// - if it's an array, it's a list of checkbox items; divide it into columns
+// - otherwise show it in a row that spans all cols
+// Use this as arg to form_general();
+//
+function checkbox_table($items, $ncols) {
+    $x = '<table width=100%>';
+    foreach ($items as $item) {
+        if (is_array($item)) {
+            if (count($item)) {
+                $x .= checkbox_table_array($item, $ncols);
+            }
+        } else {
+            $x .= sprintf('<tr colspan=%d><td>%s</td></tr>', $ncols, $item);
+        }
+    }
+    $x .= "</table>\n";
+    return $x;
+}
+
+// Helper function for the above.
+// Return '<tr><td>x</td> ... <td>x</td></tr>'
+// where each table cell contains 1/ncols of the given checkbox items
+//
+function checkbox_table_array($items, $ncols) {
+    $x = '<tr>';
+    $y = split_list($items, $ncols);
+    for ($i=0; $i<$ncols; $i++) {
+        $x .= sprintf("<td valign=top style=\"padding: 4px\" width=\"%d%%\">%s</td>\n",
+            intdiv(100, $ncols),
+            implode('<br>', checkbox_item_strings($y[$i]))
+        );
+    }
+    $x .= '</tr>';
+    return $x;
+}
+
 // ---------------- table stuff ------------
+
+// divide a list into $ncols parts
+//
+function split_list($items, $ncols) {
+    $n = count($items);
+    $x = [];
+    for ($i=0; $i<$ncols; $i++) {
+        $a = ceil($n*$i/$ncols);
+        $b = ceil($n*($i+1)/$ncols);
+        $x[] = array_slice($items, $a, ($b-$a));
+    }
+    return $x;
+}
+
+function show_items_cols($items, $ncols) {
+    echo "<table width=100%><tr>\n";
+    $cols = split_list($items, $ncols);
+    foreach ($cols as $col) {
+        echo sprintf(
+            "<td valign=top style=\"padding: 4px\" width=\"%d%%\">%s</td>\n",
+            intdiv(100, $ncols),
+            implode('<br>', $col)
+        );
+    }
+    echo "</tr></table>\n";
+}
 
 function start_table_str($class="", $style="") {
     $s = $style?'style="'.$style.'"':'';

@@ -1,0 +1,33 @@
+<?php
+require_once('imslp_db.inc');
+function main() {
+    $query = "select distinct(name) from work_type join work as w join instrument_combo as ic where w.year_of_composition<1800 and ic.id member of (w.instrument_combo_ids->'$') and 115 member of (ic.instruments->'$.id');
+    $query = select count(*) from instrument_combo where 115 member of (instruments->'$.id');
+
+    select json_arrayagg(name) from (select name from work_type where id<10) as t;
+
+    select distinct wt.name from work_type as wt join work as w where wt.id member of (w.work_type_ids->'$') and w.year_of_composition<1800 and 11211 member
+    of (w.instrument_combo_ids->'$');
+
+    select json_arrayagg(id) from (select id from instrument_combo where 115 member of (instruments->'$.id')) as t;
+        works
+
+    select distinct wt.name from work_type as wt join work as w
+        where wt.id member of (w.work_type_ids->'$')
+        and w.year_of_composition<1800
+        and json_overlaps(
+            (select json_arrayagg(id) from (select id from instrument_combo where 115 member of (instruments->'$.id')) as t),
+            w.instrument_combo_ids->'$'
+        );
+
+    works but slot
+
+    select distinct wt.name from work_type as wt join work as w
+        where wt.id member of (w.work_type_ids->'$')
+        and w.year_of_composition<1800
+        and json_overlaps(
+            CAST('[116,117]' AS JSON
+            w.instrument_combo_ids->'$'
+        );
+}
+?>

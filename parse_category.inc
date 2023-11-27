@@ -138,11 +138,19 @@ function parse_person($title, $str) {
         if (is_string($item)) {
             $other_text .= " $item";
         } else {
-            if ($item->name === '#fte:performer') {
-                $p = parse_aux($item, 'performer');
-            } else if ($item->name === '#fte:person') {
-                $p = parse_aux($item, 'person');
-            } else if ($item->name === '#fte:composer') {
+            if ($item->name === '#fte:') {
+                $x = array_shift($item->args);
+                if ($x == 'performer') {
+                    $p = parse_aux($item, 'performer');
+                } else if ($x == 'person') {
+                    $p = parse_aux($item, 'person');
+                } else if ($x == 'composer') {
+                    $p = parse_aux($item, 'composer');
+                } else {
+                    echo "parse_person(): unrecognized #fte: $x\n";
+                    return null;
+                }
+            } else if ($item->name === '#imslpcomposer:') {
                 $p = parse_aux($item, 'composer');
             }
         }

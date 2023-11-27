@@ -6,7 +6,7 @@
 require_once("parse_work.inc");
 
 function main($nlines) {
-    $f = fopen('david_page_dump.txt', 'r');
+    $f = fopen('data/david_page_dump.txt', 'r');
     $nworks = [];
     for ($i=0; $i<$nlines; $i++) {
         echo "JSON line $i\n";

@@ -37,83 +37,55 @@ function sort_file_sets($fss) {
     return $x1;
 }
 
-function copyright($id) {
-    $c = DB_copyright::lookup_id($id);
-    return $c->name;
-}
-
-function show_score_file_set($fs) {
-    echo "<hr><a name=sfs_$fs->id></a>";
-    start_table('');
-    if ($fs->amazon) row2("Amazon", $fs->amazon);
-    if ($fs->arranger) row2("Arranger", $fs->arranger);
-    if ($fs->copyright_id) row2("Copyright", copyright($fs->copyright_id));
-    if ($fs->date_submitted) row2("Date Submitted", $fs->date_submitted);
-    if ($fs->editor) row2("Editor", $fs->editor);
-    if ($fs->engraver) row2("Engraver", $fs->engraver);
-    if ($fs->file_tags) row2("File Tags", $fs->file_tags);
-    if ($fs->image_type) row2("Image Type", $fs->image_type);
-    if ($fs->misc_notes) row2("Misc. Notes", $fs->misc_notes);
-    if ($fs->publisher_information) row2("Publisher Information", $fs->publisher_information);
-    if ($fs->reprint) row2("Reprint", $fs->reprint);
-    if ($fs->sample_filename) row2("Sample Filename", $fs->sample_filename);
-    if ($fs->scanner) row2("Scanner", $fs->scanner);
-    if ($fs->sm_plus) row2("SM+", $fs->sm_plus);
-    if ($fs->thumb_filename) row2("Thumb Filename", $fs->thumb_filename);
-    if ($fs->translator) row2("Translator", $fs->translator);
-    if ($fs->uploader) row2("Uploader", $fs->uploader);
-
-    $files = DB_score_file::enum("score_file_set_id=$fs->id");
-    $x = [];
-    foreach ($files as $f) {
-        $x[] = sprintf('<a href="https://imslp.org/wiki/File:%s">%s</a>',
-            $f->file_name,
-            $f->file_description
+function show_file_sets($v, $fss, $is_score) {
+    if (count($fss) == 1) {
+        $fs = $fss[0];
+        if (!$v) $v = 'View';
+        echo sprintf(
+            "<br>%s<font size=+1><a href=%s?id=%d>%s</a></font>\n",
+            indent_spaces(2),
+            $is_score?'score.php':'recording.php',
+            $fs->id, $v
         );
-        // TODO: show per-file info
-    }
-    row2('Files', implode('<br>', $x));
-    end_table();
-}
-
-function show_audio_file_set($fs) {
-    echo "<hr><a name=afs_$fs->id></a>";
-    start_table('');
-    if ($fs->copyright_id) row2("Copyright", copyright($fs->copyright_id));
-    if ($fs->date_submitted) row2("Date Submitted", $fs->date_submitted);
-    if ($fs->misc_notes) row2("Misc. Notes", $fs->misc_notes);
-    if ($fs->performer_categories) row2("Performer Categories", $fs->performer_categories);
-    if ($fs->performers) row2("Performers", $fs->performers);
-    if ($fs->publisher_information) row2("Publisher Information", $fs->publisher_information);
-    if ($fs->uploader) row2("Uploader", $fs->uploader);
-
-    $files = DB_audio_file::enum("audio_file_set_id=$fs->id");
-    $x = [];
-    foreach ($files as $f) {
-        $x[] = sprintf('<a href="https://imslp.org/wiki/File:%s">%s</a>',
-            $f->file_name,
-            $f->file_description
-        );
-        // TODO: show per-file info
-    }
-    row2('Files', implode('<br>', $x));
-    end_table();
-}
-
-function show_file_sets($fss, $is_score) {
-    foreach ($fss as $fs) {
-        if ($is_score) {
-            show_score_file_set($fs);
-        } else {
-            show_audio_file_set($fs);
+    } else {
+        $sp = indent_spaces(2);
+        if ($v) {
+            echo "<br>$sp<font size=+1>$v</font>\n";
         }
+        $sp = indent_spaces(3);
+        foreach ($fss as $i=>$fs) {
+            $j = $i+1;
+            echo sprintf(
+                "<br>%s<a href=%s?id=%d>Version %d</a>\n",
+                $sp,
+                $is_score?'score.php':'recording.php',
+                $fs->id, $i+1
+            );
+        }
+    }
+}
+
+function indent_spaces($level) {
+    $sp = '';
+    for ($j=0; $j<$level+1; $j++) {
+        $sp .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+    }
+    return $sp;
+}
+
+function font_size($level) {
+    switch ($level) {
+    case -1: return '+4';
+    case 0: return '+3';
+    case 1: return '+2';
+    case 2: return '+1';
     }
 }
 
 // show values in this order, followed by others
 //
 $hier_vals = [
-    ['', 'Parts', 'Arrangements and Transcriptions', 'Other'],
+    ['', 'Parts', 'Scores and Parts', 'Arrangements and Transcriptions', 'Other'],
     ['', 'Complete'],
     ['']
 ];
@@ -122,10 +94,7 @@ function show_files_hier($x, $level, $is_score) {
     global $hier_vals;
     $vals = $hier_vals[$level];
 
-    $sp = '';
-    for ($j=0; $j<$level; $j++) {
-        $sp .= "&nbsp;&nbsp;&nbsp;";
-    }
+    $sp = indent_spaces($level);
 
     // show values in list (see above)
     //
@@ -133,12 +102,19 @@ function show_files_hier($x, $level, $is_score) {
         if (!array_key_exists($v, $x)) {
             continue;
         }
-        if ($v) {
-            echo "<h3>$sp $v</h3>\n";
-        }
         if ($level == 2) {
-            show_file_sets($x[$v], $is_score);
+            $w = $v;
+            if (!$is_score && !$v) $w = 'Original instrumentation';
+            show_file_sets($w, $x[$v], $is_score);
         } else {
+            $sp = indent_spaces($level);
+            $w = $v;
+            if ($level==1 && !$v) $w = 'Complete';
+            if ($w) {
+                echo sprintf("<br>%s<font size=%s>%s</font>\n",
+                    $sp, font_size($level), $w
+                );
+            }
             show_files_hier($x[$v], $level+1, $is_score);
         }
     }
@@ -147,12 +123,15 @@ function show_files_hier($x, $level, $is_score) {
     //
     foreach ($x as $v=>$list) {
         if (in_array($v, $vals)) continue;
-        if ($v) {
-            echo "<h3>$sp $v</h3>\n";
-        }
         if ($level == 2) {
-            show_file_sets($list, $is_score);
+            show_file_sets($v, $list, $is_score);
         } else {
+            $sp = indent_spaces($level);
+            if ($v) {
+                echo sprintf("<br>%s<font size=%s>%s</font>\n",
+                    $sp, font_size($level), $v
+                );
+            }
             show_files_hier($list, $level+1, $is_score);
         }
     }
@@ -161,7 +140,7 @@ function show_files_hier($x, $level, $is_score) {
 function show_score_files($cid) {
     $fss = DB_score_file_set::enum("work_id=$cid");
     if (!$fss) return;
-    echo "<h2>Score files</h2>\n";
+    echo sprintf("<p><font size=%s>Scores</font>\n", font_size(-1));
     $x1 = sort_file_sets($fss);
     show_files_hier($x1, 0, true);
 }
@@ -169,7 +148,7 @@ function show_score_files($cid) {
 function show_audio_files($cid) {
     $fss = DB_audio_file_set::enum("work_id=$cid");
     if (!$fss) return;
-    echo "<h2>Audio files</h2>\n";
+    echo sprintf("<p><font size=%s>Recordings</font>\n", font_size(-1));
     $x1 = sort_file_sets($fss);
     show_files_hier($x1, 0, false);
 }
@@ -179,12 +158,12 @@ function main($id) {
     if (!$c) {
         error_page('no such work');
     }
-    page_head("$c->title");
+    page_head("Work: $c->title");
     echo "<p>";
     show_work_detail($c);
-    show_button("edit_work.php?id=$id", 'Edit work');
-    show_button("edit_score.php?work_id=$id", 'Add score file');
-    show_button("edit_audio.php?work_id=$id", 'Add audio file');
+    //show_button("edit_work.php?id=$id", 'Edit work');
+    //show_button("edit_score.php?work_id=$id", 'Add score file');
+    //show_button("edit_audio.php?work_id=$id", 'Add audio file');
     echo "<hr>";
     show_score_files($c->id);
     show_audio_files($c->id);

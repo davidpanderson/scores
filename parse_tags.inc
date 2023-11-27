@@ -35,12 +35,14 @@ function parse_tags($tags) {
         $arr = false;
         $insts = explode(' ', $part);
         foreach ($insts as $inst) {
-            [$count, $code] = parse_count_str($inst);
             if ($inst == '(arr)') {
                 $arr = true;
                 continue;
             }
             if ($inst == 'open') continue;
+            if (!$inst) continue;
+            if (is_numeric($inst)) continue;
+            [$count, $code] = parse_count_str($inst);
             if (inst_by_code($code)) {
                 $combo[] = [$count, $code];
             } else {

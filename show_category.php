@@ -6,7 +6,7 @@
 require_once("parse_category.inc");
 
 function main($nlines) {
-    $f = fopen('david_category_template_dump.txt', 'r');
+    $f = fopen('data/david_category_template_dump.txt', 'r');
     $npeople = [];
     for ($i=0; $i<$nlines; $i++) {
         echo "JSON line $i\n";

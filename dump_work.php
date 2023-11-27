@@ -23,6 +23,7 @@ function main($file, $nlines) {
     }
 }
 
-main('david_page_dump.txt', 900);
+// there are 3079 lines
+main('data/david_page_dump.txt', 4000);
 
 ?>

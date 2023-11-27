@@ -175,12 +175,12 @@ function audio_args_to_object($args) {
             $f->performers = $val;
         } else if ($name === 'Publisher Information') {
             $f->publisher_information= $val;
+        } else if ($name === 'Thumb Filename') {
+            $f->thumb_filename = $val;
         } else if ($name === 'Uploader') {
             $f->uploader = $val;
         } else if (starts_with($name, 'Uploader ')) {
             add_elements($name, $val, $f->uploaders);
-        } else if ($name === 'Thumb Filename') {
-            $f->thumb_filename = $val;
         //} else if ($name === 'Arranger') {
         //    $f->arranger = $val;
         } else {
@@ -221,8 +221,13 @@ function parse_files($str) {
                 }
             }
         } else {
-            if ($item->name == '#fte:imslpfile') {
-                $files[] = file_args_to_object($item->args);
+            if ($item->name == '#fte:') {
+                $x = array_shift($item->args);
+                if ($x == 'imslpfile') {
+                    $files[] = file_args_to_object($item->args);
+                } else {
+                    echo "unrecognized #fte: in file list: $x\n";
+                }
             } else {
                 echo "unrecognized template in file list: $item->name\n";
             }
@@ -253,8 +258,13 @@ function parse_audio($str) {
                 }
             }
         } else {
-            if ($item->name == '#fte:imslpaudio') {
-                $files[] = audio_args_to_object($item->args);
+            if ($item->name == '#fte:') {
+                $x = array_shift($item->args);
+                if ($x == 'imslpaudio') {
+                    $files[] = audio_args_to_object($item->args);
+                } else {
+                    echo "unrecognized #fte: in audio list: $x\n";
+                }
             } else {
                 echo "unrecognized template in audio list: $item->name\n";
             }
@@ -325,7 +335,12 @@ function parse_work($title, $body) {
         } else if ($item->name == 'LinkComp') {
         } else if ($item->name == 'fax') {
         } else if ($item->name == 'PMBSrp') {
-        } else if ($item->name == '#fte:imslppage') {
+        } else if ($item->name == '#fte:') {
+            $x = array_shift($item->args);
+            if ($x !== 'imslppage') {
+                echo "unrecognized #fte: $x";
+                continue;
+            }
             $work->imslppage = true;
             foreach ($item->args as $name=>$arg) {
                 // MUST USE === in name comparisons (0 == 'foo' thing)
@@ -423,7 +438,8 @@ $ensemble_types = ['orchestra', 'piano trio', 'ensemble'];
 // {{GardnerPerf|Jeremy Denk}} (piano)
 // {{GardnerPerf|Chamber Music Society of Lincoln Center}}<br><small>{{GardnerPerf|Ida Kavafian, Ani Kavafian (violins), Paul Neubauer, Roberto Diaz (violas),<br>Ronald Thomas, Fred Sherry (cellos)}}
 // (gotta draw the line somewhere)
-
+//
+// return [ensemble_name, list of [first, last, instr]]
 
 function parse_gardner_perf($str) {
     global $ensemble_types;
@@ -692,27 +708,6 @@ function parse_performers($perf, $perf_cat) {
         }
     }
     return [$ensemble, $performers];
-}
-
-////////////////  arrangement target (from score hiers)
-
-function parse_arrangement_target($hier) {
-    if ($hier[0] != 'Arrangements and Transcriptions') return null;
-    $x = $hier[2];
-    if (substr2($x, 0, 4) == 'For ') {
-        $start = 4;
-    } else if (substr2($x, 0, 5) == '*For ') {
-        $start = 5;
-    } else {
-        return null;
-    }
-    $n = strpos($x, '(');
-    if ($n) {
-        $end = $n-1;
-    } else {
-        $end = strlen($x);
-    }
-    return substr2($x, $start, $end);
 }
 
 ?>

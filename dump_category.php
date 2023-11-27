@@ -24,6 +24,7 @@ function main($file, $nlines) {
     }
 }
 
-main('david_category_template_dump.txt', 10000);
+// there are 480 lines
+main('data/david_category_template_dump.txt', 10000);
 
 ?>

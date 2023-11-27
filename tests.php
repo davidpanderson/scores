@@ -32,7 +32,9 @@ if (0) {
     $x = "Copyright=Public Domain
 |Thumb Filename=Contenu neutre.jpg|200px|thumb|left
 |Misc. Notes=";
+    $x = 'List of works by Felix Mendelssohn#{{{1|A}}}| {{{1}}} {{{2}}}]]';
     print_r(scan_arg($x, 0));
+    echo substr($x, 44);
 }
 
 if (0) {
@@ -132,11 +134,6 @@ EOT;
 }
 
 if (0) {
-    //$str = '{{#if:blah|foo}}';
-    //$str = '{{P|Edition Peters|C.F. Peters|Leipzig|n.d.[{{{2|1902-07}}}]|{{{2|1902}}}|3100|{{{3|8800, 10037-38}}}}}';
-    //$str = '{{#if:{{{3|}}}|{{{3}}}:<nowiki> </nowiki>|}}';
-    //$str = '{{#if:{{{4|}}}|{{{4}}}|{{#if:{{{5|}}}|{{{5}}}|n.d}}}}';
-
     $str = "{{#fte:mclink
     |catname = {{ #if:{{{5|}}}|{{#if:{{{2|}}}|{{{2}}}, {{{1}}} @{{{5}}}^|{{{1}}} @{{{5}}}^}} | {{#if:{{{2|}}}|{{{2}}}, {{{1}}}|{{{1}}}}}}}
     |sortkey = {{#worksortkey:}}
@@ -144,6 +141,19 @@ if (0) {
     |show    = {{{1}}}{{#if:{{{2|}}}|&#32;{{{2|}}}}}
     }}{{ #ifeq: 0{{{3|}}} | 0 | {{ #ifeq: 0{{{4|}}} | 0 | {{#if: {{{5|}}} | &nbsp;({{{5}}}) | }} | &nbsp;({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}d. {{{4}}}) }} | &nbsp;{{ #ifeq: 0{{{4|}}} | 0 | ({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}b. {{{3}}}) | ({{#if: {{{5|}}} |{{{5}}},&nbsp;|}}{{{3}}}-{{{4}}})}}}}";
 
+    //$str = '{{P|Edition Peters|C.F. Peters|Leipzig|n.d.[{{{2|1902-07}}}]|{{{2|1902}}}|3100|{{{3|8800, 10037-38}}}}}';
+    //$str = '{{#if:{{{3|}}}|{{{3}}}:<nowiki> </nowiki>|}}';
+    //$str = '{{#if:{{{4|}}}|{{{4}}}|{{#if:{{{5|}}}|{{{5}}}|n.d}}}}';
+    //$str = '{{#switch: blah|foo}}';
+    //$str = '{{#if:{{{4|}}}|(pp.{{{4}}})|}}';
+    //$str = '{{padleft:{{{2}}}|8|0}}';
+    $str = '{{Tooltip|{{#iflang:|en=F-Pn}}|{{#iflang:|en=Bibliothèque Nationale de France}}}}';
+    print_r(parse_template_call($str, 0));
+}
+
+if (0) {
+    $str = '{{MiscLib|PLKj|2||Mus. ms. autogr. Mendelssohn 38.2/4}}';
+    //$str = '{{#switch: abc|A=fooA|fooB}}';
     print_r(parse_template_call($str, 0));
 }
 
@@ -160,7 +170,8 @@ if (0) {
 }
 
 if (0) {
-    $x = "''[[Haydn - Piano Sonatas (Martienssen)|Sonaten f▒~C¼r Klavier zu zwei H▒~CC¤nden]]''<br>{{P|Edition Peters|C.F. Peters|Leipzig||1937||11261}}";
+    //$x = "''[[Haydn - Piano Sonatas (Martienssen)|Sonaten f▒~C¼r Klavier zu zwei H▒~CC¤nden]]''<br>{{P|Edition Peters|C.F. Peters|Leipzig||1937||11261}}";
+    $x = "''[[Haydn - Piano Sonatas (Martienssen)|Sonaten für Klavier zu zwei Händen]]''<br>{{P|Edition Peters|C.F. Peters|Leipzig||1937||11333}}";
     print_r(parse_publisher($x));
 }
 
@@ -169,7 +180,8 @@ if (0) {
     //$str = '{{GardnerPerf|Yunjie Chen (piano)}}';
     //$str = '{{GardnerPerf|Mark Padmore (voice), Jonathan Biss (piano)}}';
     //$str = '{{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}';
-    $str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
+    //$str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
+    $str = '{{GardnerPerf|Orion String Quartet}}';
 
     print_r(parse_gardner_perfs($str));
 }
@@ -180,27 +192,44 @@ if (0) {
     print_r(parse_perf('Joe Smith piano'));
 }
 
-if (1) {
+if (0) {
     //$str = '{{GardnerPerf|Benjamin Beilman, violin}}; {{GardnerPerf|Yekwon Sunwoo, piano}}';
-    $str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
+    //$str = '{{GardnerPerf|Rebel Baroque Orchestra (ensemble)}}';
     //$str = 'Galaxy Bosendorfer 290 (Tatiana Kolesova)';
-    $str = 'Daniel Guilet (violin)<br>{{Plain|http://www.rene-gagnaux.ch/tichman_herbert/courte_biographie.html#Ruth_Budnevich|Ruth Budnevich}} (piano)';
+    //$str = 'Daniel Guilet (violin)<br>{{Plain|http://www.rene-gagnaux.ch/tichman_herbert/courte_biographie.html#Ruth_Budnevich|Ruth Budnevich}} (piano)';
+    $str = 'Boston Symphony Orchestra=orchestra;Koussevitzky, Serge=conductor';
     print_r(parse_performers($str ,''));
 }
 
 /////////////
 
 require_once("template.inc");
+$verbose = true;
 
-if (0) {
-    //$str = "[[foo|bar]]";
+if (1) {
+    $str = "[foo {{FE}}]";
     //$str = "{{GriegKlavierwerke|foo|blah|x3|x4|x5}}";
     //$str = "{{P|a|b|c|d|e|f|g|h}}";
     //$str = "{{LinkArr|Charles-Valentin|Alkan|1813|1888}}";
     //$str = "{{FE}}";
-    $str = "{{P|Carl Simon||Berlin||||C.S. 1823}}";
-    $x = expand_mw_text($str);
-    echo "output: $x\n";
+    //$str = "{{Années_de_Pèlerinage_(Liszt,_Franz)}}";
+    //$str = "{{P|Carl Simon||Berlin||||C.S. 1823}}";
+    //$str = '{{AMG|mc0002406942}}';
+    //$str = '{{#switch: X|A=fooA|fooB}}';
+    //$str = '{{Bluefatbox|title=See Also|body= [[List of Intermediate Piano Repertoire]] }}';
+    //$str = '{{JagU|374138}}';
+    //$str = '{{MiscLib|PLKj|2||Mus. ms. autogr. Mendelssohn 38.2/4}}';
+    //$str = '{{JagU|374138}}';
+    //$str = '1845 - Bonn: [[Simrock]] // London: [[Ewer|J.J. Ewer & Co.]] // Paris: [[Schlesinger|M. Schlesinger]] // Milan: [[Ricordi|J. Ricordi]]';
+    //$str = '{{LinkEd|Julius|Rietz}} (1812–1877)';
+    //$str = '{{MendelssohnComplete|11||80|70-83}}';
+    //$str = '{{MWV|N|19}}';
+    //$str = '{{HMB|1834|2}}';
+    //$str = '{{BNFref|12148/cb42870812s|BNF}}';
+    //$str = "{{P||{{LinkCompS|Carl Philipp Emanuel|Bach|[C.P.E. Bach]}}|Berlin|n.d.[1751]|1751}}<br>''Revised printing'', n.d.[1752].";
+    //$str = '{{HaydnSonKohler|II, No.17||6424|54-58}}';
+    $str = "{{pa|Boivin|Mme Boivin}}";
+    expand_mw_text($str);
 }
 
 ?>

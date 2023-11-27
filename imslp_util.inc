@@ -22,28 +22,38 @@ function remove_diacritics($x) {
 // - title/opus (with spaces)
 // - first name
 // - last name
+// must handle:
+//  titles w/ parens:
+//      Turandot (suite), Op. 41, BV 248 (Busoni, Ferruccio)
+//  duplicate titles
+//      Ti Rapirei! (Tosti, Francesco Paolo) (2)
 //
 function parse_title($str) {
     $str = str_replace('_', ' ', $str);
-    $x = strrpos($str, '(');
-    if ($x === false) {
+    $lparen = strrpos($str, '(');
+    if ($lparen === false) {
         return [trim($str), '',''];
     }
-    $y = strrpos($str, ')');
-    if ($y === false || $y < $x) {
+    $rparen = strrpos($str, ')');
+    if ($rparen === false || $rparen < $lparen) {
         echo "malformed title $str\n";
         return [$str, '',''];
     }
-    $t = trim(substr2($str, 0, $x));
+    $t = trim(substr2($str, 0, $lparen));
 
-    $c = substr2($str, $x+1, $y);
-    $x = strpos($c, ',');
-    if ($x === false) {
+    $c = substr2($str, $lparen+1, $rparen);
+    if (is_numeric($c)) {
+        $str2 = substr2($str, 0, $lparen);
+        [$t, $first, $last] = parse_title($str2);
+        return ["$t ($c)", $first, $last];
+    }
+    $comma = strpos($c, ',');
+    if ($comma === false) {
         $last = trim($c);
         $first = '';
     } else {
-        $last = trim(substr2($c, 0, $x));
-        $first = trim(substr($c, $x+1));
+        $last = trim(substr2($c, 0, $comma));
+        $first = trim(substr($c, $comma+1));
     }
     return [$t, $first, $last];
 }
@@ -68,6 +78,38 @@ function parse_name($str) {
         }
     }
     return [trim($first), trim($last)];
+}
+
+// compute the similarity (defined in a somewhat arbitrary way)
+// between two instrument combos
+// $icx is struct with lists icx->count and icx->id
+//
+function inst_combo_similarity($ic1, $ic2) {
+    $n = 0;
+    foreach ($ic1->id as $i=>$id) {
+        $p2 = array_search($id, $ic2->id);
+        if ($p2 === false) {
+            $n -= 1;
+        } else {
+            $n += min($ic1->count[$i], $ic2->count[$p2]);
+        }
+    }
+    foreach ($ic2->id as $i=>$id) {
+        if (!in_array($id, $ic1->id)) {
+            $n -= 1;
+        }
+    }
+    return $n;
+}
+
+if (0) {
+    $ic1 = new StdClass;
+    $ic2 = new StdClass;
+    $ic1->id = [146, 141];
+    $ic1->count = [1, 1];
+    $ic2->id = [115];
+    $ic2->count = [2];
+    echo inst_combo_similarity($ic1, $ic2);
 }
 
 ?>

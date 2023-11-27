@@ -13,7 +13,7 @@ require_once('imslp_util.inc');
 require_once('imslp_db.inc');
 
 function main() {
-    $lines = file('lang.tags');
+    $lines = file('data/lang.tags');
     $langs = [];
     foreach ($lines as $line) {
         $parts = explode(' ', $line);
@@ -40,7 +40,7 @@ function main() {
     }
 
     echo "writing lang_by_code.ser\n";
-    $f = fopen('lang_by_code.ser', 'w');
+    $f = fopen('data/lang_by_code.ser', 'w');
     fwrite($f, serialize($lang_by_code));
     fclose($f);
 }

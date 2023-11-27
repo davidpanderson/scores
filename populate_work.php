@@ -24,6 +24,7 @@
 require_once("mediawiki.inc");
 require_once("parse_work.inc");
 require_once("parse_tags.inc");
+require_once("parse_combo.inc");
 require_once("imslp_db.inc");
 require_once("imslp_util.inc");
 require_once("populate_util.inc");
@@ -218,12 +219,23 @@ function make_score_file_set($wid, $f, $hier) {
         $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
     }
 
-    // if the score is an arrangement, link it to the arrangement target
+    // if the score is an arrangement:
+    // - link it to an "arrangement target" entry (deprecated)
+    // - if no instrumentation specified in tags,
+    //      try to infer it from hier3
     //
-    $at = parse_arrangement_target($hier);
-    if ($at) {
-        $at_id = get_arrangement_target($at);
-        $x[] = "arrangement_target_id=$at_id";
+    if ($hier[0] == 'Arrangements and Transcriptions') {
+        $at = parse_arrangement_target($hier);
+        if ($at) {
+            $at_id = get_arrangement_target($at);
+            $x[] = "arrangement_target_id=$at_id";
+        }
+        if (empty($f->file_tags)) {
+            $inst_combos = parse_arrangement_string($hier[2]);
+            if ($inst_combos) {
+                $x[] = inst_combos_clause($inst_combos, false);
+            }
+        }
     }
 
     if ($x) {
@@ -337,9 +349,6 @@ function make_audio_set($wid, $f, $hier) {
         }
     }
     $x = [];
-    if (!empty($f->publisher_info)) {
-        $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
-    }
     if ($copyright_id) {
         $x[] = sprintf("copyright_id=%d", $copyright_id);
     }
@@ -355,8 +364,8 @@ function make_audio_set($wid, $f, $hier) {
     if (!empty($f->performers)) {
         $x[] = sprintf("performers='%s'", DB::escape($f->performers));
     }
-    if (!empty($f->publisher_info)) {
-        $x[] = sprintf("publisher_info='%s'", DB::escape($f->publisher_info));
+    if (!empty($f->publisher_information)) {
+        $x[] = sprintf("publisher_information='%s'", DB::escape($f->publisher_information));
     }
     if (!empty($f->thumb_filename)) {
         $x[] = sprintf("thumb_filename='%s'", DB::escape($f->thumb_filename));
@@ -365,7 +374,7 @@ function make_audio_set($wid, $f, $hier) {
         $x[] = sprintf("uploader='%s'", DB::escape($f->uploader));
     }
 
-    // create the performer records
+    // create ensemble and performer records if needed
     //
     [$ensemble, $performers] = parse_performers(
         empty($f->performers)?'':$f->performers,
@@ -384,6 +393,17 @@ function make_audio_set($wid, $f, $hier) {
         $x[] = sprintf("performer_role_ids='%s'",
             json_encode($perf_role_ids, JSON_NUMERIC_CHECK)
         );
+    }
+
+    // try to get an instrument combo from hier3
+    // (e.g. 'For 2 Flutes (Foo)')
+    //
+    if (str_starts_with($hier[2], 'For ')) {
+        $combos = parse_arrangement_string($hier[2]);
+        if ($combos) {
+            $ic_rec = get_inst_combo($combos[0]);
+            $x[] = "instrument_combo_id=$ic_rec->id";
+        }
     }
 
     $afs = new DB_audio_file_set;
@@ -451,6 +471,7 @@ function make_work($c) {
     }
 
     $json_title = str_replace('_', ' ', $c->json_title);
+    $json_title = fix_title($json_title);
     if (empty($c->opus_catalogue)) {
         $c->opus_catalogue = '';
     }
@@ -573,18 +594,28 @@ function make_work($c) {
         $x[] = sprintf("tags='%s'", DB::escape($c->tags));
         process_tags_work($x, $c->tags);
     }
+    $comp_year = 0;
     if (!empty($c->year_date_of_composition)) {
         $x[] = sprintf("year_date_of_composition='%s'", DB::escape($c->year_date_of_composition));
-        $year = (int)$c->year_date_of_composition;
-        if ($year) {
-            $x[] = sprintf("year_of_composition=%d", $year);
+        $comp_year = (int)$c->year_date_of_composition;
+        if ($comp_year) {
+            $x[] = sprintf("year_of_composition=%d", $comp_year);
         }
     }
+    $pub_year = 0;
     if (!empty($c->year_of_first_publication)) {
         $x[] = sprintf("year_of_first_publication='%s'", DB::escape($c->year_of_first_publication));
+        $pub_year = (int)$c->year_of_first_publication;
+    }
+    if ($pub_year) {
+        $x[] = sprintf("year_pub=%d", $pub_year);
+    } else if ($comp_year) {
+        $x[] = sprintf("year_pub=%d", $comp_year);
     }
     if (!empty($c->work_title)) {
-        $x[] = sprintf("work_title='%s'", DB::escape($c->work_title));
+        $x[] = sprintf("work_title='%s'",
+            DB::escape(fix_title($c->work_title))
+        );
     }
 
     if ($x) {
@@ -607,6 +638,26 @@ function make_work($c) {
     if (!empty($c->audios)) {
         make_audio_file_sets($work_id, $c->audios);
     }
+}
+
+// given a list of inst combos,
+// return an update clause for the work or score file set
+//
+function inst_combos_clause($inst_combos, $is_work) {
+    $ic_ids = [];
+    foreach ($inst_combos as $ic) {
+        // $ic is a list of [count, code]
+        $ic_rec = get_inst_combo($ic);
+        $ic_ids[] = $ic_rec->id;
+        if ($is_work) {
+            $ic_rec->nworks++;
+        } else {
+            $ic_rec->nscores++;
+        }
+    }
+    return sprintf("instrument_combo_ids='%s'",
+        json_encode($ic_ids, JSON_NUMERIC_CHECK)
+    );
 }
 
 // process a work's tags.
@@ -634,17 +685,8 @@ function process_tags_work(&$x, $tags) {
 
     // instrument combos
     //
-    $ic_ids = [];
-    foreach ($inst_combos as $ic) {
-        // $ic is a list of [count, code]
-        $ic_rec = get_inst_combo($ic);
-        $ic_ids[] = $ic_rec->id;
-        $ic_rec->nworks++;
-    }
-    if ($ic_ids) {
-        $x[] = sprintf("instrument_combo_ids='%s'",
-            json_encode($ic_ids, JSON_NUMERIC_CHECK)
-        );
+    if ($inst_combos) {
+        $x[] = inst_combos_clause($inst_combos, true);
     }
 
     // languages
@@ -681,7 +723,7 @@ function process_tags_score(&$x, $tags) {
 }
 
 function main($start_line, $end_line) {
-    $f = fopen('david_page_dump.txt', 'r');
+    $f = fopen('data/david_page_dump.txt', 'r');
     for ($i=0; ; $i++) {
         $x = fgets($f);
         if (!$x) {
@@ -695,6 +737,7 @@ function main($start_line, $end_line) {
         $y = json_decode($x);
         DB::begin_transaction();
         foreach ($y as $title => $body) {
+            //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
             $comp = parse_work($title, $body);
             if (empty($comp->imslppage)) {
                 // redirect, pop_section, link) work
@@ -712,6 +755,6 @@ function main($start_line, $end_line) {
 
 // there are 3079 lines
 
-main(0, 100);
+main(0, 10000);
 
 ?>

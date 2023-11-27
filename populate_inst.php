@@ -14,7 +14,7 @@
 require_once('imslp_db.inc');
 
 function main() {
-    $lines = file('inst.txt');
+    $lines = file('data/inst.txt');
     $insts = [];
     foreach ($lines as $line) {
         $x = explode('=', $line);
@@ -68,7 +68,7 @@ function main() {
     }
 
     echo "writing inst_by_code.ser\n";
-    $f = fopen('inst_by_code.ser', 'w');
+    $f = fopen('data/inst_by_code.ser', 'w');
     fwrite($f, serialize($inst_by_code));
     fclose($f);
 }

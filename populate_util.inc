@@ -14,6 +14,15 @@
 
 require_once("imslp_db.inc");
 
+// add space after No. and Op. in work title.
+// that way a search for 'beethoven symphony 9' works.
+//
+function fix_title($title) {
+    $x = str_replace('No.', 'No. ', $title);
+    $x = str_replace('Op.', 'Op. ', $x);
+    return str_replace('  ', ' ', $x);  // in case there was already a space
+}
+
 // lookup performer (from audio file set) or composer (from work).
 // Create (minimal) person if not there.
 // Set composer/performer flags if needed
@@ -410,20 +419,27 @@ function get_inst_combo($ic) {
         foreach ($ics as $i) {
             $inst_combo_cache[$i->md5] = $i;
         }
-        $insts_by_code = unserialize(file_get_contents('inst_by_code.ser'));
+        $insts_by_code = unserialize(file_get_contents('data/inst_by_code.ser'));
         $first = false;
     }
 
-    // $ic is [count, code].  change to [count, ID]
+    // $ic is a list of [count, code]
+    // change to a struct x
+    // x.count: list of counts
+    // x.ids: list of IDs
+    // The JSON version of this is stored in the DB
     //
+    $x = new StdClass;
+    $x->count=[];
+    $x->id=[];
     foreach ($ic as $i=>$pair) {
-        $code = $pair[1];
-        $ic[$i] = [$pair[0], $insts_by_code[$code]->id];
+        $x->count[] = $pair[0];
+        $x->id[] = $insts_by_code[$pair[1]]->id;
     }
 
     // convert to JSON and get MD5
     //
-    $ic_json = json_encode($ic, JSON_NUMERIC_CHECK);
+    $ic_json = json_encode($x, JSON_NUMERIC_CHECK);
     $ic_md5 = md5($ic_json);
 
     // see if in cache
@@ -464,7 +480,7 @@ function flush_inst_combo_cache() {
 }
 
 function flush_work_type_cache() {
-    global $wts_by_code;
+    $wts_by_code = get_wts_by_code();
     foreach ($wts_by_code as $wt) {
         if ($wt->nworks==0) continue;
         $wt->update(sprintf("nworks=%d", $wt->nworks));
@@ -472,7 +488,7 @@ function flush_work_type_cache() {
 }
 
 function flush_lang_cache() {
-    global $langs_by_code;
+    $langs_by_code = get_langs_by_code();
     foreach ($langs_by_code as $lang) {
         if ($lang->nworks==0) continue;
         $lang->update(sprintf("nworks=%d", $lang->nworks));

@@ -1,0 +1,35 @@
+IMSLP serves several user populations:
+
+1) Casual uploaders
+
+People who upload a score or audio file for an existing composition.
+They'll need to enter some metadata - license, hierarchy tags, etc.
+They could do this through a form-based interface
+rather than editing Wiki text and templates.
+This is how things work now.
+This UI can be kept (or rewritten).
+It could insert items in the DB rather than generating wiki pages.
+
+2) Advanced uploaders
+People who upload content with detailed metadata,
+or who add or edit metadata.
+E.g. publisher templates.
+These people are trained in Mediawiki and the IMSLP templates.
+They would - I think - be upset if the UI changed,
+or if any of the medadata they've entered is no longer visible.
+I think it's critical to let these people continue to
+work pretty much exactly as they do now.
+
+3) Composers
+People who upload scores and possibly audio of their own compositions.
+They're similar to casual uploaders.
+They don't know or care about wiki or templates.
+We can give them a form-based web interface,
+which feeds into the DB rather than the wiki.
+
+4) Performers
+People who search for and download scores.
+
+5) Editors/checkers
+
+6) Advanced editors/checkers

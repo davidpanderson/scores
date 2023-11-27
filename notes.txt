@@ -1,0 +1,618 @@
+define DB schema, indices, and constraints
+
+write PHP DB access layer
+    insert, lookup, enum
+
+write program to parse IMSLP data and populate DB
+
+write PHP scripts
+    display composition, composer etc.
+    search
+------------------
+For a given composition, there can be a hierarchy of scores or audios
+    audio
+        file1
+        ...
+        =====For Recorder Ensemble (Papalin)
+            file1
+        ===Synthesized/MIDI
+            file
+    scores
+        file
+        ...
+        ===Parts
+        ===Arrangements and Transcriptions
+            ====Complete
+                =====For Theater Orchestra
+                    file
+                =====For 2 Violins
+                    file
+                =====For 2 pianos (blah)
+                    file
+            ====Andante
+                =====For Organ
+                    file
+            ====Menuetto
+    to represent this: each file/audio has 3 fields
+        hier1
+        hier2
+        hier3
+    each is the last tag seen at that level
+    (a tag clears higher-level tags)
+----------------------
+prototype web interface
+front page
+    list of composers
+composer page
+    list of compositions
+composition page
+    info
+    list of files
+---------------------
+12/13/22
+
+Adding fields
+
+For score files
+
+1) the data (dump.out) in imslpfile template calls
+
+2) the DB schema (score_file_set, score_file)
+
+3) parse.inc: file_args_to_object()
+
+4) populate.php:
+    make_score_file_set()
+    make_score_file()
+
+audio:
+1) imslpaudio
+2) audio_file_set, audio_file
+3) parse.inc: audio_args_to_object()
+4) populate.php:
+    make_audio_file_set(), make_audio_file()
+-----------------
+12/14/22
+
+web interface
+front page:
+    show list of
+        composers
+        licenses
+            scores, audio
+        compositions by year
+    search
+        1) for compositions
+            fulltext indix on
+                composition title (inc. composer) and instrumentation
+                    e.g. search for beethoven piano
+        2) for person
+----------------
+score create/edit
+
+create composers separately?
+
+---------------------
+12/20/22
+talk with Guo
+
+Demo search
+    various other filter/order criteria
+        year, rating, country
+Demo create/edit
+    constrain input
+    built-in data validation
+    reduce the amount that submitters need to know
+
+code walk-through
+
+DB contents still have lots of template calls
+    - add another level of parsing / tables
+    - keep templates, replace them on display
+
+templates, links
+
+desiderata:
+    find all files by publisher or arranger, in time range
+
+make list of templates
+
+https://imslp.org/wiki/Template:RISMs
+https://imslp.org/index.php?title=Special%3APrefixIndex&prefix=&namespace=10
+
+https://imslp.org/wiki/Special:MostLinkedTemplates
+
+https://imslp.org/wiki/Category:Scores_featuring_the_piano_(arr)
+
+Move to bitbucket
+---------------------
+
+performer info
+score_file_set.performer_categories has
+    foo=orchestra;smith, joe=conductor
+    joe smith=piano, conductor
+score_file_set.performer (infrequently) has
+    Joe Smith, piano
+    Joe Smith (piano)
+    Joe Smith (piano)*
+    Joe smith, piano ; john doe, violin
+    joe smith (piano), john doe (violin)
+    orchestra name (if performer_categories has =conductor)
+
+DB:
+
+table performer_role
+    id
+    person_id
+    role   (instr name or "conductor")
+
+table ensemble
+    id
+    name
+    type (orchestra, string quartet etc.)
+
+table audio_performer
+    audio_file_set_id
+    performer_id
+
+add to audio_file_set
+    ensemble_id
+
+add to person
+    is_composer
+    is_performer
+------------
+web:
+ensembles
+    list
+    compositions (link to comp page)
+performers
+    name/role
+    link to compositions
+=================
+data from fte:person
+    birth, death year/mo/day
+    sex
+    nationality
+    picture
+    extra_information
+    biography link
+    birth date
+    death date
+
+add to person:
+    birth/death (integer)
+    birth date (text)
+    death date (text)
+    extra_information
+    alternate_names
+    flourished (text)
+    biography_link
+    picture_filename
+    picture_caption
+
+time period table (same as style)
+
+person_period (link; person can have >1 period)
+
+nationality table
+
+nationality link (person can have >1 nationality)
+==================
+search
+
+Works
+    search
+        keywords (title/composer/inst)
+        period (menu)
+        [ sex/nationality of composer (menu); need join]
+    arrangements
+People
+    search
+        all/composer/performer (radio)
+        period (menu)
+        nationality (menu)
+        all/male/female (radio)
+Ensembles
+    search
+        type (radio)
+        nationality (menu)
+        period (menu)
+Publishers
+    view all
+======================
+Tags
+There are 3 (hopefully disjoint) sets of "tags":
+instrumentation
+    there is a set of instrument types with codes like
+        vn (violin)
+        pf (piano)
+        open (unspecified instrument)
+        alt (alto voice?)
+    This includes ensemble types like
+        str (strings)
+        ch (mixed chorus)
+        ww (wind ensemble)
+        br (brass ensemble)
+        perc (percussion)
+        open sop = For treble instrument
+    and things like
+        pf4h = For piano 4 hands
+    These are defined in pages like
+        https://imslp.org/wiki/MediaWiki:Genres/Tags_A-B
+        both singly
+            ww = For wind ensemble
+        and in (sometimes confusing) combinations like
+            ww br perc = For wind band + Scores featuring wind band
+        and
+            open alt = Alto instrument (not necessarily voice)
+            open sop = For treble instrument
+Languages
+    there is a set of language codes like
+        de (german)
+    defined in
+        https://imslp.org/wiki/MediaWiki:Genres/Language_Definitions
+
+Work types
+    there is a set of "work type" codes like
+        requiems (Requiems)
+        masses (Masses)
+    Some codes contain spaces (???)
+        agnus dei = Agnus Dei
+    these are defined in
+        https://imslp.org/wiki/MediaWiki:Genres/Work_Types_Definitions
+    work types have a hierarchy defined in
+        https://imslp.org/wiki/MediaWiki:Genres/Work_Types_Hierarchy
+        this is actually a DAG; a type can have multiple parents.
+
+Where tags are specified
+    works have a field 'tags',
+        which is a mixture of tag types: work type, instruments, languages
+        e.g.
+            requiems ; masses ; sop mez ten bass ch orch ; la ; grc
+        there may be multiple work types
+        The work types need not be leaves of the DAG (e.g. 'masses')
+        instrumentation alternatives are separated by ;, e.g.
+            sonatas ; pf ; hpd
+        The instrument tags can have counts:
+             sonatas ; 2vn 2va viol vlne bc ; 2vn 2va viol vlne org
+        Note: this is redundant with the "instrumentation" field
+        and sometimes inconsistent; for example
+            tags: requiems ; masses ; sop mez ten bass ch orch ; la ; grc
+            instrumentation: voices, chorus, orchestra
+        or the order might be inconsistent:
+            instrumentation: piano or harpsichord
+           tags: sonatas ; pf ; hpd
+        or 
+            instrumentation: ''Orchestra:'' 2 flutes, 2 oboes, 2 clarinets, 2 bassoons<br>4 horns, 2 trumpets, 3 trombones, tuba, timpani, strings
+           tags: symphonies ; orch
+        or
+            instrumentation: 2 German Flutes or Violins
+            tags: sonatas ; duets ; 2fl ; 2vn
+
+    scores that are arrangements have a field 'file_tags', e.g.
+        pf str (arr) ; 3vn 2va 2vc db pf (arr)
+    but sometimes it's not populated:
+        hier1: Arrangements and Transcriptions
+        hier2:
+        hier3: For Piano 4 Hands (Markull)
+        file_tags: NULL
+    or the info is inconsistent
+        hier3: *For 4 Accordions and Bass Accordion (De Bra)
+        file_tags: 5acc (arr)
+
+    audio file sets don't have tags, but
+    have a field "hier3" that can indicate instrumentation:
+        hier1: Synthesized/MIDI
+        hier2:
+        hier3: For Violin, Viola and Cello (Grayson)
+
+----------------
+multi-valued indices:
+https://dev.mysql.com/doc/refman/8.0/en/create-index.html#create-index-multi-valued
+
+----------------
+tag proposal:
+work types:
+    Database:
+        new table
+            work_type
+                id
+                code
+                name
+                descendants (json)
+                nworks
+            also store as .ser files keyed by ID and code
+        add to work table:
+            work_type_ids(json)
+    populate/update:
+        populate_work_type.php
+            create work_type table from MW data
+                compute descendants
+                fill in parents in 2nd pass
+            create .ser files
+                code=>struct
+                id=>struct
+        populate_work:
+            read array code=>struct
+            per work:
+                populate work_type_ids
+            update nworks in work_type table
+    Search:
+        search for works of work type ID x
+            get descendants of x (use .ser file)
+            add "overlaps" clause using work_type_ids
+
+instruments:
+    Database:
+        remove arrangement_target table,
+            score_file_set.arrangement_target_id
+        new tables
+            instrument
+                ID
+                code
+                name
+                also store as .ser files keyed by ID and code
+            instrument_combo
+                ID
+                json: array of count, instrument_id
+                md5 of json
+
+        add to work table:
+            instrument_combos:
+                json: list of instrument_combo ids
+                    (of the work in native form)
+        add to score_file_set table:
+            arr_instrument_combos
+                json: list of instrument_combo ids
+                    (of arrangements, if score is an arrangement)
+        add to audio_file_set table:
+            instrument_combo_id (if specified)
+
+    populate/update
+        populate_inst.php
+            create instrument table, populate from MW data
+                (make array code=>id)
+        populate_work.php
+            at start, read instrument_combo table
+                and make array combos: md5=>combo
+            scan work table
+                parse tags
+                for each combo
+                    get IDs for instruments
+                    compute MD5        
+                    if not in combos array
+                        add to array, table
+                populate instrument_combo_ids
+            same for score_file_set
+                parse file_tags
+                NOTE: file_tags is sparsely populated;
+                99% of the scores have the combo in hier3,
+                in a form that isn't the same (e.g. "piano trio").
+                Will need to map this to inst combo
+            audio_file_set:
+                parse inst combo from hier3?
+        
+    Search:
+        a "instrument combo filter" consists of
+            a list of
+                (count, instrument ID)
+                flag: at least, exact at most
+            flag: other instruments OK
+        search for filter X
+            Scan (in PHP) the instrument combos,
+            and make a list of the ones matching X
+
+            can then search for
+                works (native)
+                works (arrangements)
+                audio
+
+languages
+    database
+        add language table
+            ID
+            code
+            name
+            nworks
+            also store as .ser files keyed by ID and code
+        add to work
+            language_ids (JSON)
+    populate
+        populate_language.php
+            populate from MW data
+        populate_work.php
+            keep languages in array
+            per work
+                if tags have a language, populate language_id
+            update nworks
+    search/update
+        search for languages
+-----------------
+preliminary web interface
+work types
+    show work types with works
+lang
+    show langs with scores
+instr combos
+    show combos with works or (arr) scores
+---------------
+1/18/2023
+
+Audio samples for arrangements (proposal)
+
+To facilitate browsing lists of works,
+I recently added code that links each work to a "sample" audio file.
+If there are multiple recordings,
+we preferentially pick one that's not synthesized or an arrangement,
+If there are >1 movements we use the first.
+
+We could extend this to arrangement scores.
+If score S is an arrangement (say for an instrument combo X)
+and there is a recording R of the work for X (or a similar combo)
+we should link S to R.
+That could facilitate browsing lists of arrangements:
+you'd hear the relevant recordings.
+
+To implement this:
+
+1) if a recording (audio_file_set) is an arrangement,
+    (i.e. hier3 is 'For xxx (yyy)')
+    parse xxx to an instrument combination and link the recording to it.
+    (add a field 'instrument_combo_id' to audio_file_set;
+    doesn't need to be multi-valued)
+
+2) Add field 'sample_filename' and 'sample_audio_file_id' to score_file_set.
+    These are populated only for arrangements.
+    If a score is an arrangement,
+    look for a recording that is similar to S's instr combo.
+    If there are several, pick one that's not synthesized.
+
+Note: currently, out of 43774 recordings, 28755 are synthesized/MIDI.
+    Of the latter, 11639 are for arrangements (heir3<>'')
+    Presumably, people who make arrangements use score editors
+    (Musescore, Sibelius etc.) that generate MIDI and synthesized audio.
+
+    I get the impression that there are lots of IMSLP volunteers who like to
+    - enter pieces using score editors
+    - make arrangements using score editors
+    - make MIDI versions of things.
+    They're probably neither composers nor performers,
+    but they want to be part of the ecosystem.
+    We should channel their energy in productive directions.
+==================
+1/27/23
+enhanced Search
+
+e.g.: scores for piano 4-hands
+[that are arrangements of string quartets]
+by French female composers
+
+a) what is UI?
+    search form
+        keywords (optional)
+        period
+        instrumentation
+            select over instrument combos
+        radio buttons: original instrumentation/arrangements
+            if arrangements: original instrumentation select
+        composer nationality
+        composer sex
+
+b) how to implement efficiently?
+    original
+        select from work
+            [where keywords...]
+            [and x in instrument_combo_ids]
+            [join person where work.composer_id=person.id and...]
+
+    arrangement
+        join score_file_set where ... and y in instrument_combo_ids
+==================
+API functions (web)
+    list.works.filter
+        in:
+            "categories"
+                instruments
+                period, e.g. Romantic
+            work criteria
+                publish year
+        out:
+            possible additional work types
+            that would match works matching criteria
+        method:
+            get list of instrument combos that contain given instruments
+            get unique work_type_ids from work matches criteria and IC
+            merge
+            
+    list.persons.filter
+        in:
+    chamber.getNextStep
+        input:
+            work criteria (composer, date)
+            instr combo
+        output:
+            instrs that could be added to combo and still have
+            works matching criteria
+        approach:
+            get list of all distinct instr combos from works matching criteria
+            for each combo:
+                if extends current combo, add new instr
+================
+1) female composers from spain
+    DB query
+    (or could have composer array)
+2) instruments in sonatas
+    work array scan; OR inst bitmap
+3) works by spanish female composers
+    work array scan
+4) composers w/ works published by schott
+    scan score array
+5) nationalities of works arranged for viola
+    scan score array
+6) scores by female composers w CC license
+    scan score array
+7) polish composers published by schott
+    scan score array
+8) time periods of viola sonatas
+    scan work array
+9) work types by female composers for viola w CC license
+    scan score array
+
+work array
+    title
+    pub year
+    work type (bitmap)
+    period
+    inst bitmap (maybe 2 or 3)
+    comp nationality bitmap
+    comp sex
+
+score array
+    work ID
+    work type (bitmap)
+    publisher ID
+    composer ID
+    comp nationality
+    comp gender
+    license
+    inst bitmap
+
+recording array
+    work ID
+    work type
+    license
+    composer ID, nationality, gender
+============
+nat lang search
+    elasticsearch, lucene
+    glimpse, algolia
+============
+new API
+    instrumentation filter spec:
+        list of (instrument ID, min, max)
+        other_insts_ok
+
+        if min/max is all 1-999
+            use inst bitmap
+            subset if others OK
+            exact otherwise
+        else
+            get list of combos that satisfy spec,
+            do this in api.cpp
+
+inst combo digest
+    txt:
+        id
+        inst ids (ordered)
+        counts
+    bin
+        similar
+
+    api
+        given spec (order IDs)
+        for each combo C
+            step through lists in parallel
+            if no match in C
+                skip if others_ok else fail
+

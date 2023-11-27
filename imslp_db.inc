@@ -199,6 +199,10 @@ class DB_score_file_set {
         if (!$ret) return 0;
         return $db->insert_id();
     }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'score_file_set', 'DB_score_file_set');
+    }
     function update($clause) {
         $db = DB::get();
         return $db->update($this, 'score_file_set', $clause);
@@ -355,6 +359,10 @@ class DB_work_type {
         $db = DB::get();
         return $db->lookup('work_type', 'DB_work_type', $clause);
     }
+    static function lookup_id($id) {
+        $db = DB::get();
+        return $db->lookup_id($id, 'work_type', 'DB_work_type');
+    }
     static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('work_type', 'DB_work_type', $where_clause, $order_clause);
@@ -371,9 +379,17 @@ class DB_instrument {
         $db = DB::get();
         return $db->lookup_id($id, 'instrument', 'DB_instrument');
     }
+    static function lookup($clause) {
+        $db = DB::get();
+        return $db->lookup('instrument', 'DB_instrument', $clause);
+    }
     static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('instrument', 'DB_instrument', $where_clause, $order_clause);
+    }
+    function update($clause) {
+        $db = DB::get();
+        return $db->update($this, 'instrument', $clause);
     }
 }
 
@@ -390,6 +406,10 @@ class DB_instrument_combo {
     static function enum($where_clause=null, $order_clause=null) {
         $db = DB::get();
         return $db->enum('instrument_combo', 'DB_instrument_combo', $where_clause, $order_clause);
+    }
+    static function enum_fields($fields, $where_clause=null, $order_clause=null) {
+        $db = DB::get();
+        return $db->enum_fields('instrument_combo', 'DB_instrument_combo', $fields, $where_clause, $order_clause);
     }
     function update($clause) {
         $db = DB::get();
