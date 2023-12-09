@@ -36,7 +36,7 @@ function page_head($title, $is_front=false) {
 }
 
 function page_tail() {
-    echo "<hr>Copyright 2023 Project Petrucci LLC</div></body></html>";
+    echo "</div></body></html>";
 }
 
 function error_page($msg) {

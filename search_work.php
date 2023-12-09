@@ -86,7 +86,7 @@ function work_search_action() {
         }
     }
     if ($period_id) {
-        $clauses[] = "period_id=$period_id";
+        $where_clauses[] = "period_id=$period_id";
     }
     if ($sex!='either' || $nationality_id) {
         $joins[] = 'join person as p';
