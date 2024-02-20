@@ -20,7 +20,7 @@ create table location_type (
 create table location (
     id                      integer         not null auto_increment,
     name                    varchar(255),
-    type                    integer         not null,
+    type                    integer,
     parent                  integer,
     ancestors               json,
     primary key(id),
@@ -182,9 +182,7 @@ create table person_role (
 alter table person_role add index (person);
 alter table person_role add index (ensemble);
 
-# actually license
-#
-create table copyright (
+create table license (
     id                      integer         not null auto_increment,
     name                    varchar(190)    not null,
     unique(name),

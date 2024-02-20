@@ -1,0 +1,15 @@
+db_done:
+    mysql < schema.sql; touch db_done
+lang_done: db_done
+	populate_lang.php; touch lang_done
+inst_done: db_done
+	populate_inst.php; touch inst_done
+work_type_done: db_done
+	populate_work_type.php; touch work_type_done
+category_done: db_done
+	populate_category.php; touch category_done
+work_done: db_done inst_done category_done
+    populate_work.php; touch work_done
+
+clean:
+	rm db_done lang_done inst_done work_type_done categor_done work_done
