@@ -4,6 +4,13 @@
 
 class DB {
     static $db_conn=null;
+    static $exit_on_db_error = false;
+    static function error($q) {
+        echo "Database error\nQuery: $q\n";
+        echo static::$db_conn->error;
+        if (static::$exit_on_db_error) die('DB error');
+        return false;
+    }
     static function init_conn() {
         if (static::$db_conn) return true;
         $dbinfo = json_decode(file_get_contents("db.json"));
@@ -20,38 +27,56 @@ class DB {
             $host, $dbinfo->user, $dbinfo->passwd, $dbinfo->name, $port
         );
         if (mysqli_connect_error()) {
-            echo "Can't connect to DB\n";
-            return false;
+            return static::error('connect to server');
         }
         return true;
     }
     public static function do_query($q) {
         echo "query: $q\n";
-        if (!static::init_conn()) return null;
+        if (!static::init_conn()) return static::error($q);
         $ret = static::$db_conn->query($q);
         if (!$ret) {
-            echo "Database error\nQuery: $q\n";
-            echo static::$db_conn->error;
-            return null;
+            return static::error($q);
         }
         return $ret;
     }
+    public static function insert_id() {
+        if (!static::init_conn()) return static::error($q);
+        return static::$db_conn->insert_id;
+    }
     public static function escape($string) {
-        if (!static::init_conn()) return null;
+        if (!static::init_conn()) return static::error($q);
         return static::$db_conn->escape_string(trim($string));
     }
+    public static function begin_transaction() {
+        if (!static::init_conn()) return static::error('begin trans');
+        if (!static::do_query('begin')) return static::error('begin trans');
+    }
+    public static function commit_transaction() {
+        if (!static::init_conn()) return static::error('commit trans');
+        if (!static::do_query('begin')) return static::error('commit trans');
+    }
+    public static function date_str($y, $m, $d) {
+        return "$y-$m-$d";
+    }
+    public static function date_str_year($y) {
+        return "$y-1-1";
+    }
+
 }
 
-class TABLE {
+class Table {
     public static $table_name='undef';
     public static $class_name='undef';
 
     public static function insert($clause) {
-        return DB::do_query(
+        $ret = DB::do_query(
             sprintf("insert into %s %s",
                 static::$table_name, $clause
             )
         );
+        if (!$ret) return null;
+        return DB::insert_id();
     }
 
     public static function enum($where_clause=null, $order_clause=null) {

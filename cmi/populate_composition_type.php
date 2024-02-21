@@ -16,7 +16,7 @@
 require_once('cmi_db.inc');
 
 function make_ct($code, $name) {
-    $ct = new COMPOSITION_TYPE;
+    $ct = new DB_composition_type;
     $ct->imslp_code = $code;
     $ct->name = $name;
     return $ct;
@@ -53,7 +53,7 @@ function get_work_types() {
 //
 function populate($cts) {
     foreach ($cts as $ct) {
-        $id = COMPOSITION_TYPE::insert(
+        $id = DB_composition_type::insert(
             sprintf("(imslp_code, name) values ('%s', '%s')",
                 DB::escape($ct->imslp_code),
                 DB::escape($ct->name)
@@ -107,7 +107,7 @@ function parse_hier($cts) {
 //
 function update_descendants($cts) {
     foreach ($cts as $ct) {
-        $w = COMPOSITION_TYPE::lookup("imslp_code='$ct->imslp_code'");
+        $w = DB_composition_type::lookup("imslp_code='$ct->imslp_code'");
         if (!$w) {
             die("no code $ct->imslp_code\n");
         }

@@ -2,101 +2,101 @@
 
 require_once('db.inc');
 
-class LOCATION_TYPE extends TABLE {
+class DB_location_type extends Table {
     public static $table_name = 'location_type';
-    public static $class_name = 'LOCATION_TYPE';
+    public static $class_name = 'DB_location_type';
 }
-class LOCATION extends TABLE {
+class DB_location extends Table {
     public static $table_name = 'location';
-    public static $class_name = 'LOCATION';
+    public static $class_name = 'DB_location';
 }
-class GENDER extends TABLE {
-    public static $table_name = 'gender';
-    public static $class_name = 'GENDER';
+class DB_sex extends Table {
+    public static $table_name = 'sex';
+    public static $class_name = 'DB_sex';
 }
-class RACE extends TABLE {
+class DB_race extends Table {
     public static $table_name = 'race';
-    public static $class_name = 'RACE';
+    public static $class_name = 'DB_race';
 }
-class ETHNICITY extends TABLE {
+class DB_ethnicity extends Table {
     public static $table_name = 'ethnicity';
-    public static $class_name = 'ETHNICITY';
+    public static $class_name = 'DB_ethnicity';
 }
-class PERIOD extends TABLE {
+class DB_period extends Table {
     public static $table_name = 'period';
-    public static $class_name = 'PERIOD';
+    public static $class_name = 'DB_period';
 }
-class PERSON extends TABLE {
+class DB_person extends Table {
     public static $table_name = 'person';
-    public static $class_name = 'PERSON';
+    public static $class_name = 'DB_person';
 }
-class LANGUAGE extends TABLE {
+class DB_language extends Table {
     public static $table_name = 'language';
-    public static $class_name = 'LANGUAGE';
+    public static $class_name = 'DB_language';
 }
-class COMPOSITION_TYPE extends TABLE {
+class DB_composition_type extends Table {
     public static $table_name = 'composition_type';
-    public static $class_name = 'COMPOSITION_TYPE';
+    public static $class_name = 'DB_composition_type';
 }
-class ENSEMBLE_TYPE extends TABLE {
+class DB_ensemble_type extends Table {
     public static $table_name = 'ensemble_type';
-    public static $class_name = 'ENSEMBLE_TYPE';
+    public static $class_name = 'DB_ensemble_type';
 }
-class ENSEMBLE extends TABLE {
+class DB_ensemble extends Table {
     public static $table_name = 'ensemble';
-    public static $class_name = 'ENSEMBLE';
+    public static $class_name = 'DB_ensemble';
 }
-class ORGANIZATION extends TABLE {
+class DB_organization extends Table {
     public static $table_name = 'organization';
-    public static $class_name = 'ORGANIZATION';
+    public static $class_name = 'DB_organization';
 }
-class INSTRUMENT extends TABLE {
+class DB_instrument extends Table {
     public static $table_name = 'instrument';
-    public static $class_name = 'INSTRUMENT';
+    public static $class_name = 'DB_instrument';
 }
-class INSTRUMENT_COMBO extends TABLE {
+class DB_instrument_combo extends Table {
     public static $table_name = 'instrument_combo';
-    public static $class_name = 'INSTRUMENT_COMBO';
+    public static $class_name = 'DB_instrument_combo';
 }
-class ROLE extends TABLE {
+class DB_role extends Table {
     public static $table_name = 'role';
-    public static $class_name = 'ROLE';
+    public static $class_name = 'DB_role';
 }
-class PERSON_ROLE extends TABLE {
+class DB_person_role extends Table {
     public static $table_name = 'person_role';
-    public static $class_name = 'PERSON_ROLE';
+    public static $class_name = 'DB_person_role';
 }
-class LICENSE extends TABLE {
+class DB_license extends Table {
     public static $table_name = 'license';
-    public static $class_name = 'LICENSE';
+    public static $class_name = 'DB_license';
 }
-class COMPOSITION extends TABLE {
+class DB_composition extends Table {
     public static $table_name = 'composition';
-    public static $class_name = 'COMPOSITION';
+    public static $class_name = 'DB_composition';
 }
-class SCORE extends TABLE {
+class DB_score extends Table {
     public static $table_name = 'score';
-    public static $class_name = 'SCORE';
+    public static $class_name = 'DB_score';
 }
-class VENUE extends TABLE {
+class DB_venue extends Table {
     public static $table_name = 'venue';
-    public static $class_name = 'VENUE';
+    public static $class_name = 'DB_venue';
 }
-class PERFORMANCE extends TABLE {
-    public static $table_name = 'performance';
+class DB_performance extends Table {
+    public static $table_name = 'DB_performance';
     public static $class_name = 'PERFORMANCE';
 }
-class CONCERT extends TABLE {
+class DB_concert extends Table {
     public static $table_name = 'concert';
-    public static $class_name = 'CONCERT';
+    public static $class_name = 'DB_concert';
 }
-class RECORDING extends TABLE {
+class DB_recording extends Table {
     public static $table_name = 'recording';
-    public static $class_name = 'RECORDING';
+    public static $class_name = 'DB_recording';
 }
-class RELEASE extends TABLE {
+class DB_release extends Table {
     public static $table_name = '_release';
-    public static $class_name = 'RELEASE';
+    public static $class_name = 'DB_release';
 }
 
 ?>

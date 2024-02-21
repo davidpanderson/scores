@@ -59,13 +59,13 @@ function main() {
     echo "populating instrument table\n";
     $inst_by_code = [];
     foreach ($insts as $code=>$name) {
-        $id = INSTRUMENT::insert(
+        $id = DB_instrument::insert(
             sprintf("(imslp_code, name) values('%s', '%s')",
                 DB::escape($code),
                 DB::escape($name)
             )
         );
-        $rec = INSTRUMENT::lookup_id($id);
+        $rec = DB_instrument::lookup_id($id);
         $inst_by_code[$code] = $rec;
     }
 

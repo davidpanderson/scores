@@ -29,13 +29,13 @@ function main() {
     echo "populating language table\n";
     $lang_by_code = [];
     foreach ($langs as $code=>$name) {
-        $id = LANGUAGE::insert(
+        $id = DB_language::insert(
             sprintf("(code, name) values('%s', '%s')",
                 DB::escape($code),
                 DB::escape($name)
             )
         );
-        $rec = LANGUAGE::lookup_id($id);
+        $rec = DB_language::lookup_id($id);
         $lang_by_code[$code] = $rec;
     }
 

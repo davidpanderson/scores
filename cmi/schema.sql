@@ -20,6 +20,9 @@ create table location_type (
 create table location (
     id                      integer         not null auto_increment,
     name                    varchar(255),
+    adjective               varchar(255),
+    name_native             varchar(255),
+    adjective_native        varchar(255),
     type                    integer,
     parent                  integer,
     ancestors               json,
@@ -27,7 +30,7 @@ create table location (
     unique(name, type, parent)
 );
 
-create table gender (
+create table sex (
     id                      integer         not null auto_increment,
     name                    varchar(255),
     primary key(id),
@@ -63,13 +66,14 @@ create table person (
     id                      integer         not null auto_increment,
     first_name              varchar(90)     not null,
     last_name               varchar(90)     not null,
+    alternate_names         text,
     born                    date,
     birth_place             integer,
     died                    date,
     death_place             text,
     nationalities           JSON,
     periods                 JSON,
-    gender                  integer,
+    sex                     integer,
     race                    integer,
     ethnicity               integer,
     primary key(id)
@@ -77,7 +81,7 @@ create table person (
 alter table person add fulltext index (first_name, last_name);
 alter table person add index inat( (cast(nationalities->'$' as unsigned array)) );
 alter table person add index iper( (cast(periods->'$' as unsigned array)) );
-alter table person add index pgender (gender);
+alter table person add index psex (sex);
 
 # written language
 create table language (
@@ -109,6 +113,7 @@ create table ensemble_type (
 create table ensemble (
     id                      integer         not null auto_increment,
     name                    varchar(190)    not null,
+    alternate_names         text,
     started                 date,
     ended                   date,
     type                    integer,
