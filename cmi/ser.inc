@@ -2,6 +2,8 @@
 
 // access to static tables via .ser files
 
+require_once('cmi_db.inc');
+
 /////////////// period /////////////////
 
 function get_periods() {
@@ -171,6 +173,26 @@ function location_type_name_to_id($name) {
     return $lt->id;
 }
 
+/////////////// location /////////////////
+
+function location_name_to_id($name) {
+    static $locations = null;
+    if (!$locations) {
+        $locations = unserialize(
+            file_get_contents('data/location.ser')
+        );
+    }
+    foreach ($locations as $loc) {
+        if ($loc->adjective == $name) return $loc->id;
+        if ($loc->name == $name) return $loc->id;
+        if ($loc->name_native == $name) return $loc->id;
+        if ($loc->adjective_native == $name) return $loc->id;
+    }
+    return 0;
+}
+
+//echo location_name_to_id(3, 'Neapolitan');
+
 /////////////// sex /////////////////
 
 function sex_name_to_id($name) {
@@ -181,6 +203,7 @@ function sex_name_to_id($name) {
     if (array_key_exists($name, $sexes)) {
         return $sexes[$name]->id;
     }
+    echo "Unknown sex $name\n";
     return 0;
 }
 ?>

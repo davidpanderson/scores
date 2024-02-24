@@ -13,6 +13,7 @@
 // nationality
 
 require_once("cmi_db.inc");
+require_once("ser.inc");
 
 // add space after No. and Op. in work title.
 // that way a search for 'beethoven symphony 9' works.
@@ -53,9 +54,8 @@ function person_died_str($p) {
 
 // lookup performer (from audio file set) or composer (from work).
 // Create (minimal) person if not there.
-// Set composer/performer flags if needed
 //
-function get_person($first, $last, $is_composer, $is_performer) {
+function get_person($first, $last) {
     global $test;
     $p = DB_person::lookup(
         sprintf("first_name='%s' and last_name='%s'",
@@ -64,19 +64,11 @@ function get_person($first, $last, $is_composer, $is_performer) {
         )
     );
     if ($p) {
-        if ($is_composer && !$p->is_composer) {
-            $p->update("is_composer=1");
-        }
-        if ($is_performer && !$p->is_performer) {
-            $p->update("is_performer=1");
-        }
         return $p->id;
     }
-    $q = sprintf("(first_name, last_name, is_composer, is_performer) values ('%s', '%s', %d, %d)",
+    $q = sprintf("(first_name, last_name) values ('%s', '%s')",
         DB::escape($first),
-        DB::escape($last),
-        $is_composer?1:0,
-        $is_performer?1:0
+        DB::escape($last)
     );
     if ($test) {
         echo "person insert: $q\n";
@@ -140,23 +132,23 @@ function make_person($p) {
         }
     }
     if (!empty($p->nationality)) {
-        $nat_ids = [];
+        $loc_ids = [];
         foreach ($p->nationality as $nat) {
-            $nat_id = get_nationality($nat);
-            if (!$nat_id) {
-                echo "ERROR: no nat $nat\n";
-                exit;
+            $loc_id = get_location_id($nat);
+            if ($loc_id) {
+                $loc_ids[] = $loc_id;
             }
-            $nat_ids[] = $nat_id;
         }
-        $x[] = sprintf("nationalities='%s'", json_encode($nat_ids, JSON_NUMERIC_CHECK));
+        if ($loc_ids) {
+            $x[] = sprintf("locations='%s'", json_encode($loc_ids, JSON_NUMERIC_CHECK));
+        }
     }
     if (!empty($p->time_period)) {
         $per_ids = [];
         foreach ($p->time_period as $per) {
-            $per_id = get_period($per);
+            $per_id = get_period_id($per);
             if (!$per_id) {
-                echo "ERROR: no per $per\n";
+                echo "ERROR: no period $per\n";
                 exit;
             }
             $per_ids[] = $per_id;
@@ -202,35 +194,32 @@ function make_ensemble($p) {
         }
     }
 
+    $x = [];
+
     // get nationality and period IDs
     //
     if (count($p->nationality)) {
-        $nationality_id = get_nationality($p->nationality[0]);
-    } else {
-        $nationality_id = 0;
+        $loc_id = get_location_id($p->nationality[0]);
+        if ($loc_id) $x[] = "location=$loc_id";
     }
     if (count($p->time_period)) {
-        $period_id = get_period($p->time_period[0]);
-    } else {
-        $period_id = 0;
+        $period_id = get_period_id($p->time_period[0]);
+        if ($period_id) $x[] = "period_id=$period_id";
     }
 
-    $x = [];
     if (!empty($p->alternate_names)) {
         $x[] = sprintf("alternate_names='%s'", DB::escape($p->alternate_names));
     }
     if (!empty($p->born_year)) {
-        $d = DB::date_str_year((int)p->born_year);
+        $d = DB::date_str_year((int)$p->born_year);
         $x[] = "started='$d'";
     }
     if (!empty($p->died_year)) {
-        $d = DB::date_str_year((int)p->died_year);
+        $d = DB::date_str_year((int)$p->died_year);
         $x[] = "ended='$d'";
     }
-    if ($nationality_id) $x[] = "location=$nationality_id";
-    if ($period_id) $x[] = "period_id=$period_id";
     if (!empty($p->instrument)) {
-        $id = get_ensemble_type($p->instrument);
+        $id = get_ensemble_type_id($p->instrument);
         $x[] = sprintf("type=%d", $id);
     }
 
@@ -249,26 +238,26 @@ function make_ensemble($p) {
     }
 }
 
-function get_copyright($name) {
+function get_license_id($name) {
     global $test;
     if (!$name) return 0;
-    $p = DB_copyright::lookup(sprintf("name='%s'", DB::escape($name)));
+    $p = DB_license::lookup(sprintf("name='%s'", DB::escape($name)));
     if ($p) return (int)$p->id;
     $q = sprintf("(name) values ('%s')", DB::escape($name));
     if ($test) {
-        echo "copyright insert: $q\n";
+        echo "license insert: $q\n";
         $id = 0;
     } else {
-        $id = DB_copyright::insert($q);
+        $id = DB_license::insert($q);
         if (!$id) {
-            echo "copyright insert failed\n";
+            echo "license insert failed\n";
             exit;
         }
     }
     return $id;
 }
 
-function get_period($name) {
+function get_period_id($name) {
     global $test;
     if (!$name) return 0;
     $p = DB_period::lookup(sprintf("name='%s'", DB::escape($name)));
@@ -287,14 +276,14 @@ function get_period($name) {
     return $id;
 }
 
-function get_ensemble_type($name) {
+function get_ensemble_type_id($name) {
     $p = DB_ensemble_type::lookup(sprintf("name='%s'", DB::escape($name)));
     if ($p) return (int)$p->id;
     $q = sprintf("(name) values ('%s')", DB::escape($name));
     return DB_ensemble_type::insert($q);
 }
 
-function get_nationality($name) {
+function get_location_id($name) {
     global $test;
 
     // $name can contain extra crap at the end
@@ -302,22 +291,25 @@ function get_nationality($name) {
     $name = str_replace(' composers', '', $name);
     $n = strpos($name, "\n");
     if ($n) $name = substr2($name, 0, $n);
+    $n = strpos($name, " <");
+    if ($n) $name = substr2($name, 0, $n);
+    $n = strpos($name, " (");
+    if ($n) $name = substr2($name, 0, $n);
 
     if (!$name) return 0;
-    $p = DB_location::lookup(sprintf("name='%s'", DB::escape($name)));
-    if ($p) return (int)$p->id;
-    $q = sprintf("(name, location_type) values ('%s', %d)",
-        DB::escape($name), location_type_name_to_id('country')
-    );
-    if ($test) {
-        echo "nationality insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_location::insert($q);
-        if (!$id) {
-            echo "nationality insert failed\n";
-            exit;
-        }
+    if ($name=='Unaffiliated') return 0;
+    if ($name=='Other nationality') return 0;
+    if ($name=='Englsh') $name='English';
+    if ($name=='german') $name='German';
+    if ($name=='japanese') $name='Japanese';
+    if ($name=='Argentine') $name='Argentinian';
+    if ($name=='<Serbian>') $name='Serbian';
+    if (strstr($name, 'Neapolitan')) $name = 'Neapolitan';
+        // non-ascii char at end
+    if (strstr($name, 'Italian')) $name = 'Italian';
+    $id = location_name_to_id($name);
+    if (!$id) {
+        die ("nationality $name not found\n");
     }
     return $id;
 }
@@ -402,7 +394,7 @@ function get_arrangement_target($instruments) {
 
 function get_performer_role($first, $last, $role) {
     global $test;
-    $person_id = get_person($first, $last, false, true);
+    $person_id = get_person($first, $last);
     $p = DB_performer_role::lookup(
         sprintf("person_id=%d and role='%s'",
             $person_id, DB::escape($role)

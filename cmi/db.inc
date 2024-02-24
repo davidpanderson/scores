@@ -54,7 +54,7 @@ class DB {
     }
     public static function commit_transaction() {
         if (!static::init_conn()) return static::error('commit trans');
-        if (!static::do_query('begin')) return static::error('commit trans');
+        if (!static::do_query('commit')) return static::error('commit trans');
     }
     public static function date_str($y, $m, $d) {
         return "$y-$m-$d";

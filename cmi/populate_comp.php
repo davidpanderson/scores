@@ -461,12 +461,7 @@ function make_audio_file_sets($wid, $audios) {
 function make_work($c) {
     global $test;
     [$title, $composer_first, $composer_last] = parse_title($c->json_title);
-    $composer_id = get_person($composer_first, $composer_last, true, false);
-    if (!empty($c->piece_style)) {
-        $period_id = get_period(str_replace('_', ' ', $c->piece_style));
-    } else {
-        $period_id = 0;
-    }
+    $composer_id = get_person($composer_first, $composer_last);
 
     $json_title = str_replace('_', ' ', $c->json_title);
     $json_title = fix_title($json_title);
@@ -475,31 +470,31 @@ function make_work($c) {
     }
     // check for works with same title
     //
-    $w = DB_work::lookup(
+    $w = DB_composition::lookup(
         sprintf("title='%s'", DB::escape($json_title))
     );
     if ($w) {
         for ($i=2; ; $i++) {
-            $title = sprintf('%s (%d)', $json_title, $i);
+            $long_title = sprintf('%s (%d)', $json_title, $i);
             echo "DUP FOUND: trying $title\n";
-            $w = DB_work::lookup(
-                sprintf("title='%s'", DB::escape($title))
+            $w = DB_composition::lookup(
+                sprintf("title='%s'", DB::escape($long_title))
             );
             if (!$w) break;
         }
     } else {
-        $title = $json_title;
+        $long_title = $json_title;
     }
-    $q = sprintf("(composer_id, title, opus_catalogue) values (%d, '%s', '%s')",
+    $q = sprintf("(creators, long_title, opus_catalogue) values ('[%d]', '%s', '%s')",
         $composer_id,
-        DB::escape($title),
+        DB::escape($long_title),
         DB::escape($c->opus_catalogue)
     );
     if ($test){
         echo "work insert: $q\n";
         $work_id = 1;
     } else {
-        $work_id = DB_work::insert($q);
+        $work_id = DB_composition::insert($q);
         if (!$work_id) {
             echo "work insert failed\n";
             return;
@@ -510,84 +505,62 @@ function make_work($c) {
     if (!empty($c->alternative_title)) {
         $x[] = sprintf("alternative_title='%s'", DB::escape($c->alternative_title));
     }
-    if (!empty($c->attrib)) {
-        $x[] = sprintf("attrib='%s'", DB::escape($c->attrib));
-    }
-    if (!empty($c->authorities)) {
-        $x[] = sprintf("authorities='%s'", DB::escape($c->authorities));
-    }
+    // TODO: deal with stuff like '10-12 minutes'
     if (!empty($c->average_duration)) {
         $x[] = sprintf("average_duration='%s'", DB::escape($c->average_duration));
     }
-    if (!empty($c->comments)) {
-        $x[] = sprintf("comments='%s'", DB::escape($c->comments));
-    }
+    // TODO: fix things like {{LinkDed|Ferdinand|Hiller}}
     if (!empty($c->dedication)) {
         $x[] = sprintf("dedication='%s'", DB::escape($c->dedication));
     }
-    if (!empty($c->discography)) {
-        $x[] = sprintf("discography='%s'", DB::escape($c->discography));
-    }
-    if (!empty($c->external_links)) {
-        $x[] = sprintf("external_links='%s'", DB::escape($c->external_links));
-    }
-    if (!empty($c->extra_information)) {
-        $x[] = sprintf("extra_information='%s'", DB::escape($c->extra_information));
-    }
+    // TODO: parse '1881-01-04 in Breslau, Saal des Konzerthauses.  :Breslauer Orchesterverein, Johannes Brahms (conductor)'
     if (!empty($c->first_performance)) {
         $x[] = sprintf("first_performance='%s'", DB::escape($c->first_performance));
-    }
-    if (!empty($c->incipit)) {
-        $x[] = sprintf("incipit='%s'", DB::escape($c->incipit));
-    }
-    if (!empty($c->instrdetail)) {
-        $x[] = sprintf("instrdetail='%s'", DB::escape($c->instrdetail));
-    }
-    if (!empty($c->instrumentation)) {
-        $x[] = sprintf("instrumentation='%s'", DB::escape($c->instrumentation));
     }
     if (!empty($c->key)) {
         $x[] = sprintf("_key='%s'", DB::escape($c->key));
     }
+    // TODO: parse, and use the language table
     if (!empty($c->language)) {
         $x[] = sprintf("language='%s'", DB::escape($c->language));
     }
+    // TODO: parse {{LinkLib|Ambrosius|Stub}} (1705–1758) No.45
+    // and populate person table
     if (!empty($c->librettist)) {
         $x[] = sprintf("librettist='%s'", DB::escape($c->librettist));
     }
-    if (!empty($c->manuscript_sources)) {
-        $x[] = sprintf("manuscript_sources='%s'", DB::escape($c->manuscript_sources));
-    }
+    // e.g. '3 movements'
     if (!empty($c->movements_header)) {
-        $x[] = sprintf("movements_header='%s'", DB::escape($c->movements_header));
+        $n = (int)$c->movements_header;
+        if ($n) {
+            $x[] = sprintf("n_movements=%d", $n);
+        }
     }
     if (!empty($c->ncrecordings)) {
         $x[] = sprintf("ncrecordings='%s'", DB::escape($c->ncrecordings));
     }
-    if (!empty($c->nonpd_eu)) {
-        $x[] = sprintf("nonpd_eu=1");
-    }
-    if (!empty($c->nonpd_us)) {
-        $x[] = sprintf("nonpd_us=1");
-    }
+    // e.g.
+    // 4 movements:
+    // #Allegro ({{K|f}})
+    // #Adagio ({{K|F}})
+    // #''Minuet.'' Allegretto ({{K|f}}) - Trio ({{K|F}})
+    // #Prestissimo ({{K|f}})
+    //
+    // TODO: parse this and make separate composition records
+    if (0) {
     if (!empty($c->number_of_movements_sections)) {
         $x[] = sprintf("number_of_movements_sections='%s'", DB::escape($c->number_of_movements_sections));
     }
-    if ($period_id) {
-        $x[] = sprintf("period_id=%d", $period_id);
     }
-    if (!empty($c->related_works)) {
-        $x[] = sprintf("related_works='%s'", DB::escape($c->related_works));
+
+    // TODO: get rid of this?
+    if (!empty($c->piece_style)) {
+        $period_id = get_period_id(str_replace('_', ' ', $c->piece_style));
+        if ($period_id) {
+            $x[] = sprintf("period=%d", $period_id);
+        }
     }
-    if (!empty($c->searchkey)) {
-        $x[] = sprintf("searchkey='%s'", DB::escape($c->searchkey));
-    }
-    if (!empty($c->searchkey_amarec)) {
-        $x[] = sprintf("searchkey_amarec='%s'", DB::escape($c->searchkey_amarec));
-    }
-    if (!empty($c->searchkey_scores)) {
-        $x[] = sprintf("searchkey_scores='%s'", DB::escape($c->searchkey_scores));
-    }
+    // tags has composition type and instruments
     if (!empty($c->tags)) {
         $x[] = sprintf("tags='%s'", DB::escape($c->tags));
         process_tags_work($x, $c->tags);
@@ -611,7 +584,7 @@ function make_work($c) {
         $x[] = sprintf("year_pub=%d", $comp_year);
     }
     if (!empty($c->work_title)) {
-        $x[] = sprintf("work_title='%s'",
+        $x[] = sprintf("title='%s'",
             DB::escape(fix_title($c->work_title))
         );
     }
@@ -621,7 +594,7 @@ function make_work($c) {
         if ($test) {
             echo "comp update: $query\n";
         } else {
-            $comp = new DB_work;
+            $comp = new DB_composition;
             $comp->id = $work_id;
             $ret = $comp->update($query);
             if (!$ret) {
@@ -630,12 +603,14 @@ function make_work($c) {
         }
     }
 
+if (0) {
     if (!empty($c->files)) {
         make_score_file_sets($work_id, $c->files);
     }
     if (!empty($c->audios)) {
         make_audio_file_sets($work_id, $c->audios);
     }
+}
 }
 
 // given a list of inst combos,
@@ -729,24 +704,29 @@ function main($start_line, $end_line) {
             break;
         }
         if ($i<$start_line) continue;
-        if ($i>=$end_line) continue;
+        if ($i>=$end_line) break;
         echo "JSON record $i\n";
         if (!trim($x)) continue;    // skip blank lines
         $y = json_decode($x);
-        print_r($y); die('');
         DB::begin_transaction();
         foreach ($y as $title => $body) {
-            //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
+            echo "title: $title\n";
+            if ($title != 'Symphony_No.11_in_D_major,_K.84/73q_(Mozart,_Wolfgang_Amadeus)') continue;
+            echo "body: $body\n";
             $comp = parse_work($title, $body);
+            echo "parsed structure:\n";
+            print_r($comp);
+            break;
             if (empty($comp->imslppage)) {
                 // redirect, pop_section, link) work
                 continue;
             }
             make_work($comp);
-            //break;
+            break;
         }
         DB::commit_transaction();
     }
+    return;
     flush_inst_combo_cache();
     flush_work_type_cache();
     flush_lang_cache();
@@ -754,6 +734,6 @@ function main($start_line, $end_line) {
 
 // there are 3079 lines
 
-main(0, 10000);
+main(0, 1);
 
 ?>

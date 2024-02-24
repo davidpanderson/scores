@@ -1,6 +1,10 @@
 #! /usr/bin/env php
 
 <?php
+
+// - populate the location table
+// - write data/location.ser
+
 require_once('cmi_db.inc');
 require_once('ser.inc');
 
@@ -9,7 +13,7 @@ $subcont_id=0;
 $country_id=0;
 
 function continent($name, $adj) {
-    global $cont_id, $subcont_id;
+    global $cont_id, $subcont_id, $country_id;
     $cont_id = DB_location::insert(
         sprintf(
             "(name, adjective, type) values ('%s', '%s', %d)",
@@ -19,9 +23,10 @@ function continent($name, $adj) {
         )
     );
     $subcont_id = 0;
+    $country_id = 0;
 }
 function subcontinent($noun, $adj) {
-    global $cont_id, $subcont_id;
+    global $cont_id, $subcont_id, $country_id;
     $subcont_id = DB_location::insert(
         sprintf(
             "(name, adjective, type, parent, ancestors) values ('%s', '%s', %d, %d, '%s')",
@@ -32,6 +37,7 @@ function subcontinent($noun, $adj) {
             json_encode([$cont_id], JSON_NUMERIC_CHECK)
         )
     );
+    $country_id = 0;
 }
 function country($name, $adj, $name_native='', $adj_native='') {
     global $cont_id, $subcont_id, $country_id;
@@ -50,7 +56,7 @@ function country($name, $adj, $name_native='', $adj_native='') {
     );
 }
 function state($name, $adj, $name_native='', $adj_native='') {
-    global $cont_id, $subcont_id;
+    global $cont_id, $subcont_id, $country_id;
     $anc = $subcont_id?[$cont_id, $subcont_id, $country_id]:[$cont_id, $country_id];
     DB_location::insert(
         sprintf(
@@ -109,6 +115,7 @@ country('Albania', 'Albanian');
 country('Armenia', 'Armenian');
 country('Austria', 'Austrian');
 country('Basque Country', 'Basque');
+    // province?
 country('Belarus', 'Belarusian');
 country('Belgium', 'Belgian');
 country('Bohemia', 'Bohemian');
@@ -146,6 +153,7 @@ country('Malta', 'Maltese');
 country('Moldova', 'Moldovan');
 country('Monaco', 'Monegasque');
 country('Naples', 'Neapolitan');
+    // city? province? country?
 country('Norway', 'Norwegian');
 country('Poland', 'Polish');
 country('Portugal', 'Portuguese');
@@ -166,6 +174,7 @@ country('Transnistria', 'Transnistrian');
 country('Turkey', 'Turkish');
 country('Ukraine', 'Ukrainian');
 country('Venice', 'Venetian');
+    // city? province? country?
 country('Wales', 'Welsh');
 country('Yugoslavia', 'Yugoslav');
 
@@ -173,6 +182,7 @@ continent('North America', 'North American');
 country('Canada', 'Canadian');
 country('United States', 'American');
 state('Hawaii', 'Hawaiian');
+    // although Hawaii was a country at one point
 subcontinent('Central America', 'Central American');
 country('Costa Rica', 'Costa Rican');
 country('Cuba', 'Cuban');
@@ -200,4 +210,12 @@ continent('Oceania', 'Oceanian');
 country('Australia', 'Australian');
 country('New Zealand', 'New Zealander');
 
+function main() {
+    $locs = DB_location::enum();
+    $f = fopen('data/location.ser', 'w');
+    fwrite($f, serialize($locs));
+    fclose($f);
+}
+
+main();
 ?>

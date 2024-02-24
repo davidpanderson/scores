@@ -71,7 +71,7 @@ create table person (
     birth_place             integer,
     died                    date,
     death_place             text,
-    nationalities           JSON,
+    locations               JSON,
     periods                 JSON,
     sex                     integer,
     race                    integer,
@@ -79,7 +79,8 @@ create table person (
     primary key(id)
 );
 alter table person add fulltext index (first_name, last_name);
-alter table person add index inat( (cast(nationalities->'$' as unsigned array)) );
+alter table person add index iname(first_name, last_name);
+alter table person add index inat( (cast(locations->'$' as unsigned array)) );
 alter table person add index iper( (cast(periods->'$' as unsigned array)) );
 alter table person add index psex (sex);
 
@@ -198,7 +199,8 @@ create table composition (
     id                      integer         not null auto_increment,
     title                   varchar(190)    not null,
     long_title              varchar(255),
-        # includes composer, instruments
+        # includes opus, composer
+    alternative_title       text,
     opus_catalogue          text,
     composed                date,
     published               date,
@@ -214,12 +216,12 @@ create table composition (
     parent                  integer,
     children                json,
     arrangement_of          integer,
-    languages               json,
+    language                text,
     instrument_combos       json,
     ensemble_type           integer,
     period                  integer,
-    average_duration        integer,
-    extra_information       text,
+    average_duration        text,
+    n_movements             integer,
     unique(title),
     primary key(id)
 );
@@ -229,8 +231,6 @@ alter table composition add index wwt( (cast(comp_types->'$' as unsigned array))
 alter table composition add index wic( (cast(instrument_combos->'$' as unsigned array)) );
 alter table composition add index wperiod (period);
 
-# a group of 1 or more score files (e.g. parts)
-#
 create table score (
     id                      integer         not null auto_increment,
     composition             integer         not null,
