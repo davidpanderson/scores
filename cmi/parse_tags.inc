@@ -8,22 +8,22 @@ require_once('ser.inc');
 // sonatas ; 2vn 2va viol vlne bc ; 2vn 2va viol vlne org
 // requiems ; masses ; sop mez ten bass ch orch ; la ; grc
 // and return
-// 1) a list of work type codes
+// 1) a list of comp type codes
 // 2) a list of inst combos
 //      (An inst combo is a list of [count, inst code])
 // 3) a list of arrangement inst combos
 // 4) a list of language codes
 
 function parse_tags($tags) {
-    $work_types = [];
+    $comp_types = [];
     $inst_combos = [];
     $arr_inst_combos = [];
     $languages = [];
     $parts = explode(';', $tags);
     foreach ($parts as $part) {
         $part = trim($part);
-        if (work_type_by_code($part)) {
-            $work_types[] = $part;
+        if (comp_type_by_code($part)) {
+            $comp_types[] = $part;
             continue;
         }
         if (lang_by_code($part)) {
@@ -57,7 +57,7 @@ function parse_tags($tags) {
             }
         }
     }
-    return [$work_types, $inst_combos, $arr_inst_combos, $languages];
+    return [$comp_types, $inst_combos, $arr_inst_combos, $languages];
 }
 
 // $combo is a list of [count, code]
@@ -72,7 +72,7 @@ if (0) {
         $lines = file('tags.out');
         $unique_inst_combos = [];
         foreach ($lines as $line) {
-            [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($line);
+            [$comp_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($line);
             foreach ($inst_combos as $combo) {
                 $h = combo_hash($combo);
                 if (!array_key_exists($h, $unique_inst_combos)) {

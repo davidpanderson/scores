@@ -8,7 +8,8 @@ class DB {
     static function error($q) {
         echo "Database error\nQuery: $q\n";
         echo static::$db_conn->error;
-        if (static::$exit_on_db_error) die('DB error');
+        echo "\n";
+        if (static::$exit_on_db_error) die("DB error\n");
         return false;
     }
     static function init_conn() {

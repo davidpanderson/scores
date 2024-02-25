@@ -197,9 +197,11 @@ create table license (
 
 create table composition (
     id                      integer         not null auto_increment,
-    title                   varchar(190)    not null,
-    long_title              varchar(255),
-        # includes opus, composer
+    long_title              varchar(255)    not null,
+        # includes key, opus and/or composer
+        # e.g. Symphony No. 11 in D major, K.84/73q (Mozart, Wolfgang Amadeus)
+    title                   varchar(190),
+        # e.g. Symphony No. 11
     alternative_title       text,
     opus_catalogue          text,
     composed                date,
@@ -216,7 +218,7 @@ create table composition (
     parent                  integer,
     children                json,
     arrangement_of          integer,
-    language                text,
+    languages               json,
     instrument_combos       json,
     ensemble_type           integer,
     period                  integer,

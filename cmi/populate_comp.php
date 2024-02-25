@@ -13,7 +13,7 @@
 //
 // input: a file in which each line is a JSON record
 //      with roughly 100 wiki pages, each name=>contents
-//      also .ser files from populate_work_type.php
+//      also .ser files from populate_comp_type.php
 // For each page:
 // - parse it using parse_work()
 // - skip if it doesn't contain a #pfe:imslppage call
@@ -454,6 +454,40 @@ function make_audio_file_sets($wid, $audios) {
     }
 }
 
+///////////////// ARRANGEMENT /////////////////
+
+function make_arrangement($comp, $c, $item, $hier) {
+}
+
+function make_arrangements($comp, $c) {
+    $hier = ['','',''];
+    foreach ($c->files as $item) {
+        if (is_string($item)) {
+            if (starts_with($item, '===')) {
+                [$level, $name] = hier_label($item);
+                if ($level == 3) {
+                    $hier[0] = $name;
+                    $hier[1] = '';
+                    $hier[2] = '';
+                } else if ($level == 4) {
+                    $hier[1] = $name;
+                    $hier[2] = '';
+                } else if ($level == 5) {
+                    $hier[2] = $name;
+                } else {
+                    echo "unrecognized hierarchy level: $item\n";
+                }
+            } else {
+                echo "unrecognized string in file list: $item\n";
+            }
+        } else {
+            if ($hier[0] == 'Arrangements and Transcriptions') {
+                make_arrangement($comp, $c, $item, $hier);
+            }
+        }
+    }
+}
+
 ///////////////// WORK /////////////////
 
 // create DB records for work and its files
@@ -518,12 +552,9 @@ function make_work($c) {
         $x[] = sprintf("first_performance='%s'", DB::escape($c->first_performance));
     }
     if (!empty($c->key)) {
-        $x[] = sprintf("_key='%s'", DB::escape($c->key));
+        $x[] = sprintf("_keys='%s'", DB::escape($c->key));
     }
-    // TODO: parse, and use the language table
-    if (!empty($c->language)) {
-        $x[] = sprintf("language='%s'", DB::escape($c->language));
-    }
+
     // TODO: parse {{LinkLib|Ambrosius|Stub}} (1705–1758) No.45
     // and populate person table
     if (!empty($c->librettist)) {
@@ -536,9 +567,7 @@ function make_work($c) {
             $x[] = sprintf("n_movements=%d", $n);
         }
     }
-    if (!empty($c->ncrecordings)) {
-        $x[] = sprintf("ncrecordings='%s'", DB::escape($c->ncrecordings));
-    }
+
     // e.g.
     // 4 movements:
     // #Allegro ({{K|f}})
@@ -562,26 +591,22 @@ function make_work($c) {
     }
     // tags has composition type and instruments
     if (!empty($c->tags)) {
-        $x[] = sprintf("tags='%s'", DB::escape($c->tags));
         process_tags_work($x, $c->tags);
     }
+
     $comp_year = 0;
     if (!empty($c->year_date_of_composition)) {
-        $x[] = sprintf("year_date_of_composition='%s'", DB::escape($c->year_date_of_composition));
         $comp_year = (int)$c->year_date_of_composition;
         if ($comp_year) {
-            $x[] = sprintf("year_of_composition=%d", $comp_year);
+            $x[] = sprintf("composed='%s'", "$comp_year:01:01");
         }
     }
     $pub_year = 0;
     if (!empty($c->year_of_first_publication)) {
-        $x[] = sprintf("year_of_first_publication='%s'", DB::escape($c->year_of_first_publication));
         $pub_year = (int)$c->year_of_first_publication;
     }
     if ($pub_year) {
-        $x[] = sprintf("year_pub=%d", $pub_year);
-    } else if ($comp_year) {
-        $x[] = sprintf("year_pub=%d", $comp_year);
+        $x[] = sprintf("published='%s'", "$pub_year:01:01");
     }
     if (!empty($c->work_title)) {
         $x[] = sprintf("title='%s'",
@@ -603,6 +628,8 @@ function make_work($c) {
         }
     }
 
+    make_arrangements($comp, $c);
+
 if (0) {
     if (!empty($c->files)) {
         make_score_file_sets($work_id, $c->files);
@@ -622,13 +649,8 @@ function inst_combos_clause($inst_combos, $is_work) {
         // $ic is a list of [count, code]
         $ic_rec = get_inst_combo($ic);
         $ic_ids[] = $ic_rec->id;
-        if ($is_work) {
-            $ic_rec->nworks++;
-        } else {
-            $ic_rec->nscores++;
-        }
     }
-    return sprintf("instrument_combo_ids='%s'",
+    return sprintf("instrument_combos='%s'",
         json_encode($ic_ids, JSON_NUMERIC_CHECK)
     );
 }
@@ -637,21 +659,20 @@ function inst_combos_clause($inst_combos, $is_work) {
 // append update clauses to array $x
 //
 function process_tags_work(&$x, $tags) {
-    [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($tags);
+    [$comp_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags($tags);
 
     // work types
 
     $wt_ids = [];
-    foreach ($work_types as $code) {
-        $wt = work_type_by_code($code);
+    foreach ($comp_types as $code) {
+        $wt = comp_type_by_code($code);
         $wt_ids[] = $wt->id;
-        $wt->nworks++;
     }
     if ($wt_ids) {
         // without the JSON_NUMERIC_CHECK,
         // ids sometimes get represented as strings - WTF???
         //
-        $x[] = sprintf("work_type_ids='%s'",
+        $x[] = sprintf("comp_types='%s'",
             json_encode($wt_ids, JSON_NUMERIC_CHECK)
         );
     }
@@ -668,10 +689,9 @@ function process_tags_work(&$x, $tags) {
     foreach ($langs as $lang) {
         $rec = lang_by_code($lang);
         $lang_ids[] = $rec->id;
-        $rec->nworks++;
     }
     if ($lang_ids) {
-        $x[] = sprintf("language_ids='%s'",
+        $x[] = sprintf("languages='%s'",
             json_encode($lang_ids, JSON_NUMERIC_CHECK)
         );
     }
@@ -716,7 +736,6 @@ function main($start_line, $end_line) {
             $comp = parse_work($title, $body);
             echo "parsed structure:\n";
             print_r($comp);
-            break;
             if (empty($comp->imslppage)) {
                 // redirect, pop_section, link) work
                 continue;
@@ -729,7 +748,6 @@ function main($start_line, $end_line) {
     return;
     flush_inst_combo_cache();
     flush_work_type_cache();
-    flush_lang_cache();
 }
 
 // there are 3079 lines

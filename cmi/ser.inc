@@ -50,12 +50,12 @@ function location_name($id) {
 function get_cts_by_code() {
     static $cts_by_code;
     if (!$cts_by_code) {
-        $cts_by_code = unserialize(file_get_contents('data/composition_type_by_code.ser'));
+        $cts_by_code = unserialize(file_get_contents('data/comp_type_by_code.ser'));
     }
     return $cts_by_code;
 }
 
-function composition_type_by_code($code) {
+function comp_type_by_code($code) {
     $cts_by_code = get_cts_by_code();
     if (array_key_exists($code, $cts_by_code)) {
         return $cts_by_code[$code];
@@ -63,12 +63,12 @@ function composition_type_by_code($code) {
     return null;
 }
 
-function composition_types() {
-    static $composition_types = null;
-    if (!$composition_types) {
-        $composition_types = unserialize(file_get_contents('data/composition_type.ser'));
+function comp_types() {
+    static $comp_types = null;
+    if (!$comp_types) {
+        $comp_types = unserialize(file_get_contents('data/comp_type.ser'));
     }
-    return $composition_types;
+    return $comp_types;
 }
 
 /////////////// instrument /////////////////

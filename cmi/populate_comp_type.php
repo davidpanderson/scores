@@ -9,7 +9,7 @@
 //
 // outputs:
 //  populate composition_type table
-//  create serialized file data/composition_type_by_code.ser
+//  create serialized file data/comp_type_by_code.ser
 //      maps code=>ct struct (with descendants)
 //      used by populate_work.php
 
@@ -70,7 +70,7 @@ function write_ser($cts) {
     foreach ($cts as $ct) {
         $cts_by_code[$ct->imslp_code] = $ct;
     }
-    $f = fopen('data/work_type_by_code.ser', 'w');
+    $f = fopen('data/comp_type_by_code.ser', 'w');
     fwrite($f, serialize($cts_by_code));
     fclose($f);
 }
