@@ -22,7 +22,7 @@ function main($nlines) {
                 echo "failed to parse $title\n";
             } else {
                 echo "parsed $title\n";
-                //print_r($work);
+                print_r($work);
             }
             $n++;
         }

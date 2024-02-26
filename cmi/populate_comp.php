@@ -53,6 +53,17 @@ if (0) {
     print_r(hier_label('foo'));
 }
 
+///////////////// PERSON_ROLE /////////////////
+
+function get_person_role($person_id, $role) {
+    $role_id = role_name_to_id($role);
+    $r = DB_person_role::lookup("person=$person_id and role=$role_id");
+    if ($r) return $r->id;
+    return DB_person_role::insert(
+        "(person, role) values ($person_id, $role_id)"
+    );
+}
+
 ///////////////// SCORE FILES /////////////////
 
 function make_score_file($f, $i, $file_set_id) {
@@ -456,11 +467,72 @@ function make_audio_file_sets($wid, $audios) {
 
 ///////////////// ARRANGEMENT /////////////////
 
-function make_arrangement($comp, $c, $item, $hier) {
+// in: {{LinkArr|Roberto|Novegno|1981|}}
+// out: [first, last, born, died];
+
+require_once('template.inc');
+function parse_arranger($s) {
+    $x = explode('|', $s);
+    if (count($x) < 3) return null;
+    $born = (count($x) > 4)?$x[3]:0;
+    $died = (count($x) > 5)?$x[4]:0;
+    return [$x[1], $x[2], $born, $died];
 }
 
+// make a composition record for an arrangment
+//
+// $comp: the DB_composition
+// $item: the parsed MW file record
+// $hier: 3-element array
+//
+function make_arrangement($comp, $item, $hier, $n) {
+    echo "========= make_arrangement =============\n";
+    echo "item:\n";
+    print_r($item);
+    echo "hier:\n";
+    print_r($hier);
+
+    $x = [];
+    // who did the arrangement?
+    //
+    [$first, $last, $born, $died] = parse_arranger($item->arranger);
+    $person_id = get_person($first, $last, $born, $died);
+    if ($person_id) {
+        $pers_role_id = get_person_role($person_id, 'arranger');
+        $x[] = sprintf("creators='%s'",
+            json_encode([$pers_role_id], JSON_NUMERIC_CHECK)
+        );
+    }
+    // what instrument combo is arrangement for?
+    //
+    if (!empty($item->file_tags)) {
+        process_tags_score($x, $item->file_tags);
+    } else {
+        $combos = parse_arrangement_string($hier[2]);
+        if ($combos) {
+            $x[] = inst_combos_clause($combos);
+        }
+    }
+    $long_title = "arr $comp->id $n";
+    $id = DB_composition::insert(
+        "(long_title, arrangement_of) values ('$long_title', $comp->id)"
+    );
+    echo "results:\n";
+    print_r($x);
+    $query = implode(',', $x);
+    $new_comp = new DB_composition;
+    $new_comp->id = $id;
+    $new_comp->update($query);
+}
+
+// make records for a composition's arrangements
+//
+// $comp: the DB_composition
+// $c: parsed mediawiki
+//
 function make_arrangements($comp, $c) {
     $hier = ['','',''];
+    $n = 0;
     foreach ($c->files as $item) {
         if (is_string($item)) {
             if (starts_with($item, '===')) {
@@ -482,7 +554,7 @@ function make_arrangements($comp, $c) {
             }
         } else {
             if ($hier[0] == 'Arrangements and Transcriptions') {
-                make_arrangement($comp, $c, $item, $hier);
+                make_arrangement($comp, $item, $hier, $n++);
             }
         }
     }
@@ -499,9 +571,7 @@ function make_work($c) {
 
     $json_title = str_replace('_', ' ', $c->json_title);
     $json_title = fix_title($json_title);
-    if (empty($c->opus_catalogue)) {
-        $c->opus_catalogue = '';
-    }
+
     // check for works with same title
     //
     $w = DB_composition::lookup(
@@ -519,11 +589,7 @@ function make_work($c) {
     } else {
         $long_title = $json_title;
     }
-    $q = sprintf("(creators, long_title, opus_catalogue) values ('[%d]', '%s', '%s')",
-        $composer_id,
-        DB::escape($long_title),
-        DB::escape($c->opus_catalogue)
-    );
+    $q = sprintf("(long_title) values ('%s')", DB::escape($long_title));
     if ($test){
         echo "work insert: $q\n";
         $work_id = 1;
@@ -536,6 +602,15 @@ function make_work($c) {
     }
 
     $x = [];
+    if ($composer_id) {
+        $pers_role_id = get_person_role($composer_id, 'composer');
+        $x[] = sprintf("creators='%s'",
+            json_encode([$pers_role_id], JSON_NUMERIC_CHECK)
+        );
+    }
+    if (!empty($c->opus_catalogue)) {
+        $x[] = sprintf("opus_catalogue='%s'", DB::escape($c->opus_catalogue));
+    }
     if (!empty($c->alternative_title)) {
         $x[] = sprintf("alternative_title='%s'", DB::escape($c->alternative_title));
     }
@@ -547,10 +622,13 @@ function make_work($c) {
     if (!empty($c->dedication)) {
         $x[] = sprintf("dedication='%s'", DB::escape($c->dedication));
     }
+    if (0) {
     // TODO: parse '1881-01-04 in Breslau, Saal des Konzerthauses.  :Breslauer Orchesterverein, Johannes Brahms (conductor)'
     if (!empty($c->first_performance)) {
         $x[] = sprintf("first_performance='%s'", DB::escape($c->first_performance));
     }
+    }
+
     if (!empty($c->key)) {
         $x[] = sprintf("_keys='%s'", DB::escape($c->key));
     }
@@ -641,9 +719,9 @@ if (0) {
 }
 
 // given a list of inst combos,
-// return an update clause for the work or score file set
+// return an update clause
 //
-function inst_combos_clause($inst_combos, $is_work) {
+function inst_combos_clause($inst_combos) {
     $ic_ids = [];
     foreach ($inst_combos as $ic) {
         // $ic is a list of [count, code]
@@ -680,7 +758,7 @@ function process_tags_work(&$x, $tags) {
     // instrument combos
     //
     if ($inst_combos) {
-        $x[] = inst_combos_clause($inst_combos, true);
+        $x[] = inst_combos_clause($inst_combos);
     }
 
     // languages
@@ -731,7 +809,7 @@ function main($start_line, $end_line) {
         DB::begin_transaction();
         foreach ($y as $title => $body) {
             echo "title: $title\n";
-            if ($title != 'Symphony_No.11_in_D_major,_K.84/73q_(Mozart,_Wolfgang_Amadeus)') continue;
+            if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
             echo "body: $body\n";
             $comp = parse_work($title, $body);
             echo "parsed structure:\n";

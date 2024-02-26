@@ -52,10 +52,14 @@ function person_died_str($p) {
     return null;
 }
 
-// lookup performer (from audio file set) or composer (from work).
+// lookup:
+// performer (from audio file set)
+// or composer (from work).
+// or arranger (from score_file_set)
+//
 // Create (minimal) person if not there.
 //
-function get_person($first, $last) {
+function get_person($first, $last, $born=0, $died=0) {
     global $test;
     $p = DB_person::lookup(
         sprintf("first_name='%s' and last_name='%s'",
@@ -66,9 +70,11 @@ function get_person($first, $last) {
     if ($p) {
         return $p->id;
     }
-    $q = sprintf("(first_name, last_name) values ('%s', '%s')",
+    $q = sprintf("(first_name, last_name%s%s) values ('%s', '%s'%s%s)",
+        $born?', born':'', $died?', died':'',
         DB::escape($first),
-        DB::escape($last)
+        DB::escape($last),
+        $born?", '$born:01:01'":'', $died?", '$died:01:01'":''
     );
     if ($test) {
         echo "person insert: $q\n";

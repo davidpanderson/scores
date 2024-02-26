@@ -206,4 +206,19 @@ function sex_name_to_id($name) {
     echo "Unknown sex $name\n";
     return 0;
 }
+
+/////////////// role /////////////////
+
+function role_name_to_id($name) {
+    static $roles = null;
+    if (!$roles) {
+        $roles = unserialize(file_get_contents('data/role_by_name.ser'));
+    }
+    if (array_key_exists($name, $roles)) {
+        return $roles[$name]->id;
+    }
+    echo "Unknown role $name\n";
+    return 0;
+}
+
 ?>

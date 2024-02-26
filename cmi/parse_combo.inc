@@ -1,5 +1,7 @@
 <?php
 
+require_once('cmi_db.inc');
+
 // two ways of parsing the instrumentation string (hier3) for a score,
 // e.g. 'For Flute, 2 Oboes, and Harp (Yokoyama)'
 //
@@ -167,7 +169,7 @@ function inst_name_to_code($name) {
     if (!$arr) {
         $insts = DB_instrument::enum();
         foreach ($insts as $inst) {
-            $arr[strtolower($inst->name)] = $inst->code;
+            $arr[strtolower($inst->name)] = $inst->imslp_code;
         }
     }
     if (array_key_exists($name, $arr)) {
@@ -181,7 +183,8 @@ if (0) {
 }
 
 if (0) {
-    $str = '*For Flute, 2 Oboes, Clarinet, Bassoon and Horn or Harp (Yokoyama)';
+    //$str = '*For Flute, 2 Oboes, Clarinet, Bassoon and Horn or Harp (Yokoyama)';
+    $str = 'For Piano (Novegno)';
     print_r(parse_arrangement_string($str));
 }
 

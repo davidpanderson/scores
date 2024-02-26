@@ -168,10 +168,10 @@ create table instrument_combo (
 );
 alter table instrument_combo add index icinst( (cast(instruments->'$.id' as unsigned array)) );
 
-# performer, composer, lyricists
+# performer, composer, lyricist, etc.
 create table role (
     id                      integer         not null auto_increment,
-    description             varchar(255),
+    name                    varchar(255),
     primary key(id)
 );
 
@@ -200,8 +200,12 @@ create table composition (
     long_title              varchar(255)    not null,
         # includes key, opus and/or composer
         # e.g. Symphony No. 11 in D major, K.84/73q (Mozart, Wolfgang Amadeus)
+        # movement: mvt <parent_id> <ordinal>
+        # arrangement: arr <parent_id> <ordinal>
     title                   varchar(190),
         # e.g. Symphony No. 11
+        # movement: title of movement, if any
+        # arrangement: null
     alternative_title       text,
     opus_catalogue          text,
     composed                date,
@@ -224,7 +228,7 @@ create table composition (
     period                  integer,
     average_duration        text,
     n_movements             integer,
-    unique(title),
+    unique(long_title),
     primary key(id)
 );
 alter table composition add fulltext cindex (long_title);
@@ -235,7 +239,7 @@ alter table composition add index wperiod (period);
 
 create table score (
     id                      integer         not null auto_increment,
-    composition             integer         not null,
+    compositions            json,
     parent                  integer,
     instrument_combos       json,
     publisher               integer,
@@ -247,7 +251,7 @@ create table score (
     primary key(id)
 );
 alter table score add index sic( (cast(instrument_combos->'$' as unsigned array)) );
-alter table score add index scomp(composition);
+alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
 
 create table venue (
     id                      integer         not null auto_increment,
