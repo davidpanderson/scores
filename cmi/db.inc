@@ -5,6 +5,7 @@
 class DB {
     static $db_conn=null;
     static $exit_on_db_error = false;
+    static $show_queries = false;
     static function error($q) {
         echo "Database error\nQuery: $q\n";
         echo static::$db_conn->error;
@@ -33,7 +34,9 @@ class DB {
         return true;
     }
     public static function do_query($q) {
-        echo "query: $q\n";
+        if (static::$show_queries) {
+            echo "query: $q\n";
+        }
         if (!static::init_conn()) return static::error($q);
         $ret = static::$db_conn->query($q);
         if (!$ret) {

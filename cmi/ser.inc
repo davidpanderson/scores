@@ -29,22 +29,6 @@ function period_name_to_id($name) {
     return $period_by_name[$name];
 }
 
-
-/////////////// location /////////////////
-
-function get_locations() {
-    static $n = null;
-    if ($n === null) {
-        $n = unserialize(file_get_contents('data/location.ser'));
-    }
-    return $n;
-}
-
-function location_name($id) {
-    $n = get_locations();
-    return $n[$id]->name;
-}
-
 /////////////// composition type /////////////////
 
 function get_cts_by_code() {
@@ -173,6 +157,17 @@ function location_type_name_to_id($name) {
     return $lt->id;
 }
 
+function location_type_id_to_name($id) {
+    static $location_types = null;
+    if (!$location_types) {
+        $location_types = unserialize(
+            file_get_contents('data/location_type_by_id.ser')
+        );
+    }
+    $lt = $location_types[$id];
+    return $lt->name;
+}
+
 /////////////// location /////////////////
 
 function location_name_to_id($name) {
@@ -191,7 +186,19 @@ function location_name_to_id($name) {
     return 0;
 }
 
-//echo location_name_to_id(3, 'Neapolitan');
+function get_locations() {
+    static $n = null;
+    if ($n === null) {
+        $n = unserialize(file_get_contents('data/location_by_id.ser'));
+    }
+    return $n;
+}
+
+function location_id_to_name($id) {
+    if (!$id) return '';
+    $n = get_locations();
+    return $n[$id]->name;
+}
 
 /////////////// sex /////////////////
 
@@ -204,6 +211,19 @@ function sex_name_to_id($name) {
         return $sexes[$name]->id;
     }
     echo "Unknown sex $name\n";
+    return 0;
+}
+
+function sex_id_to_name($id) {
+    static $sexes = null;
+    if (!$id) return '';
+    if (!$sexes) {
+        $sexes = unserialize(file_get_contents('data/sex_by_id.ser'));
+    }
+    if (array_key_exists($id, $sexes)) {
+        return $sexes[$id]->name;
+    }
+    echo "Unknown $id\n";
     return 0;
 }
 

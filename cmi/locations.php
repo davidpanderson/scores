@@ -3,10 +3,11 @@
 <?php
 
 // - populate the location table
-// - write data/location.ser
+// - write location.ser
 
 require_once('cmi_db.inc');
 require_once('ser.inc');
+require_once('ser_init.inc');
 
 $cont_id=0;
 $subcont_id=0;
@@ -25,7 +26,7 @@ function continent($name, $adj) {
     $subcont_id = 0;
     $country_id = 0;
 }
-function subcontinent($noun, $adj) {
+function subcontinent($name, $adj) {
     global $cont_id, $subcont_id, $country_id;
     $subcont_id = DB_location::insert(
         sprintf(
@@ -211,10 +212,7 @@ country('Australia', 'Australian');
 country('New Zealand', 'New Zealander');
 
 function main() {
-    $locs = DB_location::enum();
-    $f = fopen('data/location.ser', 'w');
-    fwrite($f, serialize($locs));
-    fclose($f);
+    write_ser(DB_location::enum(), 'location');
 }
 
 main();
