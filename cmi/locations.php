@@ -93,7 +93,7 @@ country('China', 'Chinese');
 country('Hong Kong', 'Hong Konger');
 country('Japan', 'Japanese', '日本');
 country('Korea', 'Korean');
-country('North Korean', 'North Korean');
+country('North Korea', 'North Korean');
 country('South Korea', 'South Korean');
 country('Taiwan', 'Taiwanese');
 subcontinent('Middle East', 'Middle Easterner');

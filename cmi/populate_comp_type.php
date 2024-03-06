@@ -65,13 +65,22 @@ function populate($cts) {
 
 // make the serialized files
 //
-function write_ser($cts) {
-    $cts_by_code = [];
+function write_ser() {
+    $cts = DB_composition_type::enum();
+    $x = [];
     foreach ($cts as $ct) {
-        $cts_by_code[$ct->imslp_code] = $ct;
+        $x[$ct->imslp_code] = $ct;
     }
     $f = fopen('data/comp_type_by_code.ser', 'w');
-    fwrite($f, serialize($cts_by_code));
+    fwrite($f, serialize($x));
+    fclose($f);
+
+    $x = [];
+    foreach ($cts as $ct) {
+        $x[$ct->id] = $ct;
+    }
+    $f = fopen('data/comp_type_by_id.ser', 'w');
+    fwrite($f, serialize($x));
     fclose($f);
 }
 
@@ -119,16 +128,20 @@ function update_descendants($cts) {
     }
 }
 
-$cts = get_work_types();
-echo count($cts)." work types\n";
-echo "populating work_type table\n";
-populate($cts);
-echo "computing descendants\n";
-parse_hier($cts);
-//print_r($cts);
-echo "updating table\n";
-update_descendants($cts);
+function main() {
+    $cts = get_work_types();
+    echo count($cts)." work types\n";
+    echo "populating work_type table\n";
+    populate($cts);
+    echo "computing descendants\n";
+    parse_hier($cts);
+    //print_r($cts);
+    echo "updating table\n";
+    update_descendants($cts);
+}
+
+main();
 echo "writing .ser files\n";
-write_ser($cts);
+write_ser();
 
 ?>

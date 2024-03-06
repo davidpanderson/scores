@@ -57,7 +57,6 @@ function main() {
     echo count($insts)." instruments\n";
 
     echo "populating instrument table\n";
-    $inst_by_code = [];
     foreach ($insts as $code=>$name) {
         $id = DB_instrument::insert(
             sprintf("(imslp_code, name) values('%s', '%s')",
@@ -70,11 +69,27 @@ function main() {
     }
 
     echo "writing inst_by_code.ser\n";
+}
+
+function write_ser() {
+    $insts = DB_instrument::enum();
+    $x = [];
+    foreach ($insts as $i) {
+        $x[$i->imslp_code] = $i;
+    }
     $f = fopen('data/inst_by_code.ser', 'w');
-    fwrite($f, serialize($inst_by_code));
+    fwrite($f, serialize($x));
+    fclose($f);
+    $x = [];
+    foreach ($insts as $i) {
+        $x[$i->id] = $i;
+    }
+    $f = fopen('data/inst_by_id.ser', 'w');
+    fwrite($f, serialize($x));
     fclose($f);
 }
 
 main();
+write_ser();
 
 ?>

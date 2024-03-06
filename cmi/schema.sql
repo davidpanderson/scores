@@ -157,7 +157,7 @@ create table instrument_combo (
     instruments             json,
         # a structure consisting of 2 same-size lists:
         # count => array of counts (always >0)
-        # ids => array of instrument ids
+        # id => array of instrument ids
         # this lets us search with member/overlap/contain
         # on (sets of) instrument IDs
     md5                     varchar(64),        # hash of instruments

@@ -9,7 +9,7 @@ require_once('cmi_db.inc');
 function get_periods() {
     static $p = null;
     if ($p === null) {
-        $p = unserialize(file_get_contents('data/period.ser'));
+        $p = unserialize(file_get_contents('data/period_by_id.ser'));
     }
     return $p;
 }
@@ -31,65 +31,44 @@ function period_name_to_id($name) {
 
 /////////////// composition type /////////////////
 
-function get_cts_by_code() {
-    static $cts_by_code;
-    if (!$cts_by_code) {
-        $cts_by_code = unserialize(file_get_contents('data/comp_type_by_code.ser'));
-    }
-    return $cts_by_code;
-}
-
 function comp_type_by_code($code) {
-    $cts_by_code = get_cts_by_code();
-    if (array_key_exists($code, $cts_by_code)) {
-        return $cts_by_code[$code];
+    static $cts;
+    if (!$cts) {
+        $cts= unserialize(file_get_contents('data/comp_type_by_code.ser'));
+    }
+    if (array_key_exists($code, $cts)) {
+        return $cts[$code];
     }
     return null;
 }
 
-function comp_types() {
-    static $comp_types = null;
-    if (!$comp_types) {
-        $comp_types = unserialize(file_get_contents('data/comp_type.ser'));
+function comp_type_id_to_name($id) {
+    static $cts = null;
+    if (!$cts) {
+        $cts = unserialize(file_get_contents('data/comp_type_by_id.ser'));
     }
-    return $comp_types;
+    return $cts[$id]->name;
 }
 
 /////////////// instrument /////////////////
 
 function inst_by_code($code) {
-    static $insts_by_code = null;
-    if (!$insts_by_code) {
-        $insts_by_code = unserialize(file_get_contents('data/inst_by_code.ser'));
+    static $insts = null;
+    if (!$insts) {
+        $insts = unserialize(file_get_contents('data/inst_by_code.ser'));
     }
-    if (array_key_exists($code, $insts_by_code)) {
-        return $insts_by_code[$code];
-    }
-    return null;
-}
-
-function get_instruments() {
-    static $instruments = null;
-    if (!$instruments) {
-        $instruments = unserialize(file_get_contents('data/instrument.ser'));
-    }
-    return $instruments;
-}
-
-function inst_by_id($id) {
-    $instruments = get_instruments();
-    if (array_key_exists($id, $instruments)) {
-        return $instruments[$id];
+    if (array_key_exists($code, $insts)) {
+        return $insts[$code];
     }
     return null;
 }
 
-function inst_name_to_id($name) {
-    static $inst_by_name = null;
-    if (!$inst_by_name) {
-        $inst_by_name = unserialize(file_get_contents('data/instrument_name_to_id.ser'));
+function instrument_id_to_name($id) {
+    static $insts = null;
+    if (!$insts) {
+        $insts = unserialize(file_get_contents('data/inst_by_id.ser'));
     }
-    return $inst_by_name[$name];
+    return $insts[$id]->name;
 }
 
 /////////////// instrument combo /////////////////
@@ -227,6 +206,14 @@ function sex_id_to_name($id) {
     return 0;
 }
 
+function get_sexes() {
+    static $sexes = null;
+    if (!$sexes) {
+        $sexes = unserialize(file_get_contents('data/sex_by_id.ser'));
+    }
+    return $sexes;
+}
+
 /////////////// role /////////////////
 
 function role_name_to_id($name) {
@@ -239,6 +226,14 @@ function role_name_to_id($name) {
     }
     echo "Unknown role $name\n";
     return 0;
+}
+
+function role_id_to_name($id) {
+    static $roles = null;
+    if (!$roles) {
+        $roles = unserialize(file_get_contents('data/role_by_id.ser'));
+    }
+    return $roles[$id]->name;
 }
 
 ?>

@@ -467,19 +467,98 @@ function make_audio_file_sets($wid, $audios) {
 
 ///////////////// ARRANGEMENT /////////////////
 
-// in: {{LinkArr|Roberto|Novegno|1981|}}
-// out: [first, last, born, died];
+// in:
+//  {{LinkArr|Roberto|Novegno|1981|}}
+//  {{LinkArr|Roberto|Novegno|1981|1999}}
+//  {{LinkArr|Renaud de|Vilbac}} (1829–1884)<br>{{LinkArr|August|Schulz}} (1837-1909)<br>{{LinkArr|Heinrich|Plock}} (1829-1891)
+// should also work for
+//  {{LinkLib|Friedrich|Schiller|1759|1805}}
+
+// out: [[first, last, born, died]...];
 
 require_once('template.inc');
 function parse_arranger($s) {
-    $x = explode('|', $s);
-    if (count($x) < 3) return null;
-    $born = (count($x) > 4)?$x[3]:0;
-    $died = (count($x) > 5)?$x[4]:0;
-    return [$x[1], $x[2], $born, $died];
+    $x = explode('<br>', $s);
+    $out = [];
+    foreach ($x as $y) {
+        $a = parse_arranger_aux($y, $out);
+        if ($a) $out[] = $a;
+    }
+    return $out;
 }
 
-// make a composition record for an arrangment
+function parse_arranger_aux($s) {
+    $n1 = strpos($s, '{{');
+    if ($n1 === false) return null;
+    $n2 = strpos($s, '}}');
+    if ($n2 === false) return null;
+    $t = substr2($s, $n1+2, $n2);
+    $x = explode('|', $t);
+    if (count($x) < 3) return null;
+    $first = $x[1];
+    $last = $x[2];
+    $born = (count($x) > 3)?$x[3]:0;
+    $died = (count($x) > 4)?$x[4]:0;
+
+    $n3 = strpos($s, '(', $n2);
+    $n4 = strpos($s, ')', $n2);
+    if ($n3 && $n4) {
+        $t = substr2($s, $n3+1, $n4);
+        $y = explode('–', $t);      // this is a nonstandard hyphen - WTF???
+        if (count($y)==1) {
+            $y = explode('-', $t);      // this is the standard one
+        }
+        $born = $y[0];
+        if (count($y)>1) $died = $y[1];
+    }
+    return [$first, $last, $born, $died];
+}
+
+//  $s = '{{LinkArr|Roberto|Novegno|1981|}}';
+//  $s = '{{LinkArr|Roberto|Novegno|1981|1999}}';
+//  $s = '{{LinkArr|Renaud de|Vilbac}} (1829–1884)<br>{{LinkArr|August|Schulz}} (1837-1909)<br>{{LinkArr|Heinrich|Plock}} (1829-1891)';
+//print_r(parse_arranger($s)); exit;
+
+// input:
+// {{LinkDed|Joseph|Haydn|1732|1809}}
+// Moritz Reichsgraf von Fries (original); [[wikipedia:Elizabeth Alexeievna (Louise of Baden)|Ihrer Majestät der Kaiserinn Elisabeth Alexiewna]] (Diabelli piano arrangements)
+// {{LinkName|t=ded|Erzherzog|Rudolph|Archduke Rudolph of Austria}} (1788-1831)
+// [[Wikipedia:Count Ferdinand Ernst Gabriel von Waldstein|Count Ferdinand Ernst Gabriel von Waldstein]] (1762-1823)
+// F. J. von Lobkowitz<br>Graf A. von Rasumovsky
+// None
+//  output: a string
+
+function parse_dedication($s) {
+    if ($s == 'None') return '';
+    $n = strpos($s, '{{');
+    if ($n === 0) {
+        $s = str_replace('|t=ded','',$s);
+        $x = parse_arranger_aux($s);
+        if ($x) {
+            [$first, $last, $born, $died] = $x;
+            return "$first $last";
+        }
+        return '';
+    }
+
+    $s = str_replace('<br>', ' and ', $s);
+
+    $n = strpos($s, '[[');
+    if ($n === 0) return '';
+
+    $n1 = strpos($s, '(');
+    if ($n1) return substr2($s, 0, $n1-1);
+
+    if ($n > 0) return substr2($s, 0, $n);
+
+    return $s;
+}
+
+//$s = '[[Wikipedia:Count Ferdinand Ernst Gabriel von Waldstein|Count Ferdinand Ernst Gabriel von Waldstein]] (1762-1823)';
+//$s = 'Moritz Reichsgraf von Fries (original); [[wikipedia:Elizabeth Alexeievna (Louise of Baden)|Ihrer Majestät der Kaiserinn Elisabeth Alexiewna]] (Diabelli piano arrangements)';
+//print_r(parse_dedication($s));  exit;
+
+//% make a composition record for an arrangment
 //
 // $comp: the DB_composition
 // $item: the parsed MW file record
@@ -493,16 +572,25 @@ function make_arrangement($comp, $item, $hier, $n) {
     print_r($hier);
 
     $x = [];
+
     // who did the arrangement?
     //
-    [$first, $last, $born, $died] = parse_arranger($item->arranger);
-    $person_id = get_person($first, $last, $born, $died);
-    if ($person_id) {
-        $pers_role_id = get_person_role($person_id, 'arranger');
+    $pers_role_ids = [];
+    if (!empty($item->arranger)) {
+        $arrangers = parse_arranger($item->arranger);
+        foreach ($arrangers as [$first, $last, $born, $died]) {
+            $person_id = get_person($first, $last, $born, $died);
+            if ($person_id) {
+                $pers_role_ids[] = get_person_role($person_id, 'arranger');
+            }
+        }
+    }
+    if ($pers_role_ids) {
         $x[] = sprintf("creators='%s'",
-            json_encode([$pers_role_id], JSON_NUMERIC_CHECK)
+            json_encode($pers_role_ids, JSON_NUMERIC_CHECK)
         );
     }
+
     // what instrument combo is arrangement for?
     //
     if (!empty($item->file_tags)) {
@@ -519,10 +607,12 @@ function make_arrangement($comp, $item, $hier, $n) {
     );
     echo "results:\n";
     print_r($x);
-    $query = implode(',', $x);
-    $new_comp = new DB_composition;
-    $new_comp->id = $id;
-    $new_comp->update($query);
+    if ($x) {
+        $query = implode(',', $x);
+        $new_comp = new DB_composition;
+        $new_comp->id = $id;
+        $new_comp->update($query);
+    }
 }
 
 // make records for a composition's arrangements
@@ -602,12 +692,26 @@ function make_work($c) {
     }
 
     $x = [];
+
+    $role_ids = [];
     if ($composer_id) {
-        $pers_role_id = get_person_role($composer_id, 'composer');
+        $role_ids[] = get_person_role($composer_id, 'composer');
+    }
+    if (!empty($c->librettist)) {
+        $libs = parse_arranger($c->librettist);
+        foreach ($libs as [$first, $last, $born, $died]) {
+            $person_id = get_person($first, $last, $born, $died);
+            if ($person_id) {
+                $role_ids[] = get_person_role($person_id, 'librettist');
+            }
+        }
+    }
+    if ($role_ids) {
         $x[] = sprintf("creators='%s'",
-            json_encode([$pers_role_id], JSON_NUMERIC_CHECK)
+            json_encode($role_ids, JSON_NUMERIC_CHECK)
         );
     }
+
     if (!empty($c->opus_catalogue)) {
         $x[] = sprintf("opus_catalogue='%s'", DB::escape($c->opus_catalogue));
     }
@@ -620,7 +724,10 @@ function make_work($c) {
     }
     // TODO: fix things like {{LinkDed|Ferdinand|Hiller}}
     if (!empty($c->dedication)) {
-        $x[] = sprintf("dedication='%s'", DB::escape($c->dedication));
+        $d = parse_dedication($c->dedication);
+        if ($d) {
+            $x[] = sprintf("dedication='%s'", DB::escape($d));
+        }
     }
     if (0) {
     // TODO: parse '1881-01-04 in Breslau, Saal des Konzerthauses.  :Breslauer Orchesterverein, Johannes Brahms (conductor)'
@@ -633,11 +740,6 @@ function make_work($c) {
         $x[] = sprintf("_keys='%s'", DB::escape($c->key));
     }
 
-    // TODO: parse {{LinkLib|Ambrosius|Stub}} (1705–1758) No.45
-    // and populate person table
-    if (!empty($c->librettist)) {
-        $x[] = sprintf("librettist='%s'", DB::escape($c->librettist));
-    }
     // e.g. '3 movements'
     if (!empty($c->movements_header)) {
         $n = (int)$c->movements_header;
@@ -787,7 +889,7 @@ function process_tags_score(&$x, $tags) {
         $ic_rec->nscores++;
     }
     if ($ic_ids) {
-        $x[] = sprintf("instrument_combo_ids='%s'",
+        $x[] = sprintf("instrument_combos='%s'",
             json_encode($ic_ids, JSON_NUMERIC_CHECK)
         );
     }
@@ -809,17 +911,16 @@ function main($start_line, $end_line) {
         DB::begin_transaction();
         foreach ($y as $title => $body) {
             echo "title: $title\n";
-            if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
-            echo "body: $body\n";
+            //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
+            //echo "body: $body\n";
             $comp = parse_work($title, $body);
-            echo "parsed structure:\n";
-            print_r($comp);
+            //echo "parsed structure:\n";
+            //print_r($comp);
             if (empty($comp->imslppage)) {
                 // redirect, pop_section, link) work
                 continue;
             }
             make_work($comp);
-            break;
         }
         DB::commit_transaction();
     }

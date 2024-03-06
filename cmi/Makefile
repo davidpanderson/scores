@@ -14,6 +14,7 @@ category_done: init_done location_done
 	populate_category.php && touch category_done
 comp_done: inst_done category_done
 	populate_comp.php && touch comp_done
-
+ser_done: comp_done
+	make_ser.php && touch ser_done
 clean:
 	rm -f *_done

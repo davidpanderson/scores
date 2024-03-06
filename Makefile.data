@@ -10,6 +10,8 @@ category_done: db_done
 	populate_category.php; touch category_done
 work_done: db_done inst_done category_done
     populate_work.php; touch work_done
+ser_done: work_done
+	make_ser.php
 
 clean:
-	rm db_done lang_done inst_done work_type_done category_done work_done
+	rm db_done lang_done inst_done work_type_done category_done work_done ser_done
