@@ -23,6 +23,8 @@ function do_location() {
     end_table();
 }
 
+/////////////// PERSON //////////////////
+
 function person_form($params) {
     form_start('query.php');
     form_input_hidden('type', 'person');
@@ -102,7 +104,57 @@ function do_person($params) {
     }
 }
 
-function do_composition() {
+/////////////// COMPOSITION //////////////////
+
+function comp_form($params) {
+    form_start('query.php');
+    form_input_hidden('type', 'person');
+    form_input_text('Title', 'title', $params->title);
+    form_select('Instrument', 'inst1', instrument_options(), $params->inst1);
+    form_select('Instrument', 'inst2', instrument_options(), $params->inst2);
+    form_input_text('Composer name', 'name', $params->name);
+    form_select('Composer sex', 'sex', sex_options(), $params->sex);
+    form_select('Composer nationality', 'location', country_options(), $params->location);
+    form_checkboxes('Arrangement?', [['arr', '', $params->arr]]);
+    form_select('Instrument', 'arr_inst1', instrument_options(), $params->arr_inst1);
+    form_select('Instrument', 'arr_inst2', instrument_options(), $params->arr_inst2);
+    form_submit('Update');
+    form_end();
+}
+
+function comp_get() {
+    $params = new stdClass;
+    $params->offset = get_int('offset', true);
+    $params->title = get_str('title', true);
+    $params->inst1 = get_int('inst1', true);
+    $params->inst2 = get_int('inst2', true);
+    $params->name = get_str('name', true);
+    $params->sex = get_int('sex', true);
+    $params->location = get_int('location', true);
+    $params->arr = get_int('arr', true);
+    $params->arr_inst1 = get_int('arr_inst1', true);
+    $params->arr_inst2 = get_int('arr_inst2', true);
+    return $params;
+}
+
+function comp_encode($params) {
+    $x = '';
+    if ($params->offset) $x .= "&offset=$params->offset";
+    if ($params->title) $x .= "&title=$params->title";
+    if ($params->inst1) $x .= "&inst1=$params->inst1";
+    if ($params->inst2) $x .= "&inst1=$params->inst2";
+    if ($params->name) $x .= "&inst1=$params->name";
+    if ($params->sex) $x .= "&sex=$params->sex";
+    if ($params->location) $x .= "&location=$params->location";
+    if ($params->arr) $x .= "&arr=$params->arr";
+    if ($params->arr_inst1) $x .= "&arr=$params->arr_inst1";
+    if ($params->arr_inst2) $x .= "&arr=$params->arr_inst2";
+    return $x;
+}
+
+function do_composition($params) {
+    $page_size = 50;
+    comp_form($params);
     $comps = DB_composition::enum('arrangement_of is null and parent is null', 'limit 50');
     start_table();
     table_header(
@@ -142,7 +194,7 @@ function main($type) {
     case 'instrument':
         do_instrument(); break;
     case 'composition':
-        do_composition(); break;
+        do_composition(comp_get()); break;
     default:
         echo 'Unimplemented'; break;
     }

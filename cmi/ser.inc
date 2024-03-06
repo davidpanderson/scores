@@ -71,6 +71,14 @@ function instrument_id_to_name($id) {
     return $insts[$id]->name;
 }
 
+function get_instruments() {
+    static $insts = null;
+    if (!$insts) {
+        $insts = unserialize(file_get_contents('data/inst_by_id.ser'));
+    }
+    return $insts;
+}
+
 /////////////// instrument combo /////////////////
 
 function get_inst_combos() {

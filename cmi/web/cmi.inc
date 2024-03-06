@@ -93,4 +93,13 @@ function country_options() {
     return $x;
 }
 
+function instrument_options() {
+    $insts = get_instruments();
+    $x = [[0, '---']];
+    foreach ($insts as $inst) {
+        $x[] = [$inst->id, $inst->name];
+    }
+    return $x;
+}
+
 ?>

@@ -1,0 +1,20 @@
+compositions with female composer
+
+join
+composition
+person_role
+person
+
+person_role.id in composition.creators
+person_role.role = 'composer'
+person_role.person = person.id
+person.sex = 'female'
+
+select * from composition, person_role, person
+    where person_role.id member of (composition.creators->'$')
+    and person_role.role = 1
+    and person_role.person = person.id
+    and person.sex = 2
+    limit 10;
+
+seems to work

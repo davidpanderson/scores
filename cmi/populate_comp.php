@@ -468,14 +468,9 @@ function make_audio_file_sets($wid, $audios) {
 ///////////////// ARRANGEMENT /////////////////
 
 // in:
-//  {{LinkArr|Roberto|Novegno|1981|}}
-//  {{LinkArr|Roberto|Novegno|1981|1999}}
-//  {{LinkArr|Renaud de|Vilbac}} (1829–1884)<br>{{LinkArr|August|Schulz}} (1837-1909)<br>{{LinkArr|Heinrich|Plock}} (1829-1891)
-// should also work for
-//  {{LinkLib|Friedrich|Schiller|1759|1805}}
-
+//  {{LinkArr|Roberto|Novegno|1981|}}<br>{{LinkArr...}}
 // out: [[first, last, born, died]...];
-
+//
 require_once('template.inc');
 function parse_arranger($s) {
     $x = explode('<br>', $s);
@@ -487,6 +482,11 @@ function parse_arranger($s) {
     return $out;
 }
 
+// in:
+//  {{LinkArr|Roberto|Novegno|1981|}}
+//  (see other cases below)
+// out: [first, last, born, died]
+//
 function parse_arranger_aux($s) {
     $n1 = strpos($s, '{{');
     if ($n1 === false) return null;
@@ -499,6 +499,8 @@ function parse_arranger_aux($s) {
     $last = $x[2];
     $born = (count($x) > 3)?$x[3]:0;
     $died = (count($x) > 4)?$x[4]:0;
+    if ($born && !is_numeric($born)) return null;
+    if ($died && !is_numeric($died)) return null;
 
     $n3 = strpos($s, '(', $n2);
     $n4 = strpos($s, ')', $n2);
@@ -508,8 +510,8 @@ function parse_arranger_aux($s) {
         if (count($y)==1) {
             $y = explode('-', $t);      // this is the standard one
         }
-        $born = $y[0];
-        if (count($y)>1) $died = $y[1];
+        $born = is_numeric($y[0])?$y[0]:0;
+        if (count($y)>1) $died = is_numeric($y[1])?$y[1]:0;
     }
     return [$first, $last, $born, $died];
 }
@@ -517,31 +519,33 @@ function parse_arranger_aux($s) {
 //  $s = '{{LinkArr|Roberto|Novegno|1981|}}';
 //  $s = '{{LinkArr|Roberto|Novegno|1981|1999}}';
 //  $s = '{{LinkArr|Renaud de|Vilbac}} (1829–1884)<br>{{LinkArr|August|Schulz}} (1837-1909)<br>{{LinkArr|Heinrich|Plock}} (1829-1891)';
+//$s = '{{LinkArr|Varun Ryan|Soontornniyomkij|1997|}}<br>after composer in {{LinkWork|Piano Concerto in D major, Op.61a||Beethoven|Ludwig van|0}}';
+//$s='{{LinkArr|Gustave|Leo}} ({{fl}}1888)';
 //print_r(parse_arranger($s)); exit;
 
-// input:
-// {{LinkDed|Joseph|Haydn|1732|1809}}
-// Moritz Reichsgraf von Fries (original); [[wikipedia:Elizabeth Alexeievna (Louise of Baden)|Ihrer Majestät der Kaiserinn Elisabeth Alexiewna]] (Diabelli piano arrangements)
-// {{LinkName|t=ded|Erzherzog|Rudolph|Archduke Rudolph of Austria}} (1788-1831)
-// [[Wikipedia:Count Ferdinand Ernst Gabriel von Waldstein|Count Ferdinand Ernst Gabriel von Waldstein]] (1762-1823)
-// F. J. von Lobkowitz<br>Graf A. von Rasumovsky
-// None
+// input: (see cases below)
 //  output: a string
-
+//
 function parse_dedication($s) {
     if ($s == 'None') return '';
-    $n = strpos($s, '{{');
-    if ($n === 0) {
-        $s = str_replace('|t=ded','',$s);
-        $x = parse_arranger_aux($s);
+    while (1) {
+        $n = strpos($s, '{{');
+        if ($n === false) break;
+        $n2 = strpos($s, '}}', $n);
+        if ($n2===false) return '';
+        $t = substr2($s, $n, $n2+2);
+        $t = str_replace('|t=ded','',$t);
+        $x = parse_arranger_aux($t);
+        $new = substr2($s, 0, $n);
         if ($x) {
             [$first, $last, $born, $died] = $x;
-            return "$first $last";
+            $new .= "$first $last";
         }
-        return '';
+        $new .= substr($s, $n2+2);
+        $s = $new;
     }
 
-    $s = str_replace('<br>', ' and ', $s);
+    $s = str_replace('<br>', '; ', $s);
 
     $n = strpos($s, '[[');
     if ($n === 0) return '';
@@ -554,8 +558,14 @@ function parse_dedication($s) {
     return $s;
 }
 
+// $s = '{{LinkDed|Joseph|Haydn|1732|1809}};'
+// $s = 'Madame {{LinkDed|Caroline|Montigny-Rémaury}}';
 //$s = '[[Wikipedia:Count Ferdinand Ernst Gabriel von Waldstein|Count Ferdinand Ernst Gabriel von Waldstein]] (1762-1823)';
 //$s = 'Moritz Reichsgraf von Fries (original); [[wikipedia:Elizabeth Alexeievna (Louise of Baden)|Ihrer Majestät der Kaiserinn Elisabeth Alexiewna]] (Diabelli piano arrangements)';
+// $s = '{{LinkName|t=ded|Erzherzog|Rudolph|Archduke Rudolph of Austria}} (1788-1831)';
+// $s = 'F. J. von Lobkowitz<br>Graf A. von Rasumovsky';
+// $s = 'None';
+// $s = '1. To the memory of Lieutenant {{LinkDed|Jacques|Charlot}} and 2. To the memory of Lieutenant Jean Cruppi and 3. To the memory of Lieutenant Gabriel Deluc and 4. To the memory of Piere and Pascal Gaudin and 5. To the memory of Jean Dreyfus and 6. To the memory of Captain {{LinkDed|Joseph de|Marliave}}';
 //print_r(parse_dedication($s));  exit;
 
 //% make a composition record for an arrangment
@@ -915,7 +925,7 @@ function main($start_line, $end_line) {
             //echo "body: $body\n";
             $comp = parse_work($title, $body);
             //echo "parsed structure:\n";
-            //print_r($comp);
+            print_r($comp);
             if (empty($comp->imslppage)) {
                 // redirect, pop_section, link) work
                 continue;
@@ -932,6 +942,6 @@ function main($start_line, $end_line) {
 // there are 3079 lines
 
 DB::$show_queries = true;
-main(0, 1);
+main(0, 10);
 
 ?>
