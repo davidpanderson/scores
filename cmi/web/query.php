@@ -110,7 +110,7 @@ function comp_form($params) {
     form_start('query.php');
     form_input_hidden('type', 'composition');
     form_input_text('Title', 'title', $params->title);
-    form_select_multiple(
+    select2_multi(
         'Composed for<br><small>Use Ctrl to select multiple</small>',
         'insts', instrument_options(), $params->insts
     );
@@ -118,8 +118,8 @@ function comp_form($params) {
     form_input_text('Composer name', 'name', $params->name);
     form_select('Composer sex', 'sex', sex_options(), $params->sex);
     form_select('Composer nationality', 'location', country_options(), $params->location);
-    form_checkboxes('Arrangement?', [['arr', '', $params->arr]]);
-    form_select_multiple(
+    form_checkboxes('Show arrangements', [['arr', '', $params->arr]]);
+    select2_multi(
         'Arranged for<br><small>Use Ctrl to select multiple</small>',
         'arr_insts', instrument_options(), $params->arr_insts
     );
@@ -199,8 +199,6 @@ function do_composition($params) {
     }
     if ($params->arr_insts && $params->arr_insts<>[0]) {
         $arr_inst_combos = get_combos($params->arr_insts, $params->arr_others_ok);
-        echo "<p>final\n";
-        print_r($arr_inst_combos);
         if (!$arr_inst_combos) {
             echo 'Nothing arranged for those instruments.';
             return;
@@ -325,9 +323,50 @@ function do_composition($params) {
     end_table();
 }
 
+function select2_multi($label, $name, $items, $selected=null) {
+if (0) {
+echo '
+<select class="js-example-basic-multiple" name="states[]" multiple="multiple" style="width: 75%">
+  <option value=0>Alabama</option>
+    ...
+  <option value=1>Wyoming</option>
+</select>';
+    return;
+}
+    echo sprintf('
+        <div class="form-group">
+            <label align=right class="%s" for="%s">%s</label>
+            <div class="%s">
+                <select class="js-example-basic-multiple" name="%s[]" multiple="multiple" style="width: 100%%">
+        ',
+        FORM_LEFT_CLASS, $name, $label, FORM_RIGHT_CLASS, $name
+    );
+    foreach ($items as $i) {
+        echo sprintf(
+            '<option %s value=%s>%s</option>',
+            ($selected && in_array($i[0], $selected))?'selected':'',
+            $i[0], $i[1]
+        );
+    }
+    echo "</select></div></div>\n";
+}
+
 function main($type) {
     global $tables;
-    page_head($tables[$type]);
+    $head_extra = '
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    ';
+
+    page_head($tables[$type], null, false, '', $head_extra);
+
+    echo "<script>
+        $(document).ready(function() {
+            $('.js-example-basic-multiple').select2();
+        });
+        </script>
+    ";
     switch ($type) {
     case 'location':
         do_location(); break;
@@ -340,6 +379,7 @@ function main($type) {
     default:
         echo 'Unimplemented'; break;
     }
+    echo "</body>";
     page_tail();
 }
 

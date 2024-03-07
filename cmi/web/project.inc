@@ -131,6 +131,17 @@ function project_footer($show_return, $show_date, $prefix) {
     ';
 }
 
+function page_tail() {
+    echo "<br>\n";
+    project_footer(false, false, '');
+    echo '
+        <script src="'.secure_url_base().'/bootstrap.min.js"></script>
+        </div>
+        </body>
+        </html>
+    ';
+}
+
 //-------------- Caching
 
 //define("MEMCACHE_SERVERS", "127.0.0.1:11211");
