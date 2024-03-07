@@ -84,9 +84,105 @@ function get_instruments() {
 function get_inst_combos() {
     static $inst_combos;
     if (!$inst_combos) {
-        $inst_combos = unserialize(file_get_contents('data/instrument_combo.ser'));
+        $inst_combos = unserialize(file_get_contents('data/instrument_combo_by_id.ser'));
     }
     return $inst_combos;
+}
+
+function get_inst_combos_digest() {
+    static $icd;
+    if (!$icd) {
+        $icd = unserialize(file_get_contents('data/inst_combo_digest.ser'));
+    }
+    return $icd;
+}
+
+// does the combo match the spec?
+// See scores/api.h
+//
+function inst_combo_match(
+    $ic_id, $ic_count, $spec_ids, $spec_min, $spec_max, $others_ok
+) {
+    $ic_ind = 0;
+    $spec_ind = 0;
+    $ic_len = count($ic_id);
+    $spec_len = count($spec_ids);
+    while (1) {
+        if ($ic_ind == $ic_len) {
+            // reached end of combo
+            // if spec has more insts with nonzero min, fail
+            while ($spec_ind < $spec_len) {
+                if ($spec_min[$spec_ind]) {
+                    return false;
+                }
+                $spec_ind++;
+            }
+            return true;
+        }
+        if ($spec_ind == $spec_len) {
+            return $others_ok;
+        }
+        if ($ic_id[$ic_ind] == $spec_ids[$spec_ind]) {
+            // inst ids match
+            if ($ic_count[$ic_ind] < $spec_min[$spec_ind]) return false;
+            if ($ic_count[$ic_ind] > $spec_max[$spec_ind]) return false;
+            $ic_ind++;
+            $spec_ind++;
+        } else if ($ic_id[$ic_ind] < $spec_ids[$spec_ind]) {
+            // combo has an instrument that spec doesn't
+            if (!$others_ok) {
+                return false;
+            }
+            $ic_ind++;
+        } else {
+            // spec has an instrument that combo doesn't
+            if ($spec_min[$spec_ind]) {
+                return false;
+            }
+            $spec_ind++;
+        }
+    }
+    die("inst_combo_match() error\n");
+}
+
+if (0) {
+    $ic_id = [10, 11, 12];
+    $ic_count = [1, 1, 1];
+    $spec_ids = [10];
+    $spec_min = [1];
+    $spec_max = [999];
+    $ret = inst_combo_match(
+        $ic_id, $ic_count, $spec_ids, $spec_min, $spec_max, true
+    );
+    if ($ret) {
+        echo "match\n";
+    } else {
+        echo "no match\n";
+    }
+    exit;
+}
+
+// get list of inst combos with given instruments
+//
+function inst_combo_ids($spec_ids, $spec_min, $spec_max, $others_ok) {
+    $ics = get_inst_combos_digest();
+    $out = [];
+    foreach ($ics as $ic) {
+        if (inst_combo_match(
+            $ic->inst_ids, $ic->counts, $spec_ids, $spec_min, $spec_max, $others_ok
+        )) {
+            $out[] = $ic->combo_id;
+        }
+    }
+    return $out;
+}
+
+if (0) {
+    $spec_ids = [115];
+    $spec_min = [1];
+    $spec_max = [999];
+    print_r(inst_combo_ids($spec_ids, $spec_min, $spec_max, false));
+    exit;
 }
 
 /////////////// language /////////////////
@@ -232,7 +328,7 @@ function role_name_to_id($name) {
     if (array_key_exists($name, $roles)) {
         return $roles[$name]->id;
     }
-    echo "Unknown role $name\n";
+    die("Unknown role $name\n");
     return 0;
 }
 

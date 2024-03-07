@@ -35,6 +35,7 @@ function do_role() {
     DB_role::insert("(name) values ('arranger')");
     DB_role::insert("(name) values ('lyricist')");
     DB_role::insert("(name) values ('conductor')");
+    DB_role::insert("(name) values ('librettist')");
 }
 
 function do_all() {

@@ -14,7 +14,7 @@
 //      period_by_id.ser
 
 require_once('cmi_db.inc');
-//require_once('ser.inc');
+require_once('ser.inc');
 
 // fill in instrument.ncombos
 //
@@ -88,7 +88,27 @@ function compare($c1, $c2) {
     return $c1->ntotal < $c2->ntotal;
 }
 
-do_table('period');
+// make a serialized version of instrument combos,
+// with instrument IDs in increasing order
+//
+function inst_combo_digest() {
+    $combos = get_inst_combos();
+    $x = [];
+    foreach ($combos as $combo) {
+        $y = json_decode($combo->instruments);
+        array_multisort($y->id, $y->count);
+        $z = new StdClass;
+        $z->combo_id = $combo->id;
+        $z->inst_ids = $y->id;
+        $z->counts = $y->count;
+        $x[] = $z;
+    }
+    $f = fopen("data/inst_combo_digest.ser", 'w');
+    fwrite($f, serialize($x));
+    fclose($f);
+}
+
+//do_table('period');
 //do_table('license');
 //do_table('work_type');
 //do_table('instrument', 'order by name');
@@ -100,5 +120,5 @@ do_table('period');
 
 //populate_ncombos();
 //do_inst_combo_select();
-
+inst_combo_digest();
 ?>

@@ -10,11 +10,45 @@ person_role.role = 'composer'
 person_role.person = person.id
 person.sex = 'female'
 
-select * from composition, person_role, person
+[] if inst specified
+<> if composer info specified
+()
+select composition.* from composition, person_role, person
     where person_role.id member of (composition.creators->'$')
     and person_role.role = 1
     and person_role.person = person.id
     and person.sex = 2
+    and json_overlaps("[8, 190]", composition.instrument_combos)
     limit 10;
 
 seems to work
+
+select id from instrument_combo where 120 member of (instruments->'$.id');
+
+======================
+
+[] if inst specified
+<> if composer info specified
+() if arrangement
+** arrangement instrument
+
+select comp1.* (comp2.*) from composition as comp1, <person_role, person,>
+    (composition as comp2,)
+    where
+        not comp1.is_arrangement
+    <
+        and person_role.id member of (composition.creators->'$')
+        and person_role.role = 1
+        and person_role.person = person.id
+        and person.sex = 2
+        and N member of (person.locations->'$.id')
+    >
+    [and json_overlaps("[8, 190]", comp1.instrument_combos)]
+    ( and comp2.arrangement_of == comp1.id)
+    * and json_overlaps("[8, 190]", comp2.instrument_combos)*
+    limit 10;
+
+seems to work
+
+select id from instrument_combo where 120 member of (instruments->'$.id');
+

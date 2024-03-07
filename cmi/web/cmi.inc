@@ -95,7 +95,7 @@ function country_options() {
 
 function instrument_options() {
     $insts = get_instruments();
-    $x = [[0, '---']];
+    $x = [];
     foreach ($insts as $inst) {
         $x[] = [$inst->id, $inst->name];
     }

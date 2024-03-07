@@ -66,7 +66,15 @@ class DB {
     public static function date_str_year($y) {
         return "$y-1-1";
     }
-
+    public static function enum($query) {
+        $result = static::do_query($query);
+        if (!$result) return null;
+        $x = [];
+        while ($obj = $result->fetch_object()) {
+            $x[] = $obj;
+        }
+        return $x;
+    }
 }
 
 class Table {
