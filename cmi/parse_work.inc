@@ -795,7 +795,7 @@ if (0) {
 // see movement_lines.txt for examples
 // return an object with fields
 //      title
-//      alt_title
+//      alt_title (e.g. translations)
 //      keys
 //      nbars
 //      tempo
@@ -952,7 +952,7 @@ function parse_movement_line($s) {
     $x = new StdClass;
     $x->title = $s;
     $x->alt_title = $alt_title;
-    $x->keys = implode(',', $keys);
+    $x->keys = implode(', ', $keys);
     $x->nbars = $nbars;
     $x->tempo = implode(', ', $tempi);
     return $x;
@@ -995,6 +995,42 @@ function parse_key2($s) {
         }
     }
     return null;
+}
+
+// parse a 'number_of_movements_sections' field
+// see nmvts_sections.txt for examples
+// return null, or an object with
+//
+// title (1st line with {{K's expanded)
+// sections: list of movement objects (see above)
+//
+function parse_nmvts_sections($s) {
+    $lines = explode("\n", $s);
+
+    $first = $lines[0];
+    $n1 = strpos($first, ': ');
+    $first = substr($first, $n1+2);
+    $sections = [];
+    $x = explode(' ', $first);
+    print_r($x);
+    if (is_numeric($x[0])) {
+        echo "numeric\n";
+        $n = (int)$x[0];
+        for ($i=1; $i<count($lines); $i++) {
+            $mvt = parse_movement_line($lines[$i]);
+            if ($mvt) {
+                $sections[] = $mvt;
+            }
+        }
+        if ($n != count($sections)) {
+            $sections = [];
+        }
+    }
+
+    $ret = new StdClass;
+    $ret->title = $first;
+    $ret->sections = $sections;
+    return $ret;
 }
 
 ?>

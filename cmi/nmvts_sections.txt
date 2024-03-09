@@ -1,0 +1,71 @@
+*************************** 1. row ***************************
+number_of_movements_sections: 3 movements
+#Allegro
+#Andante
+#Allegro
+*************************** 10. row ***************************
+number_of_movements_sections: 3 movements:
+#Allegro ({{K|F}})
+#Minuet ({{K|F}}) - Trio ({{K|Bb}})
+#Scherzo ({{K|F}})
+*************************** 971. row ***************************
+number_of_movements_sections: 12 studies:
+:1. Comme le vent. Prestissimamente ({{K|a}})
+:2. En rhythme molossique. Risoluto ({{K|d}})
+:3. Scherzo diabolico. Prestissimo ({{K|g}})
+:''Symphonie pour piano seul''
+::4. Allegro moderato ({{K|c}})
+::5. Marche funèbre. Andantino ({{K|f}})
+::6. Menuet. Tempo di minuetto ({{K|bb}})
+::7. Finale. Presto ({{K|eb}})
+:''Concerto pour piano seul''
+::8. Allegro assai ({{K|g#}})
+::9. Adagio ({{K|c#}})
+::10. Allegretto alla barbaresca ({{K|f#}})
+:11. Ouverture. Maestoso-Lentement-Allegro ({{K|b}})
+:12. Le Festin d’Ésope. Allegretto senza licenza quantunque ({{K|e}})
+*************************** 966. row ***************************
+number_of_movements_sections: March ({{K|Eb}}) and Trio ({{K|Ab}})
+*************************** 961. row ***************************
+number_of_movements_sections: 16 waltzes:
+#Tempo giusto ({{K|B}})
+#({{K|E}})
+#({{K|g#}})
+#Poco sostenuto ({{K|e}})
+#({{K|E}})
+#Vivace ({{K|C#}})
+#Poco più Andante ({{K|c#}})
+#({{K|Bb}})
+#({{K|d}})
+#({{K|G}})
+#({{K|b}})
+#({{K|E}})
+#({{K|C}})*
+#({{K|a}})*
+#({{K|Ab}})*
+#({{K|d}})*
+*************************** 959. row ***************************
+number_of_movements_sections: 18 pieces:
+#''Rede, Mädchen, allzu liebes''
+#:Im Ländler-Tempo (E major, 56 bars)
+#''Am Gesteine rauscht die Flut'' (A minor, 20 bars)
+#''O die Frauen'' (B-flat ''or'' A major, 22 bars)
+#''Wie des Abends schöne Röthe'' (F major, 16 bars)
+#''Die grüne Hopfenranke'' (A minor, 36 bars)
+#''Ein kleiner, hübscher Vogel nahm''
+#:Grazioso (A major, 111 bars)
+#''Wohl schön bewandt'' (C minor, 24 bars)
+#''Wenn so lind dein Augen mir'' (A-flat major, 34 bars)
+#''Am Donaustrande'' (E major, 63 bars)
+#''O wie sanft die Quelle'' (G major, 33 bars)
+#''Nein, est ist nicht auszukommen'' (C minor, 26 bars)
+#''Schlosser auf, und mache Schlösser'' (E-flat major, 19 bars)
+#''Vögelein durchrauscht die Luft'' (A-flat major, 16 bars)
+#''Sieh, wie ist die Welle klar'' (E-flat major, 16 bars)
+#''Nachtigall, sie singt so schön'' (A-flat major, 27 bars)
+#''Ein dunkeler Schacht ist Liebe''
+#:Lebhaft (F minor, 36 bars)
+#''Nicht wandle, mein Licht''
+#:Mit Ausdruck (D-flat major, 39 bars)
+#''Es bebet das Gesträuche''
+#:Lebhaft (B-flat minor, 44 bars)
