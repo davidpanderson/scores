@@ -53,7 +53,7 @@ function do_composition($id) {
     row2('Performed', $c->performed);
     row2('Dedication', $c->dedication);
     row2('Types', comp_types_str($c->comp_types));
-    row2('Creators', creators_str($c->creators));
+    row2('Creators', creators_str($c->creators, true));
     if ($c->languages) {
         row2('Languages', languages_str($c->languages));
     }
@@ -79,7 +79,7 @@ function do_composition($id) {
                     $arr->id,
                     instrument_combos_str($arr->instrument_combos)
                 ),
-                creators_str($arr->creators)
+                creators_str($arr->creators, true)
             );
         }
         end_table();

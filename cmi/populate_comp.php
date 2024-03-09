@@ -747,7 +747,10 @@ function make_work($c) {
     }
 
     if (!empty($c->key)) {
-        $x[] = sprintf("_keys='%s'", DB::escape($c->key));
+        $s = parse_keys($c->key);
+        if ($s) {
+            $x[] = sprintf("_keys='%s'", DB::escape($s));
+        }
     }
 
     // e.g. '3 movements'

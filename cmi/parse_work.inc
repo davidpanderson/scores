@@ -710,4 +710,233 @@ function parse_performers($perf, $perf_cat) {
     return [$ensemble, $performers];
 }
 
+// convert things like
+// {{Key|Eb}}
+// {{key|Eb}}
+// {{Key|a}} (concludes in C major)
+// {{Sb}}
+// see below
+// ''see below''
+// C ionian
+// {{Key|C}}-{{Key|c}}
+//  1). D major <br> 2). D major <br> etc.
+// C minor ; rev. {{Key|b}}
+// {{Key|Eb}} (simplified version in {{K|E}})
+// {{Key|Db}} (1st version)<br>{{Key|Eb}} (2nd version)
+// {{key|Ab}}/{{key|Eb}}
+//
+// ... into a string like 'C sharp minor'
+//
+function parse_keys($s) {
+    if (strpos($s, 'see below') !== false) return '';
+    while (1) {
+        $n1 = strpos($s, '{{');
+        if ($n1 === false) break;
+        $n2 = strpos($s, '}}', $n1);
+        if (!$n2) break;
+
+        $result = '';
+        $t = substr2($s, $n1+2, $n2);
+        $t = explode('|', $t);
+        if (count($t) == 2) {
+            $t0 = strtolower($t[0]);
+            if ($t0 == 'key' || $t0 == 'k') {
+                $result = parse_key_aux($t[1]);
+            }
+        }
+
+        $s = substr2($s, 0, $n1).$result.substr($s, $n2+2);
+    }
+
+    $s = str_replace('<br>', '; ', $s);
+    $s = str_replace('  ', ' ', $s);
+    return trim($s);
+}
+
+if (0) {
+    //$s = '{{Key|Db}} (1st version)<br>{{Key|Eb}} (2nd version)';
+    $s = '{{Key|C}}-{{Key|c}}';
+    print_r(parse_keys($s));
+}
+
+// convert bb into B flat minor etc.
+//
+function parse_key_aux($x) {
+    $acc = '';
+    if (strlen($x)>1) {
+        switch ($x[1]) {
+        case '#': $acc = ' sharp'; break;
+        case 'b': $acc = ' flat'; break;
+        default:
+            echo "unrecognized key $x\n";
+            return '';
+        }
+    }
+    if (preg_match('/[a-g]/', $x[0])) {
+        return sprintf(' %s%s minor ',
+            strtoupper($x[0]), $acc
+        );
+    }
+    if (preg_match('/[A-G]/', $x[0])) {
+        return sprintf(' %s%s major ',
+            $x[0], $acc
+        );
+    }
+    return '';
+}
+
+if (0) {
+    //$x = 'bb';
+    $x = 'F#';
+    print_r(parse_key_aux($x));
+}
+
+// parse a movement line
+// see movement_lines.txt for examples
+// return an object with fields
+//      title
+//      alt_title
+//      keys
+//      nbars
+//      tempo
+// or null if the line is not a movement
+//
+function parse_movement_line($s) {
+    if (!$s) return null;
+    if (strpos($s, '{{LinkWork') !== false) return null;
+    if (strpos($s, '{{NoComp') !== false) return null;
+    if (strpos($s, '{{Lied') !== false) return null;
+    if (strpos($s, '[[') !== false) return null;
+    if ($s[0] != '#' && $s[0] != ':') return null;
+
+    $keys = [];
+    $nbars = 0;
+    $tempi = [];
+
+    if (strlen($s) == 1) return $x;
+    if ($s[1] == ':') return null;
+    $s = str_replace("'''", "", $s);
+    $s = str_replace("''", "", $s);
+    $s = str_replace('[', '(', $s);
+    $s = str_replace(']', ')', $s);
+    $offset = 0;
+    while (1) {
+        // loop over (...) parts
+        $n1 = strpos($s, '(', $offset);
+        if ($n1 === false) break;
+        $n2 = strpos($s, ')', $n1);
+        if ($n2 === false) break;
+
+        $first = substr2($s, 0, $n1);
+        $last = substr($s, $n2+1);
+        $t = substr2($s, $n1+1, $n2);
+
+        // $t is the text between (...)
+        // process it; $out is the result if any
+        $out = '';
+
+        // break it up into , or . parts
+        //
+        if (strpos($t, ', ') !== false) {
+            $parts = explode(', ', $t);
+        } elseif (strpos($t, '. ') !== false) {
+            $parts = explode('. ', $t);
+        } else {
+            $parts = [$t];
+        }
+
+        echo "paren contents: $t\n";
+        // loop over the parts
+        //
+        foreach ($parts as $p) {
+            echo "part: $p\n";
+            // we assume each part has only 1 item
+            // N bars
+            if (strpos($p, ' bars')) {
+                $nbars = (int)$p;
+                continue;
+            }
+            // {{K|c}}
+            $n1 = strpos($p, '{{K');
+            if ($n1 !== false) {
+                $n2 = strpos($p, '}}', $n1);
+                $k = parse_key_aux(substr2($p, $n1+4, $n2));
+                $keys[] = $k;
+                if ($n1 > 0) {
+                    $out = substr($p, $n1).$k;
+                }
+                continue;
+            }
+
+            $n1 = strpos($p, '{{');
+            if ($n1 !== false) {
+                $tp = parse_tempo(substr($p, $n1+2));
+                if ($tp) {
+                    $tempi[] = $tp;
+                }
+            }
+
+            $out .= $p;
+        }
+
+        $s = $first;
+        if ($out) $s .= "($out)";
+        $offset = strlen($s);
+        $s .= $last;
+
+    }
+    echo "s: $s\n";
+
+    $alt_title = '';
+    $n1 = strpos($s, '<small>');
+    if ($n1 !== false) {
+        $n2 = strpos($s, '</small>', $n1);
+        if ($n2) {
+            $alt_title = substr2($s, $n1+7, $n2);
+        }
+        $s = substr2($s, 0, $n1);
+    }
+
+    $n1 = strpos($s, '{{');
+    if ($n1 != false) {
+        $s = substr2($s, 0, $n1);
+    }
+    $s = substr($s, 1);
+    $a = explode('<br>', $s);
+    $b = [];
+    foreach ($a as $p) {
+        $p = trim($p);
+        if ($p) $b[] = $p;
+    }
+    $s = implode('; ', $b);
+
+    $x = new StdClass;
+    $x->title = $s;
+    $x->alt_title = $alt_title;
+    $x->keys = implode(',', $keys);
+    $x->nbars = $nbars;
+    $x->tempo = implode(', ', $tempi);
+    return $x;
+}
+
+// parse 'quarter|80' into a string, or null
+//
+$tempo_units = [
+    'quarter' => 'quarter',
+    'eighth' => 'eighth',
+    'quard' => 'dotted quarter',
+    'half' => 'half note',
+    'halfd' => 'dotted half note'
+];
+function parse_tempo($s) {
+    global $tempo_units;
+    $x = explode('|', $s);
+    if (count($x) != 2) return null;
+    $k = strtolower($x[0]);
+    if (array_key_exists($k, $tempo_units)) {
+        return sprintf('%s = %s', $tempo_units[$k], (int)$x[1]);
+    }
+    return null;
+}
+
 ?>

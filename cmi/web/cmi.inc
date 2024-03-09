@@ -29,7 +29,7 @@ function comp_types_str($cts) {
     return implode(', ', $x);
 }
 
-function creators_str($cts) {
+function creators_str($cts, $show_role) {
     if (!$cts) return '';
     $cts = json_decode($cts);
     $x = [];
@@ -37,10 +37,10 @@ function creators_str($cts) {
         $prole = DB_person_role::lookup_id($id);
         $p = DB_person::lookup_id($prole->person);
         $x[] = sprintf(
-            "<a href=item.php?type=person&id=%d>%s %s</a> (%s)",
+            "<a href=item.php?type=person&id=%d>%s %s</a>%s",
             $p->id,
             $p->first_name, $p->last_name,
-            role_id_to_name($prole->role)
+            $show_role?' ('.role_id_to_name($prole->role).')':''
         );
     }
     return implode(', ', $x);

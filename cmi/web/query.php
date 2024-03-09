@@ -184,6 +184,13 @@ function make_int_list($list) {
     return sprintf('[%s]', implode(',', $list));
 }
 
+function imslp_url($c) {
+    $t = str_replace(' ', '_', $c->long_title);
+    $t = str_replace('No._', 'No.', $t);
+    $t = str_replace('Op._', 'Op.', $t);
+    return sprintf('https://imslp.org/wiki/%s', $t);
+}
+
 function do_composition($params) {
     $page_size = 50;
     comp_form($params);
@@ -291,28 +298,41 @@ function do_composition($params) {
         );
     }
     start_table();
-    table_header(
-        'title', 'composed', 'type', 'creators', 'instrumentation'
-    );
-    foreach ($comps as $c) {
-        if ($c->arrangement_of) {
+    if ($params->arr) {
+        table_header(
+            'Arrangement of', 'IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
+        );
+        foreach ($comps as $c) {
             $c2 = DB_composition::lookup_id($c->arrangement_of);
-            $title = sprintf(
-                'Arrangement of <a href=item.php?type=composition&id=%d>%s</a>',
-                $c2->id, $c2->long_title
-            );
-        } else {
-            $title = sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
-                $c->id, $c->title
+            table_row(
+                sprintf(
+                    '<a href=item.php?type=composition&id=%d>%s</a>',
+                    $c2->id, $c2->long_title
+                ),
+                sprintf('<a href=%s>View</a>', imslp_url($c2)),
+                $c2->composed,
+                comp_types_str($c2->comp_types),
+                creators_str($c->creators, false),
+                instrument_combos_str($c->instrument_combos)
             );
         }
-        table_row(
-            $title,
-            $c->composed,
-            comp_types_str($c->comp_types),
-            creators_str($c->creators),
-            instrument_combos_str($c->instrument_combos)
+    } else {
+        table_header(
+            'Title', 'IMSLP', 'Composed', 'Type', 'Creators', 'Instrumentation'
         );
+        foreach ($comps as $c) {
+            table_row(
+                sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
+                    $c->id,
+                    $c->title
+                ),
+                sprintf('<a href=%s>View</a>', imslp_url($c)),
+                $c->composed,
+                comp_types_str($c->comp_types),
+                creators_str($c->creators, true),
+                instrument_combos_str($c->instrument_combos)
+            );
+        }
     }
     if (count($comps) > $page_size) {
         $params->offset += $page_size;

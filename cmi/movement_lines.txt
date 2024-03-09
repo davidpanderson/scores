@@ -1,0 +1,24 @@
+#''Capriccio''. Un poco agitato ({{K|f#}})
+# ({{K|g}})
+# [B{{flat}} major] Polka.  Allegro
+:1. Comme le vent. Prestissimamente ({{K|a}})
+:64. Chorale: Nun seid ihr wohl gerochen ({{K|D}}) {{MoreEnd}}
+#Scherzo. Vivace ({{K|G}}) - Trio ({{K|C}})
+# Non allegro—Lento ({{K|E}}–{{K|E}})
+#Adagio {{EM}} Allegro
+# Andante cantabile (F-sharp major)
+#''Elégie / Элегия (Elegiya)''<br>Moderato ({{K|eb}})
+#Allegro maestoso ({{quard|66}})
+#Menuetto e Trio (omitted from the "overture" version)
+:1. {{OpDerivs|Norma|Piano Trio after}}
+:1. Pezzo elegiaco''. Moderato assai ({{K|a}}, 478 bars)
+# Allegro (E dorian, 27 bars)
+# Allegro (F{{sharp}} mixolydian, 30 bars)
+# Sonatina in {{K|G}}, C.88
+# Allegro ({{quarter|120}}) (A minor)
+# Allegro ({{K|Bb}}. {{half|138}})
+:III. ''Passacaille''. Très large (F{{sharp}} minor. {{quarter|40}}) -
+#''Recitativo-Fantasia''. Ben moderato — Molto lento (ends in {{K|f#}})
+#(Allegro moderato)
+#To brune Øjne: Allegretto ({{K|G}})<br><small>Zwei braune Augen / Two Brown Eyes</small>
+# Jule-Klokkerne. <small>Christmas Chimes. Les Cloches de Noël.</small>

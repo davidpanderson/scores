@@ -485,7 +485,7 @@ function get_inst_combo($ic) {
     return $ic_rec;
 }
 
-// at the end of populate_works.php,
+// at the end of populate_comp.php,
 // update the count fields of instrument_combo, work_type, language
 //
 function flush_inst_combo_cache() {
