@@ -773,12 +773,12 @@ function parse_key_aux($x) {
         }
     }
     if (preg_match('/[a-g]/', $x[0])) {
-        return sprintf(' %s%s minor ',
+        return sprintf('%s%s minor',
             strtoupper($x[0]), $acc
         );
     }
     if (preg_match('/[A-G]/', $x[0])) {
-        return sprintf(' %s%s major ',
+        return sprintf('%s%s major',
             $x[0], $acc
         );
     }
@@ -819,6 +819,7 @@ function parse_movement_line($s) {
     $s = str_replace("''", "", $s);
     $s = str_replace('[', '(', $s);
     $s = str_replace(']', ')', $s);
+    $s = str_replace('{{EM}}', '-', $s);
     $offset = 0;
     while (1) {
         // loop over (...) parts
@@ -857,13 +858,13 @@ function parse_movement_line($s) {
                 continue;
             }
             // {{K|c}}
-            $n1 = strpos($p, '{{K');
+            $n1 = strpos($p, '{{K|');
             if ($n1 !== false) {
                 $n2 = strpos($p, '}}', $n1);
                 $k = parse_key_aux(substr2($p, $n1+4, $n2));
                 $keys[] = $k;
                 if ($n1 > 0) {
-                    $out = substr($p, $n1).$k;
+                    $out = substr2($p, 0, $n1).$k;
                 }
                 continue;
             }
@@ -873,7 +874,14 @@ function parse_movement_line($s) {
                 $tp = parse_tempo(substr($p, $n1+2));
                 if ($tp) {
                     $tempi[] = $tp;
+                    continue;
                 }
+            }
+
+            $k = parse_key2($p);
+            if ($k) {
+                $keys[] = $k;
+                continue;
             }
 
             $out .= $p;
@@ -897,6 +905,29 @@ function parse_movement_line($s) {
         $s = substr2($s, 0, $n1);
     }
 
+    $n1 = strpos($s, '{{OpDerivs');
+    if ($n1 !== false) {
+        $n2 = strpos($s, '}}', $n1);
+        if ($n2) {
+            $t = substr2($s, $n1+2, $n2);
+            $x = explode('|', $t);
+            $s2 = sprintf('%s %s', $x[2], $x[1]);
+            $s = substr2($s, 0, $n1).$s2;
+        }
+    }
+
+    // key not in parens
+    //
+    $n1 = strpos($s, '{{K|');
+    if ($n1 !== false) {
+        $n2 = strpos($s, '}}', $n1);
+        if ($n2) {
+            $k = parse_key_aux(substr2($s, $n1+4, $n2));
+            $keys[] = $k;
+            $s = substr2($s, 0, $n1).$k.substr($s, $n2+2);
+        }
+    }
+
     $n1 = strpos($s, '{{');
     if ($n1 != false) {
         $s = substr2($s, 0, $n1);
@@ -909,6 +940,14 @@ function parse_movement_line($s) {
         if ($p) $b[] = $p;
     }
     $s = implode('; ', $b);
+
+    // if title is (...), remove parens
+    if ($s && $s[0] == '(') {
+        $s = substr($s, 1);
+    }
+    if ($s && substr($s, -1) == ')') {
+        $s = substr($s, 0, -1);
+    }
 
     $x = new StdClass;
     $x->title = $s;
@@ -935,6 +974,25 @@ function parse_tempo($s) {
     $k = strtolower($x[0]);
     if (array_key_exists($k, $tempo_units)) {
         return sprintf('%s = %s', $tempo_units[$k], (int)$x[1]);
+    }
+    return null;
+}
+
+// convert 'F{{sharp}} mixolydian' to 'F sharp mixolydian',
+// or null if not a key
+//
+$modes = [
+    'major', 'minor', 'dorian', 'mixolydian', 'lydian'
+];
+function parse_key2($s) {
+    global $modes;
+    foreach ($modes as $mode) {
+        if (strpos($s, $mode)) {
+            $s = str_replace('{{sharp}}', ' sharp', $s);
+            $s = str_replace('{{flat}}', ' flat', $s);
+            $s = str_replace('-', ' ', $s);
+            return $s;
+        }
     }
     return null;
 }
