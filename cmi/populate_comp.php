@@ -27,6 +27,10 @@ require_once("cmi_db.inc");
 require_once("cmi_util.inc");
 require_once("populate_util.inc");
 
+define('DEBUG_ARRANGEMENTS', 0);
+define('DEBUG_WIKITEXT', 0);
+define('DEBUG_PARSED_WORK', 0);
+
 $test = false;
 DB::$exit_on_db_error = true;
 
@@ -46,11 +50,6 @@ function hier_label($str) {
         return [3, substr2($str, 3, $n)];
     }
     return [0, ''];
-}
-
-if (0) {
-    print_r(hier_label('===foo==='));
-    print_r(hier_label('foo'));
 }
 
 ///////////////// PERSON_ROLE /////////////////
@@ -465,109 +464,6 @@ function make_audio_file_sets($wid, $audios) {
     }
 }
 
-///////////////// ARRANGEMENT /////////////////
-
-// in:
-//  {{LinkArr|Roberto|Novegno|1981|}}<br>{{LinkArr...}}
-// out: [[first, last, born, died]...];
-//
-require_once('template.inc');
-function parse_arranger($s) {
-    $x = explode('<br>', $s);
-    $out = [];
-    foreach ($x as $y) {
-        $a = parse_arranger_aux($y, $out);
-        if ($a) $out[] = $a;
-    }
-    return $out;
-}
-
-// in:
-//  {{LinkArr|Roberto|Novegno|1981|}}
-//  (see other cases below)
-// out: [first, last, born, died]
-//
-function parse_arranger_aux($s) {
-    $n1 = strpos($s, '{{');
-    if ($n1 === false) return null;
-    $n2 = strpos($s, '}}');
-    if ($n2 === false) return null;
-    $t = substr2($s, $n1+2, $n2);
-    $x = explode('|', $t);
-    if (count($x) < 3) return null;
-    $first = $x[1];
-    $last = $x[2];
-    $born = (count($x) > 3)?$x[3]:0;
-    $died = (count($x) > 4)?$x[4]:0;
-    if ($born && !is_numeric($born)) return null;
-    if ($died && !is_numeric($died)) return null;
-
-    $n3 = strpos($s, '(', $n2);
-    $n4 = strpos($s, ')', $n2);
-    if ($n3 && $n4) {
-        $t = substr2($s, $n3+1, $n4);
-        $y = explode('–', $t);      // this is a nonstandard hyphen - WTF???
-        if (count($y)==1) {
-            $y = explode('-', $t);      // this is the standard one
-        }
-        $born = is_numeric($y[0])?$y[0]:0;
-        if (count($y)>1) $died = is_numeric($y[1])?$y[1]:0;
-    }
-    return [$first, $last, $born, $died];
-}
-
-//  $s = '{{LinkArr|Roberto|Novegno|1981|}}';
-//  $s = '{{LinkArr|Roberto|Novegno|1981|1999}}';
-//  $s = '{{LinkArr|Renaud de|Vilbac}} (1829–1884)<br>{{LinkArr|August|Schulz}} (1837-1909)<br>{{LinkArr|Heinrich|Plock}} (1829-1891)';
-//$s = '{{LinkArr|Varun Ryan|Soontornniyomkij|1997|}}<br>after composer in {{LinkWork|Piano Concerto in D major, Op.61a||Beethoven|Ludwig van|0}}';
-//$s='{{LinkArr|Gustave|Leo}} ({{fl}}1888)';
-//print_r(parse_arranger($s)); exit;
-
-// input: (see cases below)
-//  output: a string
-//
-function parse_dedication($s) {
-    if ($s == 'None') return '';
-    while (1) {
-        $n = strpos($s, '{{');
-        if ($n === false) break;
-        $n2 = strpos($s, '}}', $n);
-        if ($n2===false) return '';
-        $t = substr2($s, $n, $n2+2);
-        $t = str_replace('|t=ded','',$t);
-        $x = parse_arranger_aux($t);
-        $new = substr2($s, 0, $n);
-        if ($x) {
-            [$first, $last, $born, $died] = $x;
-            $new .= "$first $last";
-        }
-        $new .= substr($s, $n2+2);
-        $s = $new;
-    }
-
-    $s = str_replace('<br>', '; ', $s);
-
-    $n = strpos($s, '[[');
-    if ($n === 0) return '';
-
-    $n1 = strpos($s, '(');
-    if ($n1) return substr2($s, 0, $n1-1);
-
-    if ($n > 0) return substr2($s, 0, $n);
-
-    return $s;
-}
-
-// $s = '{{LinkDed|Joseph|Haydn|1732|1809}};'
-// $s = 'Madame {{LinkDed|Caroline|Montigny-Rémaury}}';
-//$s = '[[Wikipedia:Count Ferdinand Ernst Gabriel von Waldstein|Count Ferdinand Ernst Gabriel von Waldstein]] (1762-1823)';
-//$s = 'Moritz Reichsgraf von Fries (original); [[wikipedia:Elizabeth Alexeievna (Louise of Baden)|Ihrer Majestät der Kaiserinn Elisabeth Alexiewna]] (Diabelli piano arrangements)';
-// $s = '{{LinkName|t=ded|Erzherzog|Rudolph|Archduke Rudolph of Austria}} (1788-1831)';
-// $s = 'F. J. von Lobkowitz<br>Graf A. von Rasumovsky';
-// $s = 'None';
-// $s = '1. To the memory of Lieutenant {{LinkDed|Jacques|Charlot}} and 2. To the memory of Lieutenant Jean Cruppi and 3. To the memory of Lieutenant Gabriel Deluc and 4. To the memory of Piere and Pascal Gaudin and 5. To the memory of Jean Dreyfus and 6. To the memory of Captain {{LinkDed|Joseph de|Marliave}}';
-//print_r(parse_dedication($s));  exit;
-
 //% make a composition record for an arrangment
 //
 // $comp: the DB_composition
@@ -575,12 +471,6 @@ function parse_dedication($s) {
 // $hier: 3-element array
 //
 function make_arrangement($comp, $item, $hier, $n) {
-    echo "========= make_arrangement =============\n";
-    echo "item:\n";
-    print_r($item);
-    echo "hier:\n";
-    print_r($hier);
-
     $x = [];
 
     // who did the arrangement?
@@ -615,8 +505,18 @@ function make_arrangement($comp, $item, $hier, $n) {
     $id = DB_composition::insert(
         "(long_title, arrangement_of) values ('$long_title', $comp->id)"
     );
-    echo "results:\n";
-    print_r($x);
+
+    if (DEBUG_ARRANGEMENTS) {
+        echo "DEBUG_ARRANGMENTS start\n";
+        echo "item:\n";
+        print_r($item);
+        echo "hier:\n";
+        print_r($hier);
+        echo "results:\n";
+        print_r($x);
+        echo "DEBUG_ARRANGMENTS end\n";
+    }
+
     if ($x) {
         $query = implode(',', $x);
         $new_comp = new DB_composition;
@@ -660,6 +560,30 @@ function make_arrangements($comp, $c) {
     }
 }
 
+// make sub-compositions; return vector of IDs
+//
+function make_movements($c, $comp_id) {
+    $mvts = parse_nmvts_sections($c->number_of_movements_sections);
+    if (!$mvts) return [];
+    $ids = [];
+    $i = 0;
+    foreach ($mvts->sections as $section) {
+        $ids[] = DB_composition::insert(
+            sprintf("(long_title, title, alternative_title, parent, _keys, nbars, metronome_markings) values ('%s', '%s', '%s', %d, '%s', %d, '%s')",
+                "sub-comp $i of $comp_id",
+                DB::escape($section->title),
+                DB::escape($section->alt_title),
+                $comp_id,
+                DB::escape($section->keys),
+                $section->nbars,
+                DB::escape($section->metro)
+            )
+        );
+        $i++;
+    }
+    return $ids;
+}
+
 ///////////////// WORK /////////////////
 
 // create DB records for work and its files
@@ -692,11 +616,11 @@ function make_work($c) {
     $q = sprintf("(long_title) values ('%s')", DB::escape($long_title));
     if ($test){
         echo "work insert: $q\n";
-        $work_id = 1;
+        $comp_id = 1;
     } else {
-        $work_id = DB_composition::insert($q);
-        if (!$work_id) {
-            echo "work insert failed\n";
+        $comp_id = DB_composition::insert($q);
+        if (!$comp_id) {
+            echo "composition insert failed\n";
             return;
         }
     }
@@ -761,20 +685,6 @@ function make_work($c) {
         }
     }
 
-    // e.g.
-    // 4 movements:
-    // #Allegro ({{K|f}})
-    // #Adagio ({{K|F}})
-    // #''Minuet.'' Allegretto ({{K|f}}) - Trio ({{K|F}})
-    // #Prestissimo ({{K|f}})
-    //
-    // TODO: parse this and make separate composition records
-    if (0) {
-    if (!empty($c->number_of_movements_sections)) {
-        $x[] = sprintf("number_of_movements_sections='%s'", DB::escape($c->number_of_movements_sections));
-    }
-    }
-
     // TODO: get rid of this?
     if (!empty($c->piece_style)) {
         $period_id = get_period_id(str_replace('_', ' ', $c->piece_style));
@@ -807,13 +717,22 @@ function make_work($c) {
         );
     }
 
+    // Make sub-compositions if needed
+    //
+    if (!empty($c->number_of_movements_sections)) {
+        $ids = make_movements($c, $comp_id);
+        $x[] = sprintf("children='%s'",
+            json_encode($ids, JSON_NUMERIC_CHECK)
+        );
+    }
+
     if ($x) {
         $query = implode(',', $x);
         if ($test) {
             echo "comp update: $query\n";
         } else {
             $comp = new DB_composition;
-            $comp->id = $work_id;
+            $comp->id = $comp_id;
             $ret = $comp->update($query);
             if (!$ret) {
                 echo "comp update failed\n";
@@ -821,6 +740,8 @@ function make_work($c) {
         }
     }
 
+    // Make arrangments if needed
+    //
     make_arrangements($comp, $c);
 
 if (0) {
@@ -923,12 +844,20 @@ function main($start_line, $end_line) {
         $y = json_decode($x);
         DB::begin_transaction();
         foreach ($y as $title => $body) {
-            echo "title: $title\n";
             //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
-            //echo "body: $body\n";
+            if ($title != 'Piano_Sonata_in_A_minor,_D.845_(Schubert,_Franz)') continue;
+            echo "==================\ntitle: $title\n";
+            if (DEBUG_WIKITEXT) {
+                echo "DEBUG_WIKITEXT start\n";
+                echo "$body\n";
+                echo "DEBUG_WIKITEXT end\n";
+            }
             $comp = parse_work($title, $body);
-            //echo "parsed structure:\n";
-            print_r($comp);
+            if (DEBUG_PARSED_WORK) {
+                echo "DEBUG_PARSED_WORK start\n";
+                print_r($comp);
+                echo "DEBUG_PARSED_WORK end\n";
+            }
             if (empty($comp->imslppage)) {
                 // redirect, pop_section, link) work
                 continue;

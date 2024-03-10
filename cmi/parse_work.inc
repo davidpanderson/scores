@@ -1,6 +1,7 @@
 <?php
 
-// parse IMSLP data (in JSON/mediawiki format) into PHP data structures.
+// parse IMSLP data describing 'works' (in JSON/mediawiki format)
+// into PHP data structures.
 //
 // we parse high-level constructs:
 // work (#fte:imslppage)
@@ -12,7 +13,8 @@
 
 require_once("mediawiki.inc");
 
-$verbose = false;
+define('DEBUG_SECTIONS', 1);
+define('DEBUG_TEMPLATES', 0);
 
 // $name is of the form "foo bar 4" or "foo bar 4-6" or "foo bar 1-3,4,7".
 // Add $val to the corresponding elements of the array $arr
@@ -279,10 +281,6 @@ function parse_audio($str) {
 // Return null if error
 //
 function parse_work($title, $body) {
-    global $verbose;
-    if ($verbose) {
-        echo "\n------------------\nprocessing $title\n";
-    }
     $work = new StdClass;
     $work->json_title = $title;
     $work->extra_text = [];
@@ -308,8 +306,8 @@ function parse_work($title, $body) {
             //echo "non-template text: $item\n";
             continue;
         }
-        if ($verbose) {
-            echo "got template $item->name\n";
+        if (DEBUG_TEMPLATES) {
+            echo "DEBUG_TEMPLATES: got template $item->name\n";
         }
         if (strtolower($item->name) == 'attrib') {
             $work->attrib = $item->args[0];
@@ -344,8 +342,8 @@ function parse_work($title, $body) {
             $work->imslppage = true;
             foreach ($item->args as $name=>$arg) {
                 // MUST USE === in name comparisons (0 == 'foo' thing)
-                if ($verbose) {
-                    echo "arg $name:\n";
+                if (DEBUG_TEMPLATES) {
+                    echo "DEBUG_TEMPLATES: arg $name:\n";
                 }
                 if ($name === '*****AUDIO*****') {
                     $work->audios = parse_audio($arg);
@@ -727,6 +725,7 @@ function parse_performers($perf, $perf_cat) {
 //
 // ... into a string like 'C sharp minor'
 //
+// see parse_test.php
 function parse_keys($s) {
     if (strpos($s, 'see below') !== false) return '';
     while (1) {
@@ -751,12 +750,6 @@ function parse_keys($s) {
     $s = str_replace('<br>', '; ', $s);
     $s = str_replace('  ', ' ', $s);
     return trim($s);
-}
-
-if (0) {
-    //$s = '{{Key|Db}} (1st version)<br>{{Key|Eb}} (2nd version)';
-    $s = '{{Key|C}}-{{Key|c}}';
-    print_r(parse_keys($s));
 }
 
 // convert bb into B flat minor etc.
@@ -785,12 +778,6 @@ function parse_key_aux($x) {
     return '';
 }
 
-if (0) {
-    //$x = 'bb';
-    $x = 'F#';
-    print_r(parse_key_aux($x));
-}
-
 // parse a movement line
 // see movement_lines.txt for examples
 // return an object with fields
@@ -798,7 +785,7 @@ if (0) {
 //      alt_title (e.g. translations)
 //      keys
 //      nbars
-//      tempo
+//      metro
 // or null if the line is not a movement
 //
 function parse_movement_line($s) {
@@ -811,7 +798,7 @@ function parse_movement_line($s) {
 
     $keys = [];
     $nbars = 0;
-    $tempi = [];
+    $metros = [];
 
     if (strlen($s) == 1) return $x;
     if ($s[1] == ':') return null;
@@ -850,7 +837,6 @@ function parse_movement_line($s) {
         // loop over the parts
         //
         foreach ($parts as $p) {
-            echo "part: $p\n";
             // we assume each part has only 1 item
             // N bars
             if (strpos($p, ' bars')) {
@@ -871,9 +857,9 @@ function parse_movement_line($s) {
 
             $n1 = strpos($p, '{{');
             if ($n1 !== false) {
-                $tp = parse_tempo(substr($p, $n1+2));
-                if ($tp) {
-                    $tempi[] = $tp;
+                $mt = parse_metro(substr($p, $n1+2));
+                if ($mt) {
+                    $metros[] = $mt;
                     continue;
                 }
             }
@@ -893,7 +879,6 @@ function parse_movement_line($s) {
         $s .= $last;
 
     }
-    echo "s: $s\n";
 
     $alt_title = '';
     $n1 = strpos($s, '<small>');
@@ -954,26 +939,26 @@ function parse_movement_line($s) {
     $x->alt_title = $alt_title;
     $x->keys = implode(', ', $keys);
     $x->nbars = $nbars;
-    $x->tempo = implode(', ', $tempi);
+    $x->metro = implode(', ', $metros);
     return $x;
 }
 
 // parse 'quarter|80' into a string, or null
 //
-$tempo_units = [
+$metro_units = [
     'quarter' => 'quarter',
     'eighth' => 'eighth',
     'quard' => 'dotted quarter',
     'half' => 'half note',
     'halfd' => 'dotted half note'
 ];
-function parse_tempo($s) {
-    global $tempo_units;
+function parse_metro($s) {
+    global $metro_units;
     $x = explode('|', $s);
     if (count($x) != 2) return null;
     $k = strtolower($x[0]);
-    if (array_key_exists($k, $tempo_units)) {
-        return sprintf('%s = %s', $tempo_units[$k], (int)$x[1]);
+    if (array_key_exists($k, $metro_units)) {
+        return sprintf('%s = %s', $metro_units[$k], (int)$x[1]);
     }
     return null;
 }
@@ -1006,15 +991,10 @@ function parse_key2($s) {
 //
 function parse_nmvts_sections($s) {
     $lines = explode("\n", $s);
-
     $first = $lines[0];
-    $n1 = strpos($first, ': ');
-    $first = substr($first, $n1+2);
     $sections = [];
     $x = explode(' ', $first);
-    print_r($x);
     if (is_numeric($x[0])) {
-        echo "numeric\n";
         $n = (int)$x[0];
         for ($i=1; $i<count($lines); $i++) {
             $mvt = parse_movement_line($lines[$i]);
@@ -1030,7 +1010,102 @@ function parse_nmvts_sections($s) {
     $ret = new StdClass;
     $ret->title = $first;
     $ret->sections = $sections;
+
+    if (DEBUG_SECTIONS) {
+        echo "DEBUG_SECTIONS\nin:\n";
+        echo "$s\nout:\n";
+        print_r($ret);
+    }
     return $ret;
+}
+
+///////////////// ARRANGEMENT /////////////////
+
+// in:
+//  {{LinkArr|Roberto|Novegno|1981|}}<br>{{LinkArr...}}
+// out: [[first, last, born, died]...];
+//
+//require_once('template.inc');
+function parse_arranger($s) {
+    $x = explode('<br>', $s);
+    $out = [];
+    foreach ($x as $y) {
+        $a = parse_arranger_aux($y, $out);
+        if ($a) $out[] = $a;
+    }
+    return $out;
+}
+
+// in:
+//  {{LinkArr|Roberto|Novegno|1981|}}
+//  (see other cases below)
+// out: [first, last, born, died]
+//
+function parse_arranger_aux($s) {
+    $n1 = strpos($s, '{{');
+    if ($n1 === false) return null;
+    $n2 = strpos($s, '}}');
+    if ($n2 === false) return null;
+    $t = substr2($s, $n1+2, $n2);
+    $x = explode('|', $t);
+    if (count($x) < 3) return null;
+    $first = $x[1];
+    $last = $x[2];
+    $born = (count($x) > 3)?$x[3]:0;
+    $died = (count($x) > 4)?$x[4]:0;
+    if ($born && !is_numeric($born)) return null;
+    if ($died && !is_numeric($died)) return null;
+
+    $n3 = strpos($s, '(', $n2);
+    $n4 = strpos($s, ')', $n2);
+    if ($n3 && $n4) {
+        $t = substr2($s, $n3+1, $n4);
+        $y = explode('–', $t);      // this is a nonstandard hyphen - WTF???
+        if (count($y)==1) {
+            $y = explode('-', $t);      // this is the standard one
+        }
+        $born = is_numeric($y[0])?$y[0]:0;
+        if (count($y)>1) $died = is_numeric($y[1])?$y[1]:0;
+    }
+    return [$first, $last, $born, $died];
+}
+
+///////////////// DEDICATION /////////////////
+
+// input: // $s = '{{LinkDed|Joseph|Haydn|1732|1809}};'
+//   (see others in parse_test.php)
+// output: a string
+//
+function parse_dedication($s) {
+    if ($s == 'None') return '';
+    while (1) {
+        $n = strpos($s, '{{');
+        if ($n === false) break;
+        $n2 = strpos($s, '}}', $n);
+        if ($n2===false) return '';
+        $t = substr2($s, $n, $n2+2);
+        $t = str_replace('|t=ded','',$t);
+        $x = parse_arranger_aux($t);
+        $new = substr2($s, 0, $n);
+        if ($x) {
+            [$first, $last, $born, $died] = $x;
+            $new .= "$first $last";
+        }
+        $new .= substr($s, $n2+2);
+        $s = $new;
+    }
+
+    $s = str_replace('<br>', '; ', $s);
+
+    $n = strpos($s, '[[');
+    if ($n === 0) return '';
+
+    $n1 = strpos($s, '(');
+    if ($n1) return substr2($s, 0, $n1-1);
+
+    if ($n > 0) return substr2($s, 0, $n);
+
+    return $s;
 }
 
 ?>

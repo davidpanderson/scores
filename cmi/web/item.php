@@ -72,7 +72,7 @@ function do_composition($id) {
     if ($arrs) {
         echo "<h3>Arrangements</h3>\n";
         start_table();
-        table_header('Instrumentation', 'Arranger');
+        table_header('Arranged for', 'Arranger');
         foreach ($arrs as $arr) {
             table_row(
                 sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
@@ -84,9 +84,20 @@ function do_composition($id) {
         }
         end_table();
     }
-    $children = DB_composition::lookup(sprintf('parent=%d', $id));
+    $children = DB_composition::enum(sprintf('parent=%d', $id));
     if ($children) {
-        echo "<h3>Sub-compositions</h3>\n";
+        echo "<h3>Sections</h3>\n";
+        start_table();
+        table_header('Title', 'Metronome', 'Key', 'Measures');
+        foreach ($children as $child) {
+            table_row(
+                $child->title,
+                $child->metronome_markings,
+                $child->_keys,
+                $child->nbars?$child->nbars:''
+            );
+        }
+        end_table();
     }
     page_tail();
 }

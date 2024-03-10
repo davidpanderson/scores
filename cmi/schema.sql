@@ -202,7 +202,7 @@ create table composition (
         # e.g. Symphony No. 11 in D major, K.84/73q (Mozart, Wolfgang Amadeus)
         # movement: mvt <parent_id> <ordinal>
         # arrangement: arr <parent_id> <ordinal>
-    title                   varchar(190),
+    title                   text,
         # e.g. Symphony No. 11
         # movement: title of movement, if any
         # arrangement: null
@@ -228,10 +228,11 @@ create table composition (
     period                  integer,
     average_duration        text,
     n_movements             integer,
+    nbars                   integer,
     unique(long_title),
     primary key(id)
 );
-alter table composition add fulltext cindex (long_title);
+alter table composition add fulltext cindex (title);
 alter table composition add index wlang( (cast(languages->'$' as unsigned array)) );
 alter table composition add index wwt( (cast(comp_types->'$' as unsigned array)) );
 alter table composition add index wic( (cast(instrument_combos->'$' as unsigned array)) );
