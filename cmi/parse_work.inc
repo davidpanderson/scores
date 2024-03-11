@@ -13,7 +13,7 @@
 
 require_once("mediawiki.inc");
 
-define('DEBUG_SECTIONS', 1);
+define('DEBUG_SECTIONS', 0);
 define('DEBUG_TEMPLATES', 0);
 
 // $name is of the form "foo bar 4" or "foo bar 4-6" or "foo bar 1-3,4,7".
@@ -800,7 +800,7 @@ function parse_movement_line($s) {
     $nbars = 0;
     $metros = [];
 
-    if (strlen($s) == 1) return $x;
+    if (strlen($s) == 1) return null;
     if ($s[1] == ':') return null;
     $s = str_replace("'''", "", $s);
     $s = str_replace("''", "", $s);
@@ -818,6 +818,11 @@ function parse_movement_line($s) {
         $first = substr2($s, 0, $n1);
         $last = substr($s, $n2+1);
         $t = substr2($s, $n1+1, $n2);
+        if (DEBUG_SECTIONS) {
+            echo "DEBUG_SECTIONS\nfirst '$first'\n";
+            echo "last '$last'\n";
+            echo "t '$t'\n";
+        }
 
         // $t is the text between (...)
         // process it; $out is the result if any
@@ -833,7 +838,9 @@ function parse_movement_line($s) {
             $parts = [$t];
         }
 
-        echo "paren contents: $t\n";
+        if (DEBUG_SECTIONS) {
+            echo "DEBUG_SECTIONS paren contents: $t\n";
+        }
         // loop over the parts
         //
         foreach ($parts as $p) {
@@ -845,6 +852,7 @@ function parse_movement_line($s) {
             }
             // {{K|c}}
             $n1 = strpos($p, '{{K|');
+            if ($n1 === false) $n1 = strpos($p, '{{k|');
             if ($n1 !== false) {
                 $n2 = strpos($p, '}}', $n1);
                 $k = parse_key_aux(substr2($p, $n1+4, $n2));
@@ -877,7 +885,6 @@ function parse_movement_line($s) {
         if ($out) $s .= "($out)";
         $offset = strlen($s);
         $s .= $last;
-
     }
 
     $alt_title = '';
@@ -1038,12 +1045,18 @@ function parse_arranger($s) {
 
 // in:
 //  {{LinkArr|Roberto|Novegno|1981|}}
-//  (see other cases below)
+//  (see other cases in parse_test.php)
 // out: [first, last, born, died]
 //
 function parse_arranger_aux($s) {
+    // handle case of 'first last'
+    $x = explode(' ', $s);
+    if (count($x)==2 && ctype_alpha($x[0]) && ctype_alpha($x[1])) {
+        return [$x[0], $x[1], '', ''];
+    }
     $n1 = strpos($s, '{{');
     if ($n1 === false) return null;
+    if ($n1 > 0) return null;    // no 'after {{LinkArr...'
     $n2 = strpos($s, '}}');
     if ($n2 === false) return null;
     $t = substr2($s, $n1+2, $n2);

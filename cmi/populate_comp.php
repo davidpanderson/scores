@@ -27,7 +27,7 @@ require_once("cmi_db.inc");
 require_once("cmi_util.inc");
 require_once("populate_util.inc");
 
-define('DEBUG_ARRANGEMENTS', 0);
+define('DEBUG_ARRANGEMENTS', 1);
 define('DEBUG_WIKITEXT', 0);
 define('DEBUG_PARSED_WORK', 0);
 
@@ -464,16 +464,32 @@ function make_audio_file_sets($wid, $audios) {
     }
 }
 
-//% make a composition record for an arrangment
+// make a composition record for an arrangment
 //
 // $comp: the DB_composition
 // $item: the parsed MW file record
 // $hier: 3-element array
 //
-function make_arrangement($comp, $item, $hier, $n) {
+// To avoid duplicates,
+// $others is a list of arrangements we've already made for this comp.
+// Each is a struct
+//      person_role_ids: JSON-encoded list of arrangers
+//      inst_combos: JSON-encoded list of inst combos
+//      title: string (e.g. sections)
+// If this one is already in the list, return null
+// Else return the struct
+//
+function make_arrangement($comp, $item, $hier, $n, $others) {
     $x = [];
 
-    // who did the arrangement?
+    if (DEBUG_ARRANGEMENTS) {
+        echo "DEBUG_ARRANGEMENTS make_arrangements() start\n";
+        echo "item:\n";
+        print_r($item);
+        echo "hier:\n";
+        print_r($hier);
+    }
+    // get list of arrangers
     //
     $pers_role_ids = [];
     if (!empty($item->arranger)) {
@@ -485,36 +501,63 @@ function make_arrangement($comp, $item, $hier, $n) {
             }
         }
     }
+    $pri_clause = '';
     if ($pers_role_ids) {
-        $x[] = sprintf("creators='%s'",
+        $pri_clause = sprintf("creators='%s'",
             json_encode($pers_role_ids, JSON_NUMERIC_CHECK)
         );
+        $x[] = $pri_clause;
     }
 
     // what instrument combo is arrangement for?
     //
     if (!empty($item->file_tags)) {
-        process_tags_score($x, $item->file_tags);
+        [$work_types, $inst_combos, $arr_inst_combos, $langs] = parse_tags(
+            $item->file_tags
+        );
+        $combos = $arr_inst_combos;
     } else {
         $combos = parse_arrangement_string($hier[2]);
-        if ($combos) {
-            $x[] = inst_combos_clause($combos);
+    }
+    if (DEBUG_ARRANGEMENTS) {
+        echo "DEBUG_ARRANGEMENTS: combos\n";
+        print_r($combos);
+    }
+    $combos_clause = '';
+    if ($combos) {
+        $combos_clause = inst_combos_clause($combos);
+        $x[] = $combos_clause;
+    }
+
+    $title = $hier[1];
+
+    // check for duplicate
+
+    $new_desc = new StdClass;
+    $new_desc->person_role_ids = $pri_clause;
+    $new_desc->combos = $combos_clause;
+    $new_desc->title = $title;
+
+    foreach ($others as $other) {
+        if ($other == $new_desc) {
+            return null;
         }
     }
+
     $long_title = "arr $comp->id $n";
     $id = DB_composition::insert(
-        "(long_title, arrangement_of) values ('$long_title', $comp->id)"
+        sprintf(
+            "(long_title, title, arrangement_of) values ('%s', '%s', %d)",
+            DB::escape($long_title),
+            DB::escape($title),
+            $comp->id
+        )
     );
 
     if (DEBUG_ARRANGEMENTS) {
-        echo "DEBUG_ARRANGMENTS start\n";
-        echo "item:\n";
-        print_r($item);
-        echo "hier:\n";
-        print_r($hier);
-        echo "results:\n";
+        echo "clauses:\n";
         print_r($x);
-        echo "DEBUG_ARRANGMENTS end\n";
+        echo "DEBUG_ARRANGEMENTS make_arrangement() end\n";
     }
 
     if ($x) {
@@ -523,9 +566,12 @@ function make_arrangement($comp, $item, $hier, $n) {
         $new_comp->id = $id;
         $new_comp->update($query);
     }
+
+    return $new_desc;
 }
 
-// make records for a composition's arrangements
+// make records for a composition's arrangements,
+// cased on files (i.e. scores).
 //
 // $comp: the DB_composition
 // $c: parsed mediawiki
@@ -533,6 +579,7 @@ function make_arrangement($comp, $item, $hier, $n) {
 function make_arrangements($comp, $c) {
     $hier = ['','',''];
     $n = 0;
+    $others = [];
     foreach ($c->files as $item) {
         if (is_string($item)) {
             if (starts_with($item, '===')) {
@@ -554,7 +601,11 @@ function make_arrangements($comp, $c) {
             }
         } else {
             if ($hier[0] == 'Arrangements and Transcriptions') {
-                make_arrangement($comp, $item, $hier, $n++);
+                $desc = make_arrangement($comp, $item, $hier, $n, $others);
+                if ($desc) {
+                    $others[] = $desc;
+                    $n++;
+                }
             }
         }
     }
@@ -754,7 +805,7 @@ if (0) {
 }
 }
 
-// given a list of inst combos,
+// given a list of inst combos (as count/code list),
 // return an update clause
 //
 function inst_combos_clause($inst_combos) {
@@ -845,7 +896,9 @@ function main($start_line, $end_line) {
         DB::begin_transaction();
         foreach ($y as $title => $body) {
             //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
-            if ($title != 'Piano_Sonata_in_A_minor,_D.845_(Schubert,_Franz)') continue;
+            //if ($title != 'Piano_Sonata_in_A_minor,_D.845_(Schubert,_Franz)') continue;
+            //if ($title != 'Schwanengesang,_D.957_(Schubert,_Franz)') continue;
+            //if ($title != '6_Épigraphes_antiques_(Debussy,_Claude)') continue;
             echo "==================\ntitle: $title\n";
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";

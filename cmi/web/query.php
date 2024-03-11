@@ -191,6 +191,50 @@ function imslp_url($c) {
     return sprintf('https://imslp.org/wiki/%s', $t);
 }
 
+function show_arrangements($comps) {
+    start_table();
+    table_header(
+        'Arrangement of', 'Section', 'IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
+    );
+    foreach ($comps as $c) {
+        $c2 = DB_composition::lookup_id($c->arrangement_of);
+        table_row(
+            sprintf(
+                '<a href=item.php?type=composition&id=%d>%s</a>',
+                $c2->id, $c2->long_title
+            ),
+            $c->title,
+            sprintf('<a href=%s>View</a>', imslp_url($c2)),
+            $c2->composed,
+            comp_types_str($c2->comp_types),
+            creators_str($c->creators, false),
+            instrument_combos_str($c->instrument_combos)
+        );
+    }
+    end_table();
+}
+
+function show_compositions($comps) {
+    start_table();
+    table_header(
+        'Title', 'IMSLP', 'Composed', 'Type', 'Creators', 'Instrumentation'
+    );
+    foreach ($comps as $c) {
+        table_row(
+            sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
+                $c->id,
+                $c->title
+            ),
+            sprintf('<a href=%s>View</a>', imslp_url($c)),
+            $c->composed,
+            comp_types_str($c->comp_types),
+            creators_str($c->creators, true),
+            instrument_combos_str($c->instrument_combos)
+        );
+    }
+    end_table();
+}
+
 function do_composition($params) {
     $page_size = 50;
     comp_form($params);
@@ -297,42 +341,10 @@ function do_composition($params) {
             comp_encode($params), $page_size
         );
     }
-    start_table();
     if ($params->arr) {
-        table_header(
-            'Arrangement of', 'IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
-        );
-        foreach ($comps as $c) {
-            $c2 = DB_composition::lookup_id($c->arrangement_of);
-            table_row(
-                sprintf(
-                    '<a href=item.php?type=composition&id=%d>%s</a>',
-                    $c2->id, $c2->long_title
-                ),
-                sprintf('<a href=%s>View</a>', imslp_url($c2)),
-                $c2->composed,
-                comp_types_str($c2->comp_types),
-                creators_str($c->creators, false),
-                instrument_combos_str($c->instrument_combos)
-            );
-        }
+        show_arrangements($comps);
     } else {
-        table_header(
-            'Title', 'IMSLP', 'Composed', 'Type', 'Creators', 'Instrumentation'
-        );
-        foreach ($comps as $c) {
-            table_row(
-                sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
-                    $c->id,
-                    $c->title
-                ),
-                sprintf('<a href=%s>View</a>', imslp_url($c)),
-                $c->composed,
-                comp_types_str($c->comp_types),
-                creators_str($c->creators, true),
-                instrument_combos_str($c->instrument_combos)
-            );
-        }
+        show_compositions($comps);
     }
     if (count($comps) > $page_size) {
         $params->offset += $page_size;
@@ -340,7 +352,6 @@ function do_composition($params) {
             comp_encode($params), $page_size
         );
     }
-    end_table();
 }
 
 function select2_multi($label, $name, $items, $selected=null) {
@@ -371,43 +382,76 @@ echo '
     echo "</select></div></div>\n";
 }
 
-function main($type) {
-    global $tables;
+function do_person_role($id) {
+    $pr = DB_person_role::lookup_id($id);
+    if (!$pr) error_page("No person_role %d\n");
+    $person = DB_person::lookup_id($pr->person);
+    $role = DB_role::lookup_id($pr->role);
+    switch ($role->name) {
+    case 'composer':
+        page_head("Compositions by $person->first_name $person->last_name");
+        show_compositions(
+            DB_composition::enum(sprintf("%d member of (creators->'$')", $id))
+        );
+        break;
+    case 'performer':
+        break;
+    case 'arranger':
+        page_head("Arrangements by $person->first_name $person->last_name");
+        show_arrangements(
+            DB_composition::enum(sprintf("%d member of (creators->'$')", $id))
+        );
+        break;
+    case 'lyricist':
+        page_head("Compositions with lyrics by $person->first_name $person->last_name");
+        break;
+    case 'librettist':
+        page_head("Compositions with libretto by $person->first_name $person->last_name");
+        show_compositions(
+            DB_composition::enum(sprintf("%d member of (creators->'$')", $id))
+        );
+        break;
+    }
+}
+
+function select2_head($title) {
     $head_extra = '
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     ';
-
-    page_head($tables[$type], null, false, '', $head_extra);
-
+    page_head($title, null, false, '', $head_extra);
     echo "<script>
         $(document).ready(function() {
             $('.js-example-basic-multiple').select2();
         });
         </script>
     ";
+}
+
+function main($type) {
     switch ($type) {
     case 'location':
+        page_head('Locations');
         do_location(); break;
     case 'person':
+        page_head('People');
         do_person(person_get()); break;
     case 'instrument':
+        page_head('Instruments');
         do_instrument(); break;
     case 'composition':
+        select2_head('Compositions');
         do_composition(comp_get()); break;
+    case 'person_role':
+        do_person_role(get_int('id')); break;
     default:
-        echo 'Unimplemented'; break;
+        error_page("$type not implemented");
     }
     echo "</body>";
     page_tail();
 }
 
-$type = get_str('type');
-if (array_key_exists($type, $tables)) {
-    main($type);
-} else {
-    error_page("No type $type");
-}
+main(get_str('type'));
 
 ?>

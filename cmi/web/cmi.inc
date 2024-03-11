@@ -30,7 +30,7 @@ function comp_types_str($cts) {
 }
 
 function creators_str($cts, $show_role) {
-    if (!$cts) return '';
+    if (!$cts) return '---';
     $cts = json_decode($cts);
     $x = [];
     foreach ($cts as $id) {
@@ -46,6 +46,11 @@ function creators_str($cts, $show_role) {
     return implode(', ', $x);
 }
 
+function pluralize($x) {
+    if (substr($x, -1) == 's') return $x.'es';
+    return $x.'s';
+}
+
 function instrument_combo_str($id) {
     $ic = DB_instrument_combo::lookup_id($id);
     $is = json_decode($ic->instruments);
@@ -56,7 +61,7 @@ function instrument_combo_str($id) {
         } else {
             $x[] = sprintf('%d %s',
                 $is->count[$i],
-                instrument_id_to_name($is->id[$i])
+                pluralize(instrument_id_to_name($is->id[$i]))
             );
         }
     }
@@ -70,7 +75,7 @@ function instrument_combos_str($ics) {
     foreach ($ics as $id) {
         $x[] = instrument_combo_str($id);
     }
-    return implode(', ', $x);
+    return implode('; ', $x);
 }
 
 function sex_options() {
@@ -102,4 +107,11 @@ function instrument_options() {
     return $x;
 }
 
+function languages_str($langs) {
+    $x = [];
+    foreach ($langs as $lang) {
+        $x[] = language_id_to_name($lang);
+    }
+    return implode(', ', $x);
+}
 ?>

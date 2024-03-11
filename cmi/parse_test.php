@@ -1,6 +1,9 @@
+#! /usr/bin/env php
 <?php
 
 require_once('parse_work.inc');
+require_once('parse_combo.inc');
+require_once('parse_tags.inc');
 
 ////////// work.number_of_movements_sections ///////////////
 
@@ -76,7 +79,8 @@ function test_arranger() {
         '{{LinkArr|Roberto|Novegno|1981|1999}}',
         '{{LinkArr|Renaud de|Vilbac}} (1829–1884)<br>{{LinkArr|August|Schulz}} (1837-1909)<br>{{LinkArr|Heinrich|Plock}} (1829-1891)',
         '{{LinkArr|Varun Ryan|Soontornniyomkij|1997|}}<br>after composer in {{LinkWork|Piano Concerto in D major, Op.61a||Beethoven|Ludwig van|0}}',
-        '{{LinkArr|Gustave|Leo}} ({{fl}}1888)'
+        '{{LinkArr|Gustave|Leo}} ({{fl}}1888)',
+        'Jacques Drillon<br>after {{LinkArr|Franz|Liszt|1811|1886}}'
     ];
     foreach ($arrs as $arr) {
         echo "----------------\ninput: $arr\noutput:\n";
@@ -105,9 +109,43 @@ function test_dedication() {
     }
 }
 
+////////////////////// arrangement target /////////////////////
+
+function test_arrangement_target() {
+    $tgs = [
+        'For 2 Clarinets, 2 Bassoons and 2 Horns (Patterson)',
+        'For Violin or Cello and Piano',
+        'For 4 Horns (or 3 Horns and Bassoon) (Miller)',
+        '*For Violin, Cello or 2 Violins and Piano (Hoffmann)',
+        '*For Piano Trio or 2 Violins and Piano (Hofmann)',
+        'For 2 Flutes (2nd also Piccolo), 2 Oboes, 2 Clarinets, 2 Bassoons and 2 Horns (Clements)',
+        '*For Cello or Violin and Piano (Jansa)'
+    ];
+    foreach($tgs as $tg) {
+        echo "----------------\ninput: $tg\noutput:\n";
+        print_r(parse_arrangement_string($tg));
+        echo "\n";
+    }
+}
+
+////////////////////// tags /////////////////////
+
+function test_tags() {
+    $tgs = [
+        'vc pf (arr) ; vn pf (arr)'
+    ];
+    foreach($tgs as $tg) {
+        echo "----------------\ninput: $tg\noutput:\n";
+        print_r(parse_tags($tg));
+        echo "\n";
+    }
+}
+
 //test_movement_lines();
 //test_nmvts_sections();
 //test_keys();
 //test_arranger();
 //test_dedication();
+//test_arrangement_target();
+test_tags();
 ?>

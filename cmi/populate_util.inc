@@ -424,8 +424,9 @@ function get_performer_role($first, $last, $role) {
     return $id;
 }
 
-// Get DB ID of an inst combo.
-// Create new record if needed.
+// Given an inst combo (as count/code list),
+// get DB ID of an inst combo DB record,
+// creating one if needed.
 // For efficiency, cache the table in memory
 //
 $inst_combo_cache = [];

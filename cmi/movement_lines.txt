@@ -22,3 +22,4 @@
 #(Allegro moderato)
 #To brune Øjne: Allegretto ({{K|G}})<br><small>Zwei braune Augen / Two Brown Eyes</small>
 # Jule-Klokkerne. <small>Christmas Chimes. Les Cloches de Noël.</small>
+#Moderato ({{k|a}})

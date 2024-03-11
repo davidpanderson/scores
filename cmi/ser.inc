@@ -187,28 +187,23 @@ if (0) {
 
 /////////////// language /////////////////
 
-function get_langs_by_code() {
+function lang_by_code($code) {
     static $langs_by_code;
     if (!$langs_by_code) {
         $langs_by_code = unserialize(file_get_contents('data/lang_by_code.ser'));
     }
-    return $langs_by_code;
-}
-
-function lang_by_code($code) {
-    $langs_by_code = get_langs_by_code();
     if (array_key_exists($code, $langs_by_code)) {
         return $langs_by_code[$code];
     }
     return null;
 }
 
-function get_languages() {
+function language_id_to_name($id) {
     static $languages = null;
     if (!$languages) {
-        $languages = unserialize(file_get_contents('data/language.ser'));
+        $languages = unserialize(file_get_contents('data/lang_by_id.ser'));
     }
-    return $languages;
+    return $languages[$id]->name;
 }
 
 /////////////// license /////////////////
