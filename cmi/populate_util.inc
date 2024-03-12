@@ -33,6 +33,7 @@ function person_born_str($p) {
     }
     if (!empty($p->birth_date)) {
         $y = (int)strpbrk($p->birth_date, '0123456789');
+            // from first numeric char on
         if ($y) return DB::date_str_year($y);
     }
     return null;
@@ -70,11 +71,19 @@ function get_person($first, $last, $born=0, $died=0) {
     if ($p) {
         return $p->id;
     }
+    $born_str = '';
+    $died_str = '';
+    if ($born) {
+        $born_str = DB::date_str_year((int)$born);
+    }
+    if ($died) {
+        $died_str = DB::date_str_year((int)$died);
+    }
     $q = sprintf("(first_name, last_name%s%s) values ('%s', '%s'%s%s)",
-        $born?', born':'', $died?', died':'',
+        $born_str?', born':'', $died_str?', died':'',
         DB::escape($first),
         DB::escape($last),
-        $born?", '$born:01:01'":'', $died?", '$died:01:01'":''
+        $born_str?", '$born_str'":'', $died_str?", '$died_str'":''
     );
     if ($test) {
         echo "person insert: $q\n";

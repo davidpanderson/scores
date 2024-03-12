@@ -148,8 +148,7 @@ function comp_encode($params) {
     if ($params->offset) $x .= "&offset=$params->offset";
     if ($params->title) $x .= "&title=$params->title";
     if ($params->insts) $x .= sprintf(
-        '&insts=%s',
-        http_build_query($params->insts)
+        '&insts[]=%s', implode(',', $params->insts)
     );
     if ($params->others_ok) $x .= "&others_ok=$params->others_ok";
     if ($params->name) $x .= "&name=$params->name";
@@ -157,8 +156,7 @@ function comp_encode($params) {
     if ($params->location) $x .= "&location=$params->location";
     if ($params->arr) $x .= "&arr=$params->arr";
     if ($params->arr_insts) $x .= sprintf(
-        '&arr_insts=%s',
-        http_build_query($params->arr_insts)
+        '&arr_insts[]=%s', implode(',', $params->arr_insts)
     );
     if ($params->arr_others_ok) $x .= "&arr_others_ok=$params->arr_others_ok";
     return $x;
@@ -336,9 +334,10 @@ function do_composition($params) {
     }
 
     if ($params->offset) {
-        $params->offset = max($params->offset-$page_size, 0);
+        $p2 = clone $params;
+        $p2->offset = max($params->offset-$page_size, 0);
         echo sprintf('<a href=query.php?type=composition%s>Previous %d</a>',
-            comp_encode($params), $page_size
+            comp_encode($p2), $page_size
         );
     }
     if ($params->arr) {
@@ -382,6 +381,8 @@ echo '
     echo "</select></div></div>\n";
 }
 
+//////////////////// PERSON ROLE ////////////////////
+
 function do_person_role($id) {
     $pr = DB_person_role::lookup_id($id);
     if (!$pr) error_page("No person_role %d\n");
@@ -416,7 +417,6 @@ function do_person_role($id) {
 
 function select2_head($title) {
     $head_extra = '
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     ';

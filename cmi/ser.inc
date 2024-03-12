@@ -252,7 +252,7 @@ function location_name_to_id($name) {
     static $locations = null;
     if (!$locations) {
         $locations = unserialize(
-            file_get_contents('data/location.ser')
+            file_get_contents('data/location_by_id.ser')
         );
     }
     foreach ($locations as $loc) {

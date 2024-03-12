@@ -1,13 +1,11 @@
 # CMI DB schema
-#
-drop database cmi;
+
+# to recreate DB:
+# mysql < create_prod.sql
+# or mysql < create_dev.sql
 
 # an indexed or unique text field must be varchar
-# fulltext index can cover at most 256 char
-
-create database cmi character set utf8mb4 collate utf8mb4_unicode_ci;
-
-use cmi;
+# fulltext index can cover at most 256 char ?? still true?
 
 # e.g. continent, subcontinent, country, province, city
 create table location_type (

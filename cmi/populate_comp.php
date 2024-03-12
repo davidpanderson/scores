@@ -545,6 +545,8 @@ function make_arrangement($comp, $item, $hier, $n, $others) {
     }
 
     $long_title = "arr $comp->id $n";
+    $title = mb_convert_encoding($title, 'UTF-8');
+    // fix Incorrect string value: '\xC3'
     $id = DB_composition::insert(
         sprintf(
             "(long_title, title, arrangement_of) values ('%s', '%s', %d)",
@@ -577,6 +579,7 @@ function make_arrangement($comp, $item, $hier, $n, $others) {
 // $c: parsed mediawiki
 //
 function make_arrangements($comp, $c) {
+    if (empty($c->files)) return;
     $hier = ['','',''];
     $n = 0;
     $others = [];
@@ -644,25 +647,17 @@ function make_work($c) {
     [$title, $composer_first, $composer_last] = parse_title($c->json_title);
     $composer_id = get_person($composer_first, $composer_last);
 
-    $json_title = str_replace('_', ' ', $c->json_title);
-    $json_title = fix_title($json_title);
+    $long_title = str_replace('_', ' ', $c->json_title);
+    $long_title = fix_title($long_title);
 
     // check for works with same title
     //
     $w = DB_composition::lookup(
-        sprintf("title='%s'", DB::escape($json_title))
+        sprintf("long_title='%s'", DB::escape($long_title))
     );
     if ($w) {
-        for ($i=2; ; $i++) {
-            $long_title = sprintf('%s (%d)', $json_title, $i);
-            echo "DUP FOUND: trying $title\n";
-            $w = DB_composition::lookup(
-                sprintf("title='%s'", DB::escape($long_title))
-            );
-            if (!$w) break;
-        }
-    } else {
-        $long_title = $json_title;
+        echo "duplicate composition found\n";
+        return;
     }
     $q = sprintf("(long_title) values ('%s')", DB::escape($long_title));
     if ($test){
@@ -752,7 +747,10 @@ function make_work($c) {
     if (!empty($c->year_date_of_composition)) {
         $comp_year = (int)$c->year_date_of_composition;
         if ($comp_year) {
-            $x[] = sprintf("composed='%s'", "$comp_year:01:01");
+            $d = DB::date_str_year($comp_year);
+            if ($d) {
+                $x[] = "composed='$d'";
+            }
         }
     }
     $pub_year = 0;
@@ -760,7 +758,10 @@ function make_work($c) {
         $pub_year = (int)$c->year_of_first_publication;
     }
     if ($pub_year) {
-        $x[] = sprintf("published='%s'", "$pub_year:01:01");
+        $d = DB::date_str_year($pub_year);
+        if ($d) {
+            $x[] = "published='$d'";
+        }
     }
     if (!empty($c->work_title)) {
         $x[] = sprintf("title='%s'",
@@ -899,6 +900,7 @@ function main($start_line, $end_line) {
             //if ($title != 'Piano_Sonata_in_A_minor,_D.845_(Schubert,_Franz)') continue;
             //if ($title != 'Schwanengesang,_D.957_(Schubert,_Franz)') continue;
             //if ($title != '6_Épigraphes_antiques_(Debussy,_Claude)') continue;
+            //if ($title != '4_Morceaux_fugués_(Gheyn,_Matthias_van_den)') continue;
             echo "==================\ntitle: $title\n";
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";
@@ -919,14 +921,13 @@ function main($start_line, $end_line) {
         }
         DB::commit_transaction();
     }
-    return;
-    flush_inst_combo_cache();
-    flush_work_type_cache();
+    //flush_inst_combo_cache();
+    //flush_work_type_cache();
 }
 
 // there are 3079 lines
 
 DB::$show_queries = true;
-main(0, 10);
+main(811, 4000);
 
 ?>

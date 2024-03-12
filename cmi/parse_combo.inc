@@ -61,6 +61,7 @@ function parse_arrangement_target($hier) {
 // Theater Orchestra
 // Theatre Orchestra
 // Wind Band
+// Wind Octet
 // String Orchestra
 // Bandurria
 // String Quartet

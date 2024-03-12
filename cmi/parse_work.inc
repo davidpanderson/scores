@@ -755,6 +755,7 @@ function parse_keys($s) {
 // convert bb into B flat minor etc.
 //
 function parse_key_aux($x) {
+    if (!$x) return '';
     $acc = '';
     if (strlen($x)>1) {
         switch ($x[1]) {
@@ -903,7 +904,12 @@ function parse_movement_line($s) {
         if ($n2) {
             $t = substr2($s, $n1+2, $n2);
             $x = explode('|', $t);
-            $s2 = sprintf('%s %s', $x[2], $x[1]);
+            if (count($x)>2) {
+                $s2 = sprintf('%s %s', $x[2], $x[1]);
+            } else {
+                echo "short OpDeriv: $t\n";
+                $s2 = 'based on '.$x[1];
+            }
             $s = substr2($s, 0, $n1).$s2;
         }
     }

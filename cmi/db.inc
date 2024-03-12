@@ -61,9 +61,13 @@ class DB {
         if (!static::do_query('commit')) return static::error('commit trans');
     }
     public static function date_str($y, $m, $d) {
+        if ($y < 1000 || $y > 2100) return null;
+        if ($m < 1 || $m > 12) return null;
+        if ($d < 1 || $m > 31) return null;
         return "$y-$m-$d";
     }
     public static function date_str_year($y) {
+        if ($y < 1000 || $y > 2100) return null;
         return "$y-1-1";
     }
     public static function enum($query) {

@@ -70,7 +70,7 @@ function do_composition($id) {
     row2('Opus', $c->opus_catalogue);
     row2('Composed', $c->composed);
     row2('Published', $c->published);
-    row2('Performed', $c->performed);
+    row2('First performed', $c->performed);
     row2('Dedication', $c->dedication);
     row2('Types', comp_types_str($c->comp_types));
     row2('Creators', creators_str($c->creators, true));

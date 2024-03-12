@@ -10,6 +10,8 @@
 
 require_once("../inc/util.inc");
 
+define('GLOBAL_HEAD_EXTRA', '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>');
+
 //-------------- Project name and owner
 
 define("PROJECT", "Classical Music Index");
@@ -111,12 +113,53 @@ function make_php_mailer() {
 
 //-------------- Header and footer
 
+function navbar(
+    $url_prefix,
+        // prefix for links; needed for pages not in top dir
+    $user,
+        // logged-in user, if any
+    $fixed=false,
+        // if true, navbar is fixed at top of page.
+        // NOTE: if you do this, you must set a global var $fixed_navbar
+        // to true at compile time
+        // (it needs to be set when page_head() is called).
+    $inverse=false
+        // white on black?
+) {
+    global $master_url;
+
+    $brand = "<a class=\"navbar-brand\" href=$master_url>".PROJECT."</a>";
+    navbar_start($brand, $fixed, $inverse);
+
+    $x = array();
+    if ($user) {
+        $x[] = array(tra("Account"), $url_prefix.USER_HOME);
+        $x[] = array(tra("Join"), $url_prefix."join.php");
+    }
+    $x[] = array(tra("About %1", PROJECT), $url_prefix."about.php");
+    $x[] = array(tra("Help"), $url_prefix."welcome.php");
+    navbar_menu(tra("Project"), $x);
+
+    navbar_menu(tra("Community"), array(
+        array(tra("Message boards"), $url_prefix."forum_index.php"),
+        array(tra("User search"), $url_prefix."user_search.php"),
+    ));
+    navbar_menu(tra("Site"), array(
+        array(tra("Site search"), $url_prefix."site_search.php"),
+        array(tra("Languages"), $url_prefix."language_select.php")
+    ));
+
+    // add your own menu here if you want
+
+    navbar_right($user);
+    navbar_end();
+}
 // Put your project title and logo here
 // If you include any links, prepend URL with $prefix
 // if you need to open divs here close them in project_footer()
 //
 function project_banner($title, $prefix, $is_main) {
-    sample_navbar(secure_url_base(), get_logged_in_user(false), false);
+    navbar(secure_url_base(), get_logged_in_user(false), false);
     if ($title) {
         echo "<h2>$title</h2>\n";
     }

@@ -47,7 +47,8 @@ function creators_str($cts, $show_role) {
 }
 
 function pluralize($x) {
-    if (substr($x, -1) == 's') return $x.'es';
+    if (substr($x, -2) == 'ss') return $x.'es';
+    if (substr($x, -1) == 's') return $x;
     return $x.'s';
 }
 
