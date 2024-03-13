@@ -114,7 +114,7 @@ function comp_form($params) {
         'Composed for<br><small>Use Ctrl to select multiple</small>',
         'insts', instrument_options(), $params->insts
     );
-    form_checkboxes('Other instruments OK?', [['arr', '', $params->others_ok]]);
+    form_checkboxes('Other instruments OK?', [['others_ok', '', $params->others_ok]]);
     form_input_text('Composer name', 'name', $params->name);
     form_select('Composer sex', 'sex', sex_options(), $params->sex);
     form_select('Composer nationality', 'location', country_options(), $params->location);
@@ -133,13 +133,13 @@ function comp_get() {
     $params->offset = get_int('offset', true);
     $params->title = get_str('title', true);
     $params->insts = get_str('insts', true);
-    $params->others_ok = get_int('others_ok', true);
+    $params->others_ok = get_str('others_ok', true);
     $params->name = get_str('name', true);
     $params->sex = get_int('sex', true);
     $params->location = get_int('location', true);
     $params->arr = get_str('arr', true);
     $params->arr_insts = get_str('arr_insts', true);
-    $params->arr_others_ok = get_int('arr_others_ok', true);
+    $params->arr_others_ok = get_str('arr_others_ok', true);
     return $params;
 }
 
@@ -258,28 +258,26 @@ function do_composition($params) {
 
     $query = 'select';
     if ($params->arr) {
-        $query .= ' comp2.*';
+        $query .= ' comp2.* from composition as comp2
+            join composition as comp1
+            on comp2.arrangement_of=comp1.id
+        ';
     } else {
-        $query .= ' comp1.*';
+        $query .= ' comp1.* from composition as comp1
+        ';
     }
-    $query .= ' from composition as comp1';
-    if ($composer_params) {
-        $query .= ' , person_role, person';
-    }
-    if ($params->arr) {
-        $query .= ' , composition as comp2';
-    }
-    $query .= ' where true';
+    $query .= ' where true ';
 
-    // main composition
+    // clauses for main composition
     //
     if ($params->title) {
-        $query .= sprintf(" and match(comp1.long_title) against ('%s' in boolean mode)",
+        $query .= sprintf(" and match(comp1.title) against ('%s' in boolean mode)",
             DB::escape($params->title)
         );
     }
     if (!$params->arr) {
-        $query .= ' and comp1.arrangement_of is null and comp1.parent is null';
+        $query .= ' and comp1.arrangement_of is null and comp1.parent is null
+        ';
     }
     if ($params->insts) {
         $query .= sprintf(' and json_overlaps("%s", comp1.instrument_combos)',
@@ -290,33 +288,35 @@ function do_composition($params) {
     // composer
     //
     if ($composer_params) {
-        $query .= " and person_role.id member of (comp1.creators->'$')";
-        $query .= sprintf(' and person_role.role=%d',
+        $query .= 'and json_overlaps(
+            (select json_arrayagg(person_role.id) from person_role
+                join person
+                on person.id = person_role.person
+        ';
+        $query .= sprintf('where person_role.role=%d',
             role_name_to_id('composer')
         );
-        $query .= ' and person_role.person = person.id ';
-    }
-    if ($params->name) {
-        $query .= sprintf(
-            " and match(person.first_name, person.last_name) against ('%s' in boolean mode)",
-            DB::escape($params->name)
-        );
-    }
-    if ($params->sex) {
-        $query .= sprintf(" and person.sex=%d", $params->sex);
-    }
-    if ($params->location) {
-        $query .= sprintf(
-            " and %d member of (person.locations->'$')",
-            $params->location
-        );
+        if ($params->sex) {
+            $query .= sprintf(" and person.sex=%d", $params->sex);
+        }
+        if ($params->location) {
+            $query .= sprintf(
+                " and %d member of (person.locations->'$')",
+                $params->location
+            );
+        }
+        if ($params->name) {
+            $query .= sprintf(
+                " and match(person.first_name, person.last_name) against ('%s' in boolean mode)",
+                DB::escape($params->name)
+            );
+        }
+        $query .= '), comp1.creators->\'$\')
+        ';
     }
 
     // arrangement
     //
-    if ($params->arr) {
-        $query .= ' and comp2.arrangement_of=comp1.id';
-    }
     if ($params->arr_insts) {
         $query .= sprintf(' and json_overlaps("%s", comp2.instrument_combos)',
             make_int_list($arr_inst_combos)
@@ -326,7 +326,6 @@ function do_composition($params) {
 
     echo "QUERY: $query\n";
     $comps = DB::enum($query);
-    //$comps = DB_composition::enum('arrangement_of is null and parent is null', 'limit 50');
 
     if (!$comps) {
         echo "No compositions found.";

@@ -147,7 +147,8 @@ create table instrument (
     imslp_code              varchar(190)    not null,
     name                    varchar(190)    not null,
     ncombos                 integer         not null default 0,
-    primary key(id)
+    primary key(id),
+    unique(name)
 );
 
 create table instrument_combo (
@@ -234,7 +235,10 @@ alter table composition add fulltext cindex (title);
 alter table composition add index wlang( (cast(languages->'$' as unsigned array)) );
 alter table composition add index wwt( (cast(comp_types->'$' as unsigned array)) );
 alter table composition add index wic( (cast(instrument_combos->'$' as unsigned array)) );
+alter table composition add index comp_crea( (cast(creators->'$' as unsigned array)) );
 alter table composition add index wperiod (period);
+alter table composition add index comp_arr(arrangement_of);
+alter table composition add index comp_parent(parent);
 
 create table score (
     id                      integer         not null auto_increment,

@@ -219,7 +219,7 @@ function make_ensemble($p) {
     }
     if (count($p->time_period)) {
         $period_id = get_period_id($p->time_period[0]);
-        if ($period_id) $x[] = "period_id=$period_id";
+        if ($period_id) $x[] = "period=$period_id";
     }
 
     if (!empty($p->alternate_names)) {

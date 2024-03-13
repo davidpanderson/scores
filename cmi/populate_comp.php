@@ -923,11 +923,14 @@ function main($start_line, $end_line) {
     }
     //flush_inst_combo_cache();
     //flush_work_type_cache();
+
+
+    echo "NOW RUN POST_POPULATE.PHP\n";
 }
 
 // there are 3079 lines
 
 DB::$show_queries = true;
-main(811, 4000);
+main(0, 1);
 
 ?>
