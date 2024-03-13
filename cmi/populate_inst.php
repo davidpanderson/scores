@@ -3,7 +3,7 @@
 <?php
 
 // input:
-//  data/inst.txt:
+//  imslp_data/inst.txt:
 //      list of instrument names, e.g.
 //      # acc = For accordion + Scores featuring the accordion
 //      # acc gtr = For accordion, guitar + Scores featuring the accordion + Scores featuring the guitar
@@ -16,7 +16,7 @@
 require_once('cmi_db.inc');
 
 function main() {
-    $lines = file('data/inst.txt');
+    $lines = file('imslp_data/inst.txt');
     $insts = [];
     foreach ($lines as $line) {
         $x = explode('=', $line);

@@ -11,9 +11,10 @@
 //      publisher
 //      ensemble
 //
-// input: a file in which each line is a JSON record
+// input: imslp_data/david_page_dump.txt
+//      a file in which each line is a JSON record
 //      with roughly 100 wiki pages, each name=>contents
-//      also .ser files from populate_comp_type.php
+//      also .ser files for comp_type and instrument
 // For each page:
 // - parse it using parse_work()
 // - skip if it doesn't contain a #pfe:imslppage call
@@ -882,7 +883,7 @@ function process_tags_score(&$x, $tags) {
 }
 
 function main($start_line, $end_line) {
-    $f = fopen('data/david_page_dump.txt', 'r');
+    $f = fopen('imslp_data/david_page_dump.txt', 'r');
     for ($i=0; ; $i++) {
         $x = fgets($f);
         if (!$x) {
@@ -925,12 +926,12 @@ function main($start_line, $end_line) {
     //flush_work_type_cache();
 
 
-    echo "NOW RUN POST_POPULATE.PHP\n";
+    echo "NOW RUN make_ser.php\n";
 }
 
 // there are 3079 lines
 
 DB::$show_queries = true;
-main(0, 1);
+main(0, 10);
 
 ?>

@@ -3,9 +3,9 @@
 <?php
 
 // inputs:
-//  data/work_types.tags, e.g.
+//  imslp_data/work_types.tags, e.g.
 //      # adagiettos = Adagiettos
-//  work_types_hier.tags
+//  imslp_data/work_types_hier.tags
 //
 // outputs:
 //  populate composition_type table
@@ -25,7 +25,7 @@ function make_ct($code, $name) {
 // read MW data, return list of structs
 //
 function get_work_types() {
-    $lines = file('data/work_types.tags');
+    $lines = file('imslp_data/work_types.tags');
 
     $cts = [];
     foreach ($lines as $line) {
@@ -95,7 +95,7 @@ function parse_hier($cts) {
         $cts_by_name[$ct->name] = $n;
         $ct->desc = [];     // indices of descendants
     }
-    $lines = file('data/work_types_hier.tags');
+    $lines = file('imslp_data/work_types_hier.tags');
     $level = 0;
     $anc = [];      // indices of ancestors
     foreach ($lines as $line) {

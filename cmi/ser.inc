@@ -1,8 +1,7 @@
 <?php
 
-// access to static tables via .ser files
-
-require_once('cmi_db.inc');
+// access to small tables via .ser files
+// used by web code
 
 /////////////// period /////////////////
 

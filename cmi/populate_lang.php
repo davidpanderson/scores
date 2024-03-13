@@ -14,7 +14,7 @@ require_once('cmi_db.inc');
 require_once('cmi_util.inc');
 
 function main() {
-    $lines = file('data/lang.tags');
+    $lines = file('imslp_data/lang.tags');
     $langs = [];
     foreach ($lines as $line) {
         $parts = explode(' ', $line);
