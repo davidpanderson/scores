@@ -141,11 +141,32 @@ function test_tags() {
     }
 }
 
-//test_movement_lines();
+////////////////////// title /////////////////////
+
+function test_title() {
+    $ts = [
+        'Improvisation on “Osanna” from the “{{NoComp|Missa a 3|Aulen, Johannes}}” by {{LinkComp|Johannes|Aulen}}',
+        'In paradisum, from the {{NoComp|Requiem|St. George Tucker, Tui}}',
+        'Piano Trio in B{{flat}} major',
+        'Hebräische Melodien “Nach Eindrücken der {{LinkCompS|George Gordon|Byron|Byron’schen}} Gesänge” für Bratsche und Klavier, Op. 9',
+        'Sonata for Piano Duet in {{K|C}}',
+        'Piano sonata No. 1 in C{{sharp}} minor, Op. 6',
+        'Méthode de 1er cornet en si{{flat}}',
+        'Violin Sonata in {{Key|Bb}}'
+    ];
+    foreach($ts as $t) {
+        echo "----------------\ninput: $t\noutput:\n";
+        print_r(expand_title($t));
+        echo "\n";
+    }
+}
+
+test_movement_lines();
 //test_nmvts_sections();
 //test_keys();
 //test_arranger();
 //test_dedication();
 //test_arrangement_target();
-test_tags();
+//test_tags();
+//test_title();
 ?>

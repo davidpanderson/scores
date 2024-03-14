@@ -28,7 +28,7 @@ function remove_diacritics($x) {
 //  duplicate titles
 //      Ti Rapirei! (Tosti, Francesco Paolo) (2)
 //
-function parse_title($str) {
+function parse_long_title($str) {
     $str = str_replace('_', ' ', $str);
     $lparen = strrpos($str, '(');
     if ($lparen === false) {
@@ -44,7 +44,7 @@ function parse_title($str) {
     $c = substr2($str, $lparen+1, $rparen);
     if (is_numeric($c)) {
         $str2 = substr2($str, 0, $lparen);
-        [$t, $first, $last] = parse_title($str2);
+        [$t, $first, $last] = parse_long_title($str2);
         return ["$t ($c)", $first, $last];
     }
     $comma = strpos($c, ',');

@@ -779,7 +779,8 @@ function parse_key_aux($x) {
     return '';
 }
 
-// parse a movement line
+// parse a movement line like
+// #Scherzo. Vivace ({{K|G}}) - Trio ({{K|C}})
 // see movement_lines.txt for examples
 // return an object with fields
 //      title
@@ -839,43 +840,53 @@ function parse_movement_line($s) {
             $parts = [$t];
         }
 
-        if (DEBUG_SECTIONS) {
-            echo "DEBUG_SECTIONS paren contents: $t\n";
-        }
         // loop over the parts
         //
         foreach ($parts as $p) {
+            if (DEBUG_SECTIONS) {
+                echo "part: $p\n";
+            }
+
             // we assume each part has only 1 item
-            // N bars
-            if (strpos($p, ' bars')) {
-                $nbars = (int)$p;
-                continue;
-            }
-            // {{K|c}}
-            $n1 = strpos($p, '{{K|');
-            if ($n1 === false) $n1 = strpos($p, '{{k|');
-            if ($n1 !== false) {
-                $n2 = strpos($p, '}}', $n1);
-                $k = parse_key_aux(substr2($p, $n1+4, $n2));
-                $keys[] = $k;
-                if ($n1 > 0) {
-                    $out = substr2($p, 0, $n1).$k;
-                }
-                continue;
-            }
 
-            $n1 = strpos($p, '{{');
-            if ($n1 !== false) {
-                $mt = parse_metro(substr($p, $n1+2));
-                if ($mt) {
-                    $metros[] = $mt;
-                    continue;
-                }
-            }
-
+            // 'F{{sharp}} Major'
             $k = parse_key2($p);
             if ($k) {
                 $keys[] = $k;
+                continue;
+            }
+
+            // check for various templates
+            $n1 = strpos($p, '{{');
+            if ($n1 !== false) {
+                $n2 = strpos($p, '}}', $n1);
+                if ($n2 === false) {
+                    continue;
+                }
+                $t = substr2($p, $n1+2, $n2);
+                $x = explode('|', $t);
+                switch (strtolower($x[0])) {
+                case 'k':
+                case 'key':
+                    $k = parse_key_aux($x[1]);
+                    $keys[] = $k;
+                    if ($n1 > 0) {
+                        $out = substr2($p, 0, $n1).$k;
+                    }
+                    break;
+                default:
+                    // {{quard|44}}
+                    $mt = parse_metro($x);
+                    if ($mt) {
+                        $metros[] = $mt;
+                    }
+                }
+                continue;
+            }
+
+            // N bars
+            if (strpos($p, ' bars')) {
+                $nbars = (int)$p;
                 continue;
             }
 
@@ -916,7 +927,7 @@ function parse_movement_line($s) {
 
     // key not in parens
     //
-    $n1 = strpos($s, '{{K|');
+    $n1 = stripos($s, '{{k|');
     if ($n1 !== false) {
         $n2 = strpos($s, '}}', $n1);
         if ($n2) {
@@ -942,9 +953,9 @@ function parse_movement_line($s) {
     // if title is (...), remove parens
     if ($s && $s[0] == '(') {
         $s = substr($s, 1);
-    }
-    if ($s && substr($s, -1) == ')') {
-        $s = substr($s, 0, -1);
+        if ($s && substr($s, -1) == ')') {
+            $s = substr($s, 0, -1);
+        }
     }
 
     $x = new StdClass;
@@ -965,9 +976,8 @@ $metro_units = [
     'half' => 'half note',
     'halfd' => 'dotted half note'
 ];
-function parse_metro($s) {
+function parse_metro($x) {
     global $metro_units;
-    $x = explode('|', $s);
     if (count($x) != 2) return null;
     $k = strtolower($x[0]);
     if (array_key_exists($k, $metro_units)) {
@@ -979,11 +989,10 @@ function parse_metro($s) {
 // convert 'F{{sharp}} mixolydian' to 'F sharp mixolydian',
 // or null if not a key
 //
-$modes = [
-    'major', 'minor', 'dorian', 'mixolydian', 'lydian'
-];
 function parse_key2($s) {
-    global $modes;
+    $modes = [
+        'major', 'minor', 'dorian', 'mixolydian', 'lydian'
+    ];
     foreach ($modes as $mode) {
         if (strpos($s, $mode)) {
             $s = str_replace('{{sharp}}', ' sharp', $s);
@@ -1091,7 +1100,8 @@ function parse_arranger_aux($s) {
 
 ///////////////// DEDICATION /////////////////
 
-// input: // $s = '{{LinkDed|Joseph|Haydn|1732|1809}};'
+// input:
+//  {{LinkDed|Joseph|Haydn|1732|1809}}
 //   (see others in parse_test.php)
 // output: a string
 //
@@ -1124,6 +1134,51 @@ function parse_dedication($s) {
 
     if ($n > 0) return substr2($s, 0, $n);
 
+    return $s;
+}
+
+///////////////// TITLE ////////////////////
+
+// input: Cello Sonata in {{K|c}}
+// output: Cello Sonata in C minor
+// see other cases in parse_test.php
+//
+function expand_title($s) {
+    while (1) {
+        $n1 = strpos($s, '{{');
+        if ($n1 === false) return $s;
+        $first = substr2($s, 0, $n1);
+        $n2 = strpos($s, '}}', $n1);
+        if ($n2 === false) {
+            return $first;
+        }
+        $last = substr($s, $n2+2);
+        $t = substr2($s, $n1+2, $n2);
+        $x = explode('|', $t);
+        $out = '';
+        switch (strtolower($x[0])) {
+        case 'k':
+        case 'key':
+            $out = parse_key_aux($x[1]);
+            break;
+        case 'flat':
+            $out = ' flat';
+            break;
+        case 'sharp':
+            $out = ' sharp';
+            break;
+        case 'nocomp':
+            $out = $x[1];
+            break;
+        case 'linkcomp':
+            $out = sprintf('%s %s', $x[1], $x[2]);
+            break;
+        case 'linkcomps':
+            $out = sprintf("%s's", $x[1]);
+            break;
+        }
+        $s = "$first$out$last";
+    }
     return $s;
 }
 

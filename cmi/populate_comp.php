@@ -28,7 +28,7 @@ require_once("cmi_db.inc");
 require_once("cmi_util.inc");
 require_once("populate_util.inc");
 
-define('DEBUG_ARRANGEMENTS', 1);
+define('DEBUG_ARRANGEMENTS', 0);
 define('DEBUG_WIKITEXT', 0);
 define('DEBUG_PARSED_WORK', 0);
 
@@ -645,7 +645,7 @@ function make_movements($c, $comp_id) {
 //
 function make_work($c) {
     global $test;
-    [$title, $composer_first, $composer_last] = parse_title($c->json_title);
+    [$title, $composer_first, $composer_last] = parse_long_title($c->json_title);
     $composer_id = get_person($composer_first, $composer_last);
 
     $long_title = str_replace('_', ' ', $c->json_title);
@@ -766,7 +766,7 @@ function make_work($c) {
     }
     if (!empty($c->work_title)) {
         $x[] = sprintf("title='%s'",
-            DB::escape(fix_title($c->work_title))
+            DB::escape(expand_title(fix_title($c->work_title)))
         );
     }
 
@@ -898,10 +898,7 @@ function main($start_line, $end_line) {
         DB::begin_transaction();
         foreach ($y as $title => $body) {
             //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
-            //if ($title != 'Piano_Sonata_in_A_minor,_D.845_(Schubert,_Franz)') continue;
-            //if ($title != 'Schwanengesang,_D.957_(Schubert,_Franz)') continue;
-            //if ($title != '6_Épigraphes_antiques_(Debussy,_Claude)') continue;
-            //if ($title != '4_Morceaux_fugués_(Gheyn,_Matthias_van_den)') continue;
+            //if ($title != 'Symphony_No.20_in_D_major,_K.133_(Mozart,_Wolfgang_Amadeus)') continue;
             echo "==================\ntitle: $title\n";
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";
@@ -932,6 +929,6 @@ function main($start_line, $end_line) {
 // there are 3079 lines
 
 DB::$show_queries = true;
-main(0, 1);
+main(0, 10);
 
 ?>
