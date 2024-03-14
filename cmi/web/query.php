@@ -203,7 +203,7 @@ function show_arrangements($comps) {
             ),
             $c->title,
             sprintf('<a href=%s>View</a>', imslp_url($c2)),
-            $c2->composed,
+            DB::date_num_to_str($c2->composed),
             comp_types_str($c2->comp_types),
             creators_str($c->creators, false),
             instrument_combos_str($c->instrument_combos)
@@ -224,7 +224,7 @@ function show_compositions($comps) {
                 $c->title
             ),
             sprintf('<a href=%s>View</a>', imslp_url($c)),
-            $c->composed,
+            DB::date_num_to_str($c->composed),
             comp_types_str($c->comp_types),
             creators_str($c->creators, true),
             instrument_combos_str($c->instrument_combos)

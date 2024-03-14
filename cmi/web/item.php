@@ -12,9 +12,9 @@ function do_person($id) {
     start_table();
     row2('First name', $p->first_name);
     row2('Last name', $p->last_name);
-    row2('Born', $p->born);
+    row2('Born', DB::date_num_to_str($p->born));
     row2('Birth place', location_id_to_name($p->birth_place));
-    row2('Died', $p->died);
+    row2('Died', DB::date_num_to_str($p->died));
     row2('Death place', location_id_to_name($p->death_place));
     row2('Locations', locations_str($p->locations));
     row2('Sex', sex_id_to_name($p->sex));
@@ -68,9 +68,9 @@ function do_composition($id) {
         row2('Alternative title', $c->alternative_title);
     }
     row2('Opus', $c->opus_catalogue);
-    row2('Composed', $c->composed);
-    row2('Published', $c->published);
-    row2('First performed', $c->performed);
+    row2('Composed', DB::date_num_to_str($c->composed));
+    row2('Published', DB::date_num_to_str($c->published));
+    row2('First performed', DB::date_num_to_str($c->performed));
     row2('Dedication', $c->dedication);
     row2('Types', comp_types_str($c->comp_types));
     row2('Creators', creators_str($c->creators, true));

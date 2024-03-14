@@ -748,9 +748,9 @@ function make_work($c) {
     if (!empty($c->year_date_of_composition)) {
         $comp_year = (int)$c->year_date_of_composition;
         if ($comp_year) {
-            $d = DB::date_str_year($comp_year);
+            $d = DB::date_num($comp_year);
             if ($d) {
-                $x[] = "composed='$d'";
+                $x[] = "composed=$d";
             }
         }
     }
@@ -759,9 +759,9 @@ function make_work($c) {
         $pub_year = (int)$c->year_of_first_publication;
     }
     if ($pub_year) {
-        $d = DB::date_str_year($pub_year);
+        $d = DB::date_num($pub_year);
         if ($d) {
-            $x[] = "published='$d'";
+            $x[] = "published=$d";
         }
     }
     if (!empty($c->work_title)) {
@@ -926,12 +926,12 @@ function main($start_line, $end_line) {
     //flush_work_type_cache();
 
 
-    echo "NOW RUN make_ser.php\n";
+    fwrite(STDERR, "==> Now run make_ser.php\n");
 }
 
 // there are 3079 lines
 
 DB::$show_queries = true;
-main(0, 10);
+main(0, 1);
 
 ?>

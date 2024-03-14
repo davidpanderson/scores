@@ -70,6 +70,31 @@ class DB {
         if ($y < 1000 || $y > 2100) return null;
         return "$y-1-1";
     }
+    // MySQL's 'date' type doesn't allow unspecified month/day.
+    // So instead we represent dates as int YYYYMMDD
+    // where either MMDD is 0000 (unspecified)
+    // or 1.12 and 1.31
+
+    public static function date_num($y, $m=0, $d=0) {
+        if ($y<1000) return 0;
+        if ($y>3000) return 0;
+        $num = $y*10000;
+        if ($m<1 || $m>12 || $d<1 || $d>31) return $num;
+        return $num + $m*100 + $d;
+    }
+    public static function date_num_to_str($num) {
+        if (!$num) return '---';
+        $year = intdiv($num, 10000);
+        $mod = $num % 10000;
+        if ($mod) {
+            $month = intdiv($mod, 100);
+            $day = $mod % 100;
+            return sprintf('%d-%02d-%02d', $year, $month, $day);
+        } else {
+            return (string)$year;
+        }
+    }
+
     public static function enum($query) {
         $result = static::do_query($query);
         if (!$result) return null;

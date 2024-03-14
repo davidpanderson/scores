@@ -24,31 +24,31 @@ function fix_title($title) {
     return str_replace('  ', ' ', $x);  // in case there was already a space
 }
 
-function person_born_str($p) {
+function person_born_num($p) {
     if (!empty($p->born_year)) {
         $y = (int)$p->born_year;
         $m = empty($p->born_month)?1:(int)$p->born_month;
         $d = empty($p->born_day)?1:(int)$p->born_day;
-        if ($y) return DB::date_str($y, $m, $d);
+        if ($y) return DB::date_num($y, $m, $d);
     }
     if (!empty($p->birth_date)) {
         $y = (int)strpbrk($p->birth_date, '0123456789');
             // from first numeric char on
-        if ($y) return DB::date_str_year($y);
+        if ($y) return DB::date_num($y);
     }
     return null;
 }
 
-function person_died_str($p) {
+function person_died_num($p) {
     if (!empty($p->died_year)) {
         $y = (int)$p->died_year;
         $m = empty($p->died_month)?1:(int)$p->died_month;
         $d = empty($p->died_day)?1:(int)$p->died_day;
-        if ($y) return DB::date_str($y, $m, $d);
+        if ($y) return DB::date_num($y, $m, $d);
     }
     if (!empty($p->death_date)) {
         $y = (int)strpbrk($p->death_date, '0123456789');
-        if ($y) return DB::date_str_year($y);
+        if ($y) return DB::date_num($y);
     }
     return null;
 }
@@ -71,19 +71,20 @@ function get_person($first, $last, $born=0, $died=0) {
     if ($p) {
         return $p->id;
     }
-    $born_str = '';
-    $died_str = '';
+    $born_num = 0;
+    $died_num = 0;
     if ($born) {
-        $born_str = DB::date_str_year((int)$born);
+        $born_num = DB::date_num((int)$born);
     }
     if ($died) {
-        $died_str = DB::date_str_year((int)$died);
+        $died_num = DB::date_num((int)$died);
     }
     $q = sprintf("(first_name, last_name%s%s) values ('%s', '%s'%s%s)",
-        $born_str?', born':'', $died_str?', died':'',
+        $born_num?', born':'', $died_num?', died':'',
         DB::escape($first),
         DB::escape($last),
-        $born_str?", '$born_str'":'', $died_str?", '$died_str'":''
+        $born_num?", $born_num":'',
+        $died_num?", $died_num":''
     );
     if ($test) {
         echo "person insert: $q\n";
@@ -132,13 +133,13 @@ function make_person($p) {
     if (!empty($p->alternate_names)) {
         $x[] = sprintf("alternate_names='%s'", DB::escape($p->alternate_names));
     }
-    $b = person_born_str($p);
+    $b = person_born_num($p);
     if ($b) {
-        $x[] = sprintf("born='%s'", $b);
+        $x[] = sprintf("born=%d", $b);
     }
-    $d = person_died_str($p);
+    $d = person_died_num($p);
     if ($d) {
-        $x[] = sprintf("died='%s'", $d);
+        $x[] = sprintf("died=%d", $d);
     }
     if (!empty($p->sex)) {
         $s = sex_name_to_id($p->sex);
@@ -226,12 +227,16 @@ function make_ensemble($p) {
         $x[] = sprintf("alternate_names='%s'", DB::escape($p->alternate_names));
     }
     if (!empty($p->born_year)) {
-        $d = DB::date_str_year((int)$p->born_year);
-        $x[] = "started='$d'";
+        $d = DB::date_num((int)$p->born_year);
+        if ($d) {
+            $x[] = "started=$d";
+        }
     }
     if (!empty($p->died_year)) {
-        $d = DB::date_str_year((int)$p->died_year);
-        $x[] = "ended='$d'";
+        $d = DB::date_num((int)$p->died_year);
+        if ($d) {
+            $x[] = "ended=$d";
+        }
     }
     if (!empty($p->instrument)) {
         $id = get_ensemble_type_id($p->instrument);
