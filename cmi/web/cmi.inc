@@ -2,6 +2,8 @@
 
 display_errors();
 
+define('DEBUG_QUERY', 0);
+
 $tables = [
     'location'=>'Location',
     'person'=>'Person',

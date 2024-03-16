@@ -1079,6 +1079,8 @@ function parse_arranger_aux($s) {
     if (count($x) < 3) return null;
     $first = $x[1];
     $last = $x[2];
+    if (!$last) return null;
+        // in {{LinkArr|foobar}}, foobar is generally a user name
     $born = (count($x) > 3)?$x[3]:0;
     $died = (count($x) > 4)?$x[4]:0;
     if ($born && !is_numeric($born)) return null;

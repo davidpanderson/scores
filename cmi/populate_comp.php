@@ -926,9 +926,10 @@ function main($start_line, $end_line) {
     fwrite(STDERR, "==> Now run make_ser.php\n");
 }
 
+DB::$show_queries = true;
+
 // there are 3079 lines
 
-DB::$show_queries = true;
 main(0, 10);
 
 ?>

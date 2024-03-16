@@ -27,8 +27,8 @@ function fix_title($title) {
 function person_born_num($p) {
     if (!empty($p->born_year)) {
         $y = (int)$p->born_year;
-        $m = empty($p->born_month)?1:(int)$p->born_month;
-        $d = empty($p->born_day)?1:(int)$p->born_day;
+        $m = empty($p->born_month)?0:(int)$p->born_month;
+        $d = empty($p->born_day)?0:(int)$p->born_day;
         if ($y) return DB::date_num($y, $m, $d);
     }
     if (!empty($p->birth_date)) {
@@ -42,8 +42,8 @@ function person_born_num($p) {
 function person_died_num($p) {
     if (!empty($p->died_year)) {
         $y = (int)$p->died_year;
-        $m = empty($p->died_month)?1:(int)$p->died_month;
-        $d = empty($p->died_day)?1:(int)$p->died_day;
+        $m = empty($p->died_month)?0:(int)$p->died_month;
+        $d = empty($p->died_day)?0:(int)$p->died_day;
         if ($y) return DB::date_num($y, $m, $d);
     }
     if (!empty($p->death_date)) {
@@ -104,20 +104,27 @@ function get_person($first, $last, $born=0, $died=0) {
 function make_person($p) {
     global $test;
     $n = $p->name;
+    $first = $n[0];
+    $last = $n[1];
+    $c = $last[0];
+    if ($c=='.' || $c=='@' || ctype_digit($c)) {
+        echo "bad last name: $last\n";
+        return;
+    }
     $pers = DB_person::lookup(
         sprintf("first_name='%s' and last_name='%s'",
-            DB::escape($n[0]),
-            DB::escape($n[1])
+            DB::escape($first),
+            DB::escape($last)
         )
     );
     if ($pers) {
-        $name = $n[0].' '.$n[1];
+        $name = $first.' '.$last;
         echo "person already exists: $name\n";
         return;
     }
     $q = sprintf("(first_name, last_name) values ('%s', '%s')",
-        DB::escape($n[0]),
-        DB::escape($n[1])
+        DB::escape($first),
+        DB::escape($last)
     );
     if ($test) {
         echo "person insert: $q\n";

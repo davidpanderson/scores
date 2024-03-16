@@ -6,14 +6,13 @@ require_once('cmi.inc');
 require_once('ser.inc');
 
 function do_location() {
-    $locs = DB_location::enum();
+    $locs = get_locations();
     start_table();
     table_header(
-        'ID', 'name', 'adjective', 'type', 'parent'
+        'name', 'adjective', 'type', 'parent'
     );
     foreach ($locs as $loc) {
         table_row(
-            $loc->id,
             $loc->name,
             $loc->adjective,
             location_type_id_to_name($loc->type),
@@ -80,7 +79,7 @@ function do_person($params) {
     }
     start_table();
     table_header(
-        'name', 'sex', 'born', 'locations'
+        'Name', 'Sex', 'Born', 'Locations'
     );
     $i = 0;
     foreach ($pers as $p) {
@@ -91,7 +90,7 @@ function do_person($params) {
                 $p->last_name.', '.$p->first_name
             ),
             sex_id_to_name($p->sex),
-            $p->born,
+            DB::date_num_to_str($p->born),
             locations_str($p->locations)
         );
     }
@@ -324,7 +323,9 @@ function do_composition($params) {
     }
     $query .= sprintf(' limit %d,%d', $params->offset, $page_size+1);
 
-    echo "QUERY: $query\n";
+    if (DEBUG_QUERY) {
+        echo "QUERY: $query\n";
+    }
     $comps = DB::enum($query);
 
     if (!$comps) {

@@ -63,15 +63,18 @@ function top() {
 function left(){
     global $user, $tables;
     panel(
-        'Tables',
-        function() use($tables){
-            echo '<ul>';
-            foreach ($tables as $name=>$title) {
-                echo sprintf('<li> <a href=query.php?type=%s>%s</a>',
-                    $name, $title
-                );
-            }
-            echo '</ul>';
+        'About',
+        function() {
+            echo '
+                Classical Music Index (CMI)
+                is a searchable database of classical music information:
+                compositions, people, ensembles, recordings, and concerts.
+                Currently CMI is based on data from
+                <a href=https://imslp.org>IMSLP</a>.
+                <p><p>
+            ';
+            show_button('query.php?type=composition', 'Find Compositions');
+            show_button('query.php?type=person', 'Find People');
         }
     );
 }
