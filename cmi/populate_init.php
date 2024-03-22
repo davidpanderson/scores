@@ -2,9 +2,13 @@
 
 <?php
 require_once('cmi_db.inc');
-require_once('ser_init.inc');
+require_once('write_ser.inc');
 
-// populate static tables and write .ser files
+// populate static tables and write .ser files for
+// location
+// sex
+// ethnicity
+// role
 
 function do_loc_type() {
     DB_location_type::insert("(name) values ('city')");
@@ -45,13 +49,14 @@ function do_all() {
     do_role();
 }
 
-function ser_all() {
-    write_ser(DB_location_type::enum(), 'location_type');
-    write_ser(DB_sex::enum(), 'sex');
-    write_ser(DB_ethnicity::enum(), 'ethnicity');
-    write_ser(DB_role::enum(), 'role');
+function do_ser() {
+    write_ser_location_type();
+    write_ser_sex();
+    write_ser_ethnicity();
+    write_ser_role();
 }
 
 do_all();
-ser_all();
+do_ser();
+
 ?>

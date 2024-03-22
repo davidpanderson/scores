@@ -52,8 +52,12 @@ function location_action($id) {
             get_int('parent')
         );
         $ret = $loc->update($q);
-        page_head("Location $name updated");
-        page_tail();
+        if ($ret) {
+            page_head("Location $name updated");
+            page_tail();
+        } else {
+            error_page('Update failed');
+        }
     } else {
         $name = get_str('name');
         $q = sprintf("(name, type, parent) values ('%s', %d, %d)",
@@ -62,8 +66,12 @@ function location_action($id) {
             get_int('parent')
         );
         $ret = DB_location::insert($q);
-        page_head("Location $name added");
-        page_tail();
+        if ($ret) {
+            page_head("Location $name added");
+            page_tail();
+        } else {
+            error_page('Insert failed');
+        }
     }
 }
 

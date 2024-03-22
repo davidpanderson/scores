@@ -14,6 +14,7 @@
 //          serialized array like 'acc' => struct
 
 require_once('cmi_db.inc');
+require_once('write_ser.inc');
 
 function main() {
     $lines = file('imslp_data/inst.txt');
@@ -71,25 +72,7 @@ function main() {
     echo "writing inst_by_code.ser\n";
 }
 
-function write_ser() {
-    $insts = DB_instrument::enum();
-    $x = [];
-    foreach ($insts as $i) {
-        $x[$i->imslp_code] = $i;
-    }
-    $f = fopen('data/inst_by_code.ser', 'w');
-    fwrite($f, serialize($x));
-    fclose($f);
-    $x = [];
-    foreach ($insts as $i) {
-        $x[$i->id] = $i;
-    }
-    $f = fopen('data/inst_by_id.ser', 'w');
-    fwrite($f, serialize($x));
-    fclose($f);
-}
-
 main();
-write_ser();
+write_ser_instrument();
 
 ?>

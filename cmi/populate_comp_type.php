@@ -14,6 +14,7 @@
 //      used by populate_work.php
 
 require_once('cmi_db.inc');
+require_once('write_ser.inc');
 
 function make_ct($code, $name) {
     $ct = new DB_composition_type;
@@ -61,27 +62,6 @@ function populate($cts) {
         );
         $ct->id = $id;
     }
-}
-
-// make the serialized files
-//
-function write_ser() {
-    $cts = DB_composition_type::enum();
-    $x = [];
-    foreach ($cts as $ct) {
-        $x[$ct->imslp_code] = $ct;
-    }
-    $f = fopen('data/comp_type_by_code.ser', 'w');
-    fwrite($f, serialize($x));
-    fclose($f);
-
-    $x = [];
-    foreach ($cts as $ct) {
-        $x[$ct->id] = $ct;
-    }
-    $f = fopen('data/comp_type_by_id.ser', 'w');
-    fwrite($f, serialize($x));
-    fclose($f);
 }
 
 // parse work_types_hier.tags,
@@ -142,6 +122,6 @@ function main() {
 
 main();
 echo "writing .ser files\n";
-write_ser();
+write_ser_comp_type();
 
 ?>

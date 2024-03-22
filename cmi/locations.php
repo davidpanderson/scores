@@ -7,7 +7,7 @@
 
 require_once('cmi_db.inc');
 require_once('ser.inc');
-require_once('ser_init.inc');
+require_once('write_ser.inc');
 
 $cont_id=0;
 $subcont_id=0;
@@ -215,7 +215,7 @@ function populate() {
 
 function main() {
     populate();
-    write_ser(DB_location::enum('', 'order by name'), 'location');
+    write_ser_location();
 }
 
 main();

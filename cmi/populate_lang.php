@@ -12,6 +12,7 @@
 
 require_once('cmi_db.inc');
 require_once('cmi_util.inc');
+require_once('write_ser.inc');
 
 function main() {
     $lines = file('imslp_data/lang.tags');
@@ -38,23 +39,7 @@ function main() {
     }
 }
 
-function write_ser() {
-    $langs = DB_language::enum();
-    $by_code = [];
-    $by_id = [];
-    foreach($langs as $lang) {
-        $by_code[$lang->code] = $lang;
-        $by_id[$lang->id] = $lang;
-    }
-    $f = fopen('data/lang_by_code.ser', 'w');
-    fwrite($f, serialize($by_code));
-    fclose($f);
-    $f = fopen('data/lang_by_id.ser', 'w');
-    fwrite($f, serialize($by_id));
-    fclose($f);
-}
-
 main();
-write_ser();
+write_ser_language();
 
 ?>
