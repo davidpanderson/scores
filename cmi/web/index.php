@@ -66,15 +66,25 @@ function left(){
         'About',
         function() {
             echo '
+                <p>
                 Classical Music Index (CMI)
-                is a searchable database of classical music information:
+                is a searchable and editable
+                database of classical music information:
                 compositions, people, ensembles, recordings, and concerts.
-                Currently CMI is based on data from
+                <p>
+                The goals of CMI, and its database schema,
+                are described <a href=https://continuum-hypothesis.com/music_discover.php>here</a>.
+                <p>
+                CMI is currently based on data from
                 <a href=https://imslp.org>IMSLP</a>.
+                <p>
+                The code behind CMI is
+                <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
                 <p><p>
             ';
-            show_button('query.php?type=composition', 'Find Compositions');
-            show_button('query.php?type=person', 'Find People');
+            show_button('query.php?type=composition', 'Compositions');
+            show_button('query.php?type=person', 'People');
+            show_button('query.php?type=location', 'Locations');
         }
     );
 }

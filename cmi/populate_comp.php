@@ -694,7 +694,10 @@ function make_work($c) {
     }
 
     if (!empty($c->opus_catalogue)) {
-        $x[] = sprintf("opus_catalogue='%s'", DB::escape($c->opus_catalogue));
+        $oc = parse_opus($c->opus_catalogue);
+        if ($oc) {
+            $x[] = sprintf("opus_catalogue='%s'", DB::escape($oc));
+        }
     }
     if (!empty($c->alternative_title)) {
         $x[] = sprintf("alternative_title='%s'", DB::escape($c->alternative_title));

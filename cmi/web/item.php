@@ -1,5 +1,7 @@
 <?php
 
+// display individual items
+
 require_once('../inc/util.inc');
 require_once('cmi_db.inc');
 require_once('cmi.inc');
@@ -124,6 +126,19 @@ function do_composition($id) {
     page_tail();
 }
 
+function do_location($id) {
+    $loc = DB_location::lookup_id($id);
+    if (!$loc) error_page("no location $id\n");
+    page_head($loc->name);
+    start_table();
+    row2('Name', $loc->name);
+    row2('Type', location_type_id_to_name($loc->type));
+    row2('Parent', $loc->parent?location_id_to_name($loc->parent):'---');
+    row2('', button_text("edit.php?type=location&id=$loc->id", 'Edit'));
+    end_table();
+    page_tail();
+}
+
 function main($type, $id) {
     switch ($type) {
     case 'person':
@@ -131,6 +146,9 @@ function main($type, $id) {
         break;
     case 'composition':
         do_composition($id);
+        break;
+    case 'location':
+        do_location($id);
         break;
     }
 }

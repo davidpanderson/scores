@@ -161,7 +161,21 @@ function test_title() {
     }
 }
 
-test_movement_lines();
+////////////////////// opus /////////////////////
+
+function test_opus() {
+    $ts = [
+        'K.428 ; {{K6|421b}} ; Op.10 No.4',
+        '{{HaydnHob|n801|XVI:52}} ; Op.92'
+    ];
+    foreach($ts as $t) {
+        echo "----------------\ninput: $t\noutput: ";
+        print_r(parse_opus($t));
+        echo "\n";
+    }
+}
+
+//test_movement_lines();
 //test_nmvts_sections();
 //test_keys();
 //test_arranger();
@@ -169,4 +183,5 @@ test_movement_lines();
 //test_arrangement_target();
 //test_tags();
 //test_title();
+test_opus();
 ?>

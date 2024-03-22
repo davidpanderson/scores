@@ -1,6 +1,11 @@
 <?php
 
+// utility functions for CMI web pages
+
 display_errors();
+
+require_once('cmi_db.inc');
+require_once('ser.inc');
 
 define('DEBUG_QUERY', 0);
 
@@ -117,4 +122,35 @@ function languages_str($langs) {
     }
     return implode(', ', $x);
 }
+
+function location_type_options() {
+    $lts = DB_location_type::enum('', 'order by name');
+    $x = [[0, '---']];
+    foreach ($lts as $lt) {
+        $x[] = [$lt->id, $lt->name];
+    }
+    return $x;
+}
+
+function location_name($loc) {
+    if ($loc->parent) {
+        return sprintf('%s (%s in %s)',
+            $loc->name, location_type_id_to_name($loc->type),
+            location_id_to_name($loc->parent)
+        );
+    } else {
+        return sprintf('%s (%s)',
+            $loc->name, location_type_id_to_name($loc->type)
+        );
+    }
+}
+function location_options() {
+    $lts = DB_location::enum('', 'order by name');
+    $x = [[0, '---']];
+    foreach ($lts as $lt) {
+        $x[] = [$lt->id, location_name($lt)];
+    }
+    return $x;
+}
+
 ?>

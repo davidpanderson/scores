@@ -5,15 +5,19 @@ require_once('cmi_db.inc');
 require_once('cmi.inc');
 require_once('ser.inc');
 
+/////////////// LOCATION //////////////////
+
 function do_location() {
     $locs = get_locations();
+    show_button('edit.php?type=location', 'Add location');
+    echo '<p>';
     start_table();
     table_header(
         'name', 'adjective', 'type', 'parent'
     );
     foreach ($locs as $loc) {
         table_row(
-            $loc->name,
+            "<a href=item.php?type=location&id=$loc->id>$loc->name</a>",
             $loc->adjective,
             location_type_id_to_name($loc->type),
             $loc->parent?location_id_to_name($loc->parent):''
@@ -110,21 +114,41 @@ function comp_form($params) {
     form_input_hidden('type', 'composition');
     form_input_text('Title', 'title', $params->title);
     select2_multi(
-        'Composed for<br><small>Use Ctrl to select multiple</small>',
+        'Composed for',
         'insts', instrument_options(), $params->insts
     );
     form_checkboxes('Other instruments OK?', [['others_ok', '', $params->others_ok]]);
+    echo "<hr>";
     form_input_text('Composer name', 'name', $params->name);
     form_select('Composer sex', 'sex', sex_options(), $params->sex);
     form_select('Composer nationality', 'location', country_options(), $params->location);
-    form_checkboxes('Show arrangements', [['arr', '', $params->arr]]);
-    select2_multi(
-        'Arranged for<br><small>Use Ctrl to select multiple</small>',
-        'arr_insts', instrument_options(), $params->arr_insts
+    echo "<hr>";
+    form_checkboxes(
+        'Show arrangements', [['arr', '', $params->arr]], 'id=arr_check'
     );
-    form_checkboxes('Other instruments OK?', [['arr', '', $params->arr_others_ok]]);
+    select2_multi(
+        'For',
+        'arr_insts', instrument_options(), $params->arr_insts, 'id=arr_inst'
+    );
+    form_checkboxes(
+        'Other instruments OK?', [['arr', '', $params->arr_others_ok]],
+        'id=arr_others_ok'
+    );
     form_submit('Update');
     form_end();
+    echo "
+<script>
+var arr_check = document.getElementById('arr_check');
+var arr_inst = document.getElementById('arr_inst');
+var arr_others_ok = document.getElementById('arr_others_ok');
+f = function() {
+    arr_inst.disabled = !arr_check.checked;
+    arr_others_ok.disabled = !arr_check.checked;
+};
+f();
+arr_check.onchange = f;
+</script>
+    ";
 }
 
 function comp_get() {
@@ -214,7 +238,13 @@ function show_arrangements($comps) {
 function show_compositions($comps) {
     start_table();
     table_header(
-        'Title', 'IMSLP', 'Composed', 'Type', 'Creators', 'Instrumentation'
+        'Title',
+        'Creators',
+        'IMSLP',
+        'Key',
+        'Opus',
+        'Composed',
+        'Instrumentation'
     );
     foreach ($comps as $c) {
         table_row(
@@ -222,10 +252,12 @@ function show_compositions($comps) {
                 $c->id,
                 $c->title
             ),
-            sprintf('<a href=%s>View</a>', imslp_url($c)),
-            DB::date_num_to_str($c->composed),
-            comp_types_str($c->comp_types),
             creators_str($c->creators, true),
+            sprintf('<a href=%s>View</a>', imslp_url($c)),
+            $c->_keys,
+            $c->opus_catalogue,
+            DB::date_num_to_str($c->composed),
+            //comp_types_str($c->comp_types),
             instrument_combos_str($c->instrument_combos)
         );
     }
@@ -353,23 +385,14 @@ function do_composition($params) {
     }
 }
 
-function select2_multi($label, $name, $items, $selected=null) {
-if (0) {
-echo '
-<select class="js-example-basic-multiple" name="states[]" multiple="multiple" style="width: 75%">
-  <option value=0>Alabama</option>
-    ...
-  <option value=1>Wyoming</option>
-</select>';
-    return;
-}
+function select2_multi($label, $name, $items, $selected=null, $extra='') {
     echo sprintf('
         <div class="form-group">
             <label align=right class="%s" for="%s">%s</label>
             <div class="%s">
-                <select class="js-example-basic-multiple" name="%s[]" multiple="multiple" style="width: 100%%">
+                <select class="js-example-basic-multiple" name="%s[]" multiple="multiple" style="width: 100%%" %s>
         ',
-        FORM_LEFT_CLASS, $name, $label, FORM_RIGHT_CLASS, $name
+        FORM_LEFT_CLASS, $name, $label, FORM_RIGHT_CLASS, $name, $extra
     );
     foreach ($items as $i) {
         echo sprintf(

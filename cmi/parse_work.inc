@@ -1184,4 +1184,24 @@ function expand_title($s) {
     return $s;
 }
 
+// expand {{HaydnHob...}}, and remove ; and after
+//
+function parse_opus($s) {
+    $n1 = stripos($s, '{{HaydnHob');
+    if ($n1 !== false) {
+        $n2 = strpos($s, '}}');
+        if ($n2 === false) {
+            echo "unrecognized opus $s\n";
+            return '';
+        }
+        $t = substr2($s, $n1+2, $n2);
+        $x = explode('|', $t);
+        return sprintf('Hob.%s', $x[2]);
+    }
+    $n1 = strpos($s, ';');
+    if ($n1 !== false) {
+        $s = substr2($s, 0, $n1);
+    }
+    return trim($s);
+}
 ?>
