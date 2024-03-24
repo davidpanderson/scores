@@ -11,3 +11,4 @@ cp query.php prod/user/
 cp project.inc prod/project/
 cp signup.php prod/user/
 cp edit.php prod/user/
+cp write_ser.inc prod/user/

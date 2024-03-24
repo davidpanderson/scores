@@ -20,6 +20,9 @@ function do_person($id) {
     row2('Death place', location_id_to_name($p->death_place));
     row2('Locations', locations_str($p->locations));
     row2('Sex', sex_id_to_name($p->sex));
+    if (editor()) {
+        row2('', button_text("edit.php?type=person&id=$id", "Edit"));
+    }
     end_table();
     $prs = DB_person_role::enum("person=$id");
     if ($prs) {
@@ -38,6 +41,7 @@ function do_person($id) {
             );
         }
         end_table();
+        show_button("edit.php?type=person_role&person_id=$id", 'Add role');
     }
     page_tail();
 }
@@ -132,8 +136,24 @@ function do_location($id) {
     page_head($loc->name);
     start_table();
     row2('Name', $loc->name);
+    row2('Adjective', $loc->adjective);
+    if ($loc->name_native) {
+        row2('Name, native', $loc->name_native);
+    }
+    if ($loc->adjective_native) {
+        row2('Adjective, native', $loc->adjective_native);
+    }
     row2('Type', location_type_id_to_name($loc->type));
-    row2('Parent', $loc->parent?location_id_to_name($loc->parent):'---');
+    if ($loc->parent) {
+        row2('Parent',
+            sprintf('<a href=item.php?type=location&id=%d>%s</a>',
+                $loc->parent,
+                location_id_to_name($loc->parent)
+            )
+        );
+    } else {
+        row2('Parent', '---');
+    }
     row2('', button_text("edit.php?type=location&id=$loc->id", 'Edit'));
     end_table();
     page_tail();

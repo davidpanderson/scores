@@ -14,10 +14,6 @@ class DB_sex extends Table {
     public static $table_name = 'sex';
     public static $class_name = 'DB_sex';
 }
-class DB_race extends Table {
-    public static $table_name = 'race';
-    public static $class_name = 'DB_race';
-}
 class DB_ethnicity extends Table {
     public static $table_name = 'ethnicity';
     public static $class_name = 'DB_ethnicity';
@@ -83,8 +79,8 @@ class DB_venue extends Table {
     public static $class_name = 'DB_venue';
 }
 class DB_performance extends Table {
-    public static $table_name = 'DB_performance';
-    public static $class_name = 'PERFORMANCE';
+    public static $table_name = 'performance';
+    public static $class_name = 'DB_performance';
 }
 class DB_concert extends Table {
     public static $table_name = 'concert';

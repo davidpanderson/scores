@@ -94,6 +94,15 @@ class DB {
             return (string)$year;
         }
     }
+    // parse Y-M-D
+    public static function date_num_parse($s) {
+        $x = explode('-', $s);
+        switch (count($x)) {
+        case 1: return static::date_num((int)$x[0]);
+        case 3: return static::date_num((int)$x[0], (int)$x[1], (int)$x[2]);
+        }
+        return 0;
+    }
 
     public static function enum($query) {
         $result = static::do_query($query);

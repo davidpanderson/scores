@@ -385,25 +385,6 @@ function do_composition($params) {
     }
 }
 
-function select2_multi($label, $name, $items, $selected=null, $extra='') {
-    echo sprintf('
-        <div class="form-group">
-            <label align=right class="%s" for="%s">%s</label>
-            <div class="%s">
-                <select class="js-example-basic-multiple" name="%s[]" multiple="multiple" style="width: 100%%" %s>
-        ',
-        FORM_LEFT_CLASS, $name, $label, FORM_RIGHT_CLASS, $name, $extra
-    );
-    foreach ($items as $i) {
-        echo sprintf(
-            '<option %s value=%s>%s</option>',
-            ($selected && in_array($i[0], $selected))?'selected':'',
-            $i[0], $i[1]
-        );
-    }
-    echo "</select></div></div>\n";
-}
-
 //////////////////// PERSON ROLE ////////////////////
 
 function do_person_role($id) {
@@ -436,20 +417,6 @@ function do_person_role($id) {
         );
         break;
     }
-}
-
-function select2_head($title) {
-    $head_extra = '
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    ';
-    page_head($title, null, false, '', $head_extra);
-    echo "<script>
-        $(document).ready(function() {
-            $('.js-example-basic-multiple').select2();
-        });
-        </script>
-    ";
 }
 
 function main($type) {

@@ -61,7 +61,7 @@ function top() {
 }
 
 function left(){
-    global $user, $tables;
+    global $user;
     panel(
         'About',
         function() {

@@ -312,6 +312,15 @@ function get_sexes() {
     return $sexes;
 }
 
+/////////////// ethnicity /////////////////
+
+function get_ethnicities() {
+    static $ethnicities = null;
+    if (!$ethnicities) {
+        $ethnicities = unserialize(file_get_contents('data/ethnicity_by_id.ser'));
+    }
+    return $ethnicities;
+}
 /////////////// role /////////////////
 
 function role_name_to_id($name) {

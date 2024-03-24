@@ -35,13 +35,6 @@ create table sex (
     unique(name)
 );
 
-create table race (
-    id                      integer         not null auto_increment,
-    name                    varchar(255),
-    primary key(id),
-    unique(name)
-);
-
 create table ethnicity (
     id                      integer         not null auto_increment,
     name                    varchar(255),
@@ -65,15 +58,14 @@ create table person (
     first_name              varchar(90)     not null,
     last_name               varchar(90)     not null,
     alternate_names         text,
-    born                    int,
+    born                    integer,
     birth_place             integer,
-    died                    int,
+    died                    integer,
     death_place             text,
     locations               JSON,
     periods                 JSON,
     sex                     integer,
-    race                    integer,
-    ethnicity               integer,
+    ethnicity               JSON,
     primary key(id)
 );
 alter table person add fulltext index (first_name, last_name);
@@ -113,11 +105,12 @@ create table ensemble (
     id                      integer         not null auto_increment,
     name                    varchar(190)    not null,
     alternate_names         text,
-    started                 int,
-    ended                   int,
+    started                 integer,
+    ended                   integer,
     type                    integer,
     location                integer,
     members                 json,
+        # person_roles
     period                  integer         not null default 0,
     unique(name),
     primary key(id)
@@ -134,8 +127,8 @@ create table organization (
     id                      integer         not null auto_increment,
     name                    text            not null,
     type                    integer,
-    started                 int,
-    ended                   int,
+    started                 integer,
+    ended                   integer,
     location                integer,
     url                     varchar(255),
     primary key(id)
@@ -207,9 +200,9 @@ create table composition (
         # arrangement: null
     alternative_title       text,
     opus_catalogue          text,
-    composed                int,
-    published               int,
-    performed               int,
+    composed                integer,
+    published               integer,
+    performed               integer,
     dedication              text,
     tempo_markings          text,
     metronome_markings      text,
@@ -248,7 +241,7 @@ create table score (
     publisher               integer,
     license                 integer,
     languages               json,
-    published               int,
+    published               integer,
     edition_number          text,
     page_count              integer,
     primary key(id)
@@ -262,8 +255,8 @@ create table venue (
     location                integer,
     address                 text,
     capacity                integer,
-    started                 int,
-    ended                   int,
+    started                 integer,
+    ended                   integer,
     primary key(id)
 );
 
@@ -271,6 +264,9 @@ create table performance (
     id                      integer         not null auto_increment,
     composition             integer,
     performers              json,
+        # person_roles
+    tentative               tinyint,
+        # part of a concert being edited; can delete if old
     primary key(id)
 );
 
@@ -280,8 +276,9 @@ create table concert (
     venue                   integer,
     audience_size           integer,
     organization            integer,
+        # sponsor or organizer
     program                 json,
-    performers              json,
+        # performances
     primary key(id)
 );
 
@@ -289,29 +286,18 @@ create table recording (
     id                      integer         not null auto_increment,
     performance             integer,
     concert                 integer,
-    copyright_id            integer         not null default 0,
-    date_submitted          text,
-    ensemble_id             integer         not null default 0,
-    instrument_combo_id     integer         not null default 0,
-        # populated for recordings of arrangements
-    misc_notes              text,
-    performer_categories    text,
-    performers              text,
-    performer_role_ids      JSON,
-    publisher_information   text,
-    thumb_filename          text,
-    uploader                text,
     primary key(id)
 );
 
 create table _release (
     id                      integer         not null auto_increment,
     title                   text,
-    release_date            int,
+    release_date            integer,
     catalog_num             text,
     url                     text,
     license                 integer,
     recordings              json,
     publisher               integer,
+        # organization
     primary key(id)
 );
