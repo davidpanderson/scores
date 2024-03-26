@@ -82,9 +82,10 @@ function left(){
                 <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
                 <p><p>
             ';
-            show_button('query.php?type=composition', 'Compositions');
-            show_button('query.php?type=person', 'People');
-            show_button('query.php?type=location', 'Locations');
+            show_button('search.php?type=composition', 'Compositions');
+            show_button('search.php?type=person', 'People');
+            show_button('search.php?type=location', 'Locations');
+            show_button('search.php?type=concert', 'Concerts');
         }
     );
 }

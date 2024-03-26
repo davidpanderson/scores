@@ -29,12 +29,13 @@ function do_location() {
 /////////////// PERSON //////////////////
 
 function person_form($params) {
-    form_start('query.php');
+    form_start('search.php');
     form_input_hidden('type', 'person');
     form_input_text('Name', 'name', $params->name);
     form_select('Sex', 'sex', sex_options(), $params->sex);
     form_select('Nationality', 'location', country_options(), $params->location);
-    form_submit('Update');
+    form_submit('Search');
+    form_general('', button_text('edit.php?type=person', 'Add person'));
     form_end();
 }
 
@@ -62,7 +63,10 @@ function do_person($params) {
     person_form($params);
     $x = [];
     if ($params->name) {
-        $x[] = sprintf("last_name like '%%%s%%'", $params->name);
+        $x[] = sprintf(
+            "match (first_name, last_name) against ('%s' in boolean mode)",
+            $params->name
+        );
     }
     if ($params->sex) {
         $x[] = sprintf('sex=%d', $params->sex);
@@ -77,7 +81,7 @@ function do_person($params) {
     );
     if ($params->offset) {
         $params->offset = max($params->offset-$page_size, 0);
-        echo sprintf('<a href=query.php?type=person%s>Previous %d</a>',
+        echo sprintf('<a href=search.php?type=person%s>Previous %d</a>',
             person_encode($params), $page_size
         );
     }
@@ -89,9 +93,9 @@ function do_person($params) {
     foreach ($pers as $p) {
         if (++$i == $page_size+1) break;
         table_row(
-            sprintf('<a href=item.php?type=person&id=%d>%s</a>',
+            sprintf('<a href=item.php?type=person&id=%d>%s %s</a>',
                 $p->id,
-                $p->last_name.', '.$p->first_name
+                $p->first_name, $p->last_name
             ),
             sex_id_to_name($p->sex),
             DB::date_num_to_str($p->born),
@@ -101,7 +105,7 @@ function do_person($params) {
     end_table();
     if (count($pers) > $page_size) {
         $params->offset += $page_size;
-        echo sprintf('<a href=query.php?type=person%s>Next %d</a>',
+        echo sprintf('<a href=search.php?type=person%s>Next %d</a>',
             person_encode($params), $page_size
         );
     }
@@ -110,7 +114,7 @@ function do_person($params) {
 /////////////// COMPOSITION //////////////////
 
 function comp_form($params) {
-    form_start('query.php');
+    form_start('search.php');
     form_input_hidden('type', 'composition');
     form_input_text('Title', 'title', $params->title);
     select2_multi(
@@ -134,7 +138,7 @@ function comp_form($params) {
         'Other instruments OK?', [['arr', '', $params->arr_others_ok]],
         'id=arr_others_ok'
     );
-    form_submit('Update');
+    form_submit('Search');
     form_end();
     echo "
 <script>
@@ -236,6 +240,7 @@ function show_arrangements($comps) {
 }
 
 function show_compositions($comps) {
+    copy_to_clipboard_script();
     start_table();
     table_header(
         'Title',
@@ -244,7 +249,8 @@ function show_compositions($comps) {
         'Key',
         'Opus',
         'Composed',
-        'Instrumentation'
+        'Instrumentation',
+        'Code'
     );
     foreach ($comps as $c) {
         table_row(
@@ -258,7 +264,8 @@ function show_compositions($comps) {
             $c->opus_catalogue,
             DB::date_num_to_str($c->composed),
             //comp_types_str($c->comp_types),
-            instrument_combos_str($c->instrument_combos)
+            instrument_combos_str($c->instrument_combos),
+            copy_button(item_code($c->id, 'composition'))
         );
     }
     end_table();
@@ -368,7 +375,7 @@ function do_composition($params) {
     if ($params->offset) {
         $p2 = clone $params;
         $p2->offset = max($params->offset-$page_size, 0);
-        echo sprintf('<a href=query.php?type=composition%s>Previous %d</a>',
+        echo sprintf('<a href=search.php?type=composition%s>Previous %d</a>',
             comp_encode($p2), $page_size
         );
     }
@@ -379,7 +386,7 @@ function do_composition($params) {
     }
     if (count($comps) > $page_size) {
         $params->offset += $page_size;
-        echo sprintf('<a href=query.php?type=composition%s>Next %d</a>',
+        echo sprintf('<a href=search.php?type=composition%s>Next %d</a>',
             comp_encode($params), $page_size
         );
     }
@@ -419,6 +426,17 @@ function do_person_role($id) {
     }
 }
 
+function do_concert() {
+    $cs = DB_concert::enum();
+    start_table();
+    table_header('Venue', 'Location', 'Date');
+    foreach ($cs as $c) {
+        table_row();
+    }
+    end_table();
+    show_button('edit.php?type=concert', 'Add concert');
+}
+
 function main($type) {
     switch ($type) {
     case 'location':
@@ -430,6 +448,9 @@ function main($type) {
     case 'instrument':
         page_head('Instruments');
         do_instrument(); break;
+    case 'concert':
+        page_head('Concerts');
+        do_concert(); break;
     case 'composition':
         select2_head('Compositions');
         do_composition(comp_get()); break;

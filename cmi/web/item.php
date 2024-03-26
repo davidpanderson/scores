@@ -11,6 +11,7 @@ function do_person($id) {
     $p = DB_person::lookup_id($id);
     if (!$p) error_page("no person $id\n");
     page_head("$p->first_name $p->last_name");
+    copy_to_clipboard_script();
     start_table();
     row2('First name', $p->first_name);
     row2('Last name', $p->last_name);
@@ -21,28 +22,32 @@ function do_person($id) {
     row2('Locations', locations_str($p->locations));
     row2('Sex', sex_id_to_name($p->sex));
     if (editor()) {
-        row2('', button_text("edit.php?type=person&id=$id", "Edit"));
+        row2('', button_text("edit.php?type=person&id=$id", "Edit info"));
     }
-    end_table();
     $prs = DB_person_role::enum("person=$id");
     if ($prs) {
-        echo '<h2>Roles</h2>';
-        start_table();
-        table_header('Role', 'Instrument');
+        $x = [];
         foreach ($prs as $pr) {
+            $s = '&bull; '.role_id_to_name($pr->role);
             if ($pr->instrument) {
+                $s .= sprintf(' (%s)', instrument_id_to_name($pr->instrument));
             }
-            table_row(
-                sprintf('<a href=query.php?type=person_role&id=%d>%s</a>',
-                    $pr->id,
-                    role_id_to_name($pr->role)
-                ),
-                ''
-            );
+            if (editor()) {
+                $s .= ' '.copy_button(item_code($pr->id, 'person_role'));
+            }
+            $x[] = $s;
         }
-        end_table();
-        show_button("edit.php?type=person_role&person_id=$id", 'Add role');
     }
+    if (editor()) {
+        $x[] = '<hr>';
+        $x[] = button_text(
+            "edit.php?type=person_role&person_id=$id", 'Add role'
+        );
+    }
+    if ($x) {
+        row2('Roles', implode('<p>', $x));
+    }
+    end_table();
     page_tail();
 }
 
@@ -56,6 +61,7 @@ function do_composition($id) {
         $page_title = $c->long_title;
     }
     page_head($page_title);
+    copy_to_clipboard_script();
     start_table();
     if ($c->arrangement_of) {
         row2('Section',
@@ -92,13 +98,16 @@ function do_composition($id) {
     }
     row2('Average duration', $c->average_duration);
     row2('Number of movements', $c->n_movements);
+    if (editor()) {
+        row2('Code', copy_button(item_code($c->id, 'composition')));
+    }
     end_table();
 
     $arrs = DB_composition::enum(sprintf('arrangement_of=%d', $id));
     if ($arrs) {
         echo "<h3>Arrangements</h3>\n";
         start_table();
-        table_header('Section', 'Arranged for', 'Creator');
+        table_header('Section', 'Arranged for', 'Creator', 'Code');
         foreach ($arrs as $arr) {
             $ics = instrument_combos_str($arr->instrument_combos);
             table_row(
@@ -107,7 +116,8 @@ function do_composition($id) {
                     $arr->id,
                     $ics?$ics:'---'
                 ),
-                creators_str($arr->creators, true)
+                creators_str($arr->creators, true),
+                copy_button(item_code($arr->id, 'composition'))
             );
         }
         end_table();
@@ -116,13 +126,14 @@ function do_composition($id) {
     if ($children) {
         echo "<h3>Sections</h3>\n";
         start_table();
-        table_header('Title', 'Metronome', 'Key', 'Measures');
+        table_header('Title', 'Metronome', 'Key', 'Measures', 'Code');
         foreach ($children as $child) {
             table_row(
                 $child->title,
                 $child->metronome_markings,
                 $child->_keys,
-                $child->nbars?$child->nbars:''
+                $child->nbars?$child->nbars:'',
+                copy_button(item_code($child->id, 'composition'))
             );
         }
         end_table();

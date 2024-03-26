@@ -82,7 +82,7 @@ function creators_str($cts, $show_role) {
             $show_role?' ('.role_id_to_name($prole->role).')':''
         );
     }
-    return implode(', ', $x);
+    return implode('<br>', $x);
 }
 
 function pluralize($x) {
@@ -146,9 +146,12 @@ function country_options() {
     return $x;
 }
 
-function instrument_options() {
+function instrument_options($include_none=false) {
     $insts = get_instruments();
     $x = [];
+    if ($include_none) {
+        $x[] = [0, '---'];
+    }
     foreach ($insts as $inst) {
         $x[] = [$inst->id, $inst->name];
     }
@@ -191,6 +194,83 @@ function location_options() {
         $x[] = [$lt->id, location_name($lt)];
     }
     return $x;
+}
+
+function role_options() {
+    $rs = DB_role::enum();
+    $x = [[0, '---']];
+    foreach ($rs as $r) {
+        $x[] = [$r->id, $r->name];
+    }
+    return $x;
+}
+
+function item_code($id, $type) {
+    switch ($type) {
+    case 'composition': return "com$id";
+    case 'person_role': return "prl$id";
+    }
+    return 'bad type';
+}
+
+function parse_code($code, $type) {
+    $t = substr($code, 0, 3);
+    $n = substr($code, 3);
+    switch ($type) {
+    case 'composition': if ($t != 'com') return 0; break;
+    case 'person_role': if ($t != 'prl') return 0; break;
+    }
+    if (!is_numeric($n)) return 0;
+    return (int)$n;
+}
+
+function copy_to_clipboard_script() {
+echo "
+<script>
+function unsecuredCopyToClipboard(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand('copy');
+  } catch (err) {
+    console.error('Unable to copy to clipboard', err);
+  }
+  document.body.removeChild(textArea);
+}
+
+function copy_to_clipboard(x) {
+  //navigator.clipboard.writeText(x);
+  // doesn't work for http://
+  unsecuredCopyToClipboard(x);
+  
+  alert('Copied code ' + x);
+}
+</script>
+";
+}
+
+function copy_button($text) {
+    return sprintf("<button onclick=\"copy_to_clipboard('%s')\">Copy</button>",
+        $text
+    );
+}
+
+// return a string describing the composition,
+// which could be an arrangement or a sub-composition
+//
+function composition_str($c) {
+    if ($c->arrangement_of) {
+        $c2 = DB_composition::lookup_id($c->arrangement_of);
+        return "Arrangement of $c2->long_title";
+    } else if ($c->parent) {
+        $c2 = DB_composition::lookup_id($c->parent);
+        return sprintf('Section (%s) of %s', $c->title, $c2->long_title);
+    } else {
+        return $c->long_title;
+    }
 }
 
 ?>
