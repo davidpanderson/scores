@@ -86,6 +86,8 @@ function left(){
             show_button('search.php?type=person', 'People');
             show_button('search.php?type=location', 'Locations');
             show_button('search.php?type=concert', 'Concerts');
+            show_button('search.php?type=venue', 'Venues');
+            show_button('search.php?type=organization', 'Organizations');
         }
     );
 }

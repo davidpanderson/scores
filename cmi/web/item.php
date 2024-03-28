@@ -170,6 +170,53 @@ function do_location($id) {
     page_tail();
 }
 
+function do_venue($id) {
+    $v = DB_venue::lookup_id($id);
+    if (!$v) error_page("No venue $id");
+    page_head("Venue");
+    start_table();
+    row2('Name', $v->name);
+    row2('Location', location_id_to_name($v->location));
+    row2('Capacity', $v->capacity);
+    if (editor()) {
+        row2('', button_text("edit.php?type=venue&id=$id", 'Edit'));
+    }
+    end_table();
+    page_tail();
+}
+
+function do_concert($id) {
+    $c = DB_concert::lookup_id($id);
+    if (!$c) error_page("No concert $id");
+    page_head("Concert");
+    start_table();
+    row2('When', DB::date_num_to_str($c->_when));
+    row2('Venue', venue_str($c->venue));
+    row2('Audience size', $c->audience_size?$c->audience_size:'---');
+    row2('Organizer', organization_id_to_name($c->organization));
+    row2('Program', program_str(json_decode($c->program)));
+    if (editor()) {
+        row2('', button_text("edit.php?type=concert&id=$id", 'Edit'));
+    }
+    end_table();
+    page_tail();
+}
+
+function do_organization($id) {
+    $org = DB_organization::lookup_id($id);
+    page_head("Organization");
+    start_table();
+    row2('Name', $org->name);
+    row2('Type', organization_type_str($org->type));
+    row2('Location', location_id_to_name($org->location));
+    row2('URL', sprintf('<a href=%s>%s</a>', $org->url, $org->url));
+    if (editor()) {
+        row2('', button_text("edit.php?type=organization&id=$id", 'Edit'));
+    }
+    end_table();
+    page_tail();
+}
+
 function main($type, $id) {
     switch ($type) {
     case 'person':
@@ -181,6 +228,16 @@ function main($type, $id) {
     case 'location':
         do_location($id);
         break;
+    case 'venue':
+        do_venue($id);
+        break;
+    case 'concert':
+        do_concert($id);
+        break;
+    case 'organization':
+        do_organization($id);
+        break;
+    default: error_page("No type $type");
     }
 }
 

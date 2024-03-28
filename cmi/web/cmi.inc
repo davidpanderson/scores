@@ -85,6 +85,21 @@ function creators_str($cts, $show_role) {
     return implode('<br>', $x);
 }
 
+function person_role_str($role) {
+    if ($role->person) {
+        $person = DB_person::lookup_id($role->person);
+        $s = "$person->first_name $person->last_name";
+    } else {
+        $ensemble = DB_ensemble::lookup_id($role->ensemble);
+        $s = "$ensemble->name";
+    }
+    $s .= ': '.role_id_to_name($role->role);
+    if ($role->instrument) {
+        $s .= sprintf(' (%s)', instrument_id_to_name($role->instrument));
+    }
+    return $s;
+}
+
 function pluralize($x) {
     if (substr($x, -2) == 'ss') return $x.'es';
     if (substr($x, -1) == 's') return $x;
@@ -158,6 +173,22 @@ function instrument_options($include_none=false) {
     return $x;
 }
 
+function venue_options() {
+    $vs = DB_venue::enum();
+    $x = [];
+    $x[] = [0, '---'];
+    foreach ($vs as $v) {
+        $x[] = [$v->id, $v->name];
+    }
+    return $x;
+}
+
+function venue_str($id) {
+    if (!$id) return '---';
+    $v = DB_venue::lookup_id($id);
+    return $v->name;
+}
+
 function languages_str($langs) {
     $x = [];
     foreach ($langs as $lang) {
@@ -203,6 +234,29 @@ function role_options() {
         $x[] = [$r->id, $r->name];
     }
     return $x;
+}
+
+function organization_type_options() {
+    $types = DB_organization_type::enum();
+    $x = [[0, '---']];
+    foreach ($types as $type) {
+        $x[] = [$type->id, $type->name];
+    }
+    return $x;
+}
+
+function organization_options() {
+    $orgs = DB_organization::enum();
+    $x = [[0, '---']];
+    foreach ($orgs as $org) {
+        $x[] = [$org->id, $org->name];
+    }
+    return $x;
+}
+
+function organization_type_str($id) {
+    $ot = DB_organization_type::lookup_id($id);
+    return $ot->name;
 }
 
 function item_code($id, $type) {
@@ -271,6 +325,35 @@ function composition_str($c) {
     } else {
         return $c->long_title;
     }
+}
+
+// convert a program (list of performance IDs) to text
+//
+function program_str($prog) {
+    $n = 1;
+    $x = [];
+    foreach ($prog as $pid) {
+        $perf = DB_performance::lookup_id($pid);
+        $x[] = performance_str($n++, $perf);
+    }
+    return implode('<p>', $x);
+}
+
+function performance_str($n, $perf) {
+    $comp = DB_composition::lookup_id($perf->composition);
+    $s = sprintf('<h4>%d) %s</h4>', $n, composition_str($comp));
+    $roles = json_decode($perf->performers);
+    foreach ($roles as $role_id) {
+        $role = DB_person_role::lookup_id($role_id);
+        $s .= sprintf("<li> %s\n", person_role_str($role));
+    }
+    return $s;
+}
+
+function organization_id_to_name($id) {
+    if (!$id) return '---';
+    $org = DB_organization::lookup_id($id);
+    return $org->name;
 }
 
 ?>

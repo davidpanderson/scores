@@ -42,6 +42,10 @@ class DB_ensemble extends Table {
     public static $table_name = 'ensemble';
     public static $class_name = 'DB_ensemble';
 }
+class DB_organization_type extends Table {
+    public static $table_name = 'organization_type';
+    public static $class_name = 'DB_organization_type';
+}
 class DB_organization extends Table {
     public static $table_name = 'organization';
     public static $class_name = 'DB_organization';

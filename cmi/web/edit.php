@@ -6,21 +6,6 @@ require_once('../inc/util.inc');
 require_once('cmi.inc');
 require_once('write_ser.inc');
 
-function person_role_str($role) {
-    if ($role->person) {
-        $person = DB_person::lookup_id($role->person);
-        $s = "$person->first_name $person->last_name";
-    } else {
-        $ensemble = DB_ensemble::lookup_id($role->ensemble);
-        $s = "$ensemble->name";
-    }
-    $s .= ': '.role_id_to_name($role->role);
-    if ($role->instrument) {
-        $s .= sprintf(' (%s)', instrument_id_to_name($role->instrument));
-    }
-    return $s;
-}
-
 function concert_form() {
     // get concert params, from DB or from URL args
     //
@@ -31,6 +16,7 @@ function concert_form() {
         if (!$con) {
             error_page("No concert: $id\n");
         }
+        $con->program = json_decode($con->program);
         $con_json = json_encode($con);
     } else {
         // if arg is absent, or present and id is zero,
@@ -172,7 +158,13 @@ function concert_form() {
     if ($message) echo "$message<p>\n";
     if ($error_msg) echo "$error_msg<p>\n";
 
-    echo '<h3>Program</h3><p>';
+    echo sprintf('
+        <div class="form-group">
+            <label align=right class="%s">%s</label>
+            <div class="%s">
+        ',
+        FORM_LEFT_CLASS, 'Program', FORM_RIGHT_CLASS
+    );
     $n = 1;
     foreach ($con->program as $perf_id) {
         $perf = DB_performance::lookup_id($perf_id);
@@ -225,15 +217,59 @@ function concert_form() {
         ',
         urlencode($con_json)
     );
-    echo '<h3>Venue</h3>';
-    echo '<h3>Date/time</h3>';
-    echo '<h3>Sponsor</h3>';
-    echo 
+    echo '</div></div><p>&nbsp;</p>';
+
+    form_start('edit.php');
+    form_input_hidden('con', urlencode($con_json));
+    form_input_hidden('id', $id);
+    form_input_hidden('type', 'concert');
+    form_input_hidden('submit', true);
+    form_select('Venue', 'venue', venue_options());
+    form_input_text('Date', 'when', '', 'text', 'placeholder="YYYY-MM-DD"');
+    form_select('Sponsor', 'organization', organization_options());
+    form_submit('OK');
+    form_end();
+
     page_tail();
 }
 
 function concert_action() {
-// clear tentative from performances
+    $con_json = urldecode(get_str('con'));
+    $con = json_decode($con_json);
+    $venue = get_int('venue');
+    $when = get_str('when', true);
+    if ($when) {
+        $when = DB::date_num_parse($when);
+    } else {
+        $when = 0;
+    }
+    $organization = get_int('organization');
+
+    // clear tentative from performances
+    foreach ($con->program as $perf_id) {
+        $p = DB_performance::lookup_id($perf_id);
+        $p->update('tentative=0');
+    }
+
+    $id = get_int('id', true);
+    if ($id) {
+        $c = DB_concert::lookup_id($id);
+        if (!$c) error_page("No concert $id");
+        $q = sprintf(
+            "_when=%d, venue=%d, organization=%d, program='%s'",
+            $when, $venue, $organization,
+            json_encode($con->program)
+        );
+        $c->update($q);
+    } else {
+        $q = sprintf(
+            "(_when, venue, organization, program) values (%d, %d, %d, '%s')",
+            $when, $venue, $organization,
+            json_encode($con->program)
+        );
+        $id = DB_concert::insert($q);
+    }
+    header("Location: item.php?type=concert&id=$id");
 }
 
 function location_form($id) {
@@ -381,16 +417,42 @@ function person_action() {
     }
     header("Location: item.php?type=person&id=$id");
 }
-function ensemble_form() {
-    page_head('Ensemble');
+function ensemble_form($id) {
+    $ens = null;
+    if ($id) {
+        $ens = DB_ensemble::lookup_id($id);
+    }
+    page_head($ens?'Edit ensemble':'Add ensemble');
     form_start('edit.php');
-    form_input_text('Name', 'name');
-    form_select('Type', 'type', ensemble_type_options());
+    form_input_hidden('type', 'ensemble');
+    if ($id) {
+        form_input_hidden('id', $id);
+    }
+    form_input_text('Name', 'name', $ens?$ens->name:'');
+    form_select(
+        'Type', 'type', ensemble_type_options(), $ens?$ens->type:null
+    );
     form_end();
     page_tail();
 }
-function ensemble_action() {
+
+function ensemble_action($id) {
+    $name = get_str('name');
+    $type = get_int('type');
+    if ($id) {
+        $ens = DB_ensemble::lookup_id($id);
+        $q = sprintf("name='%s', type=%d", DB::escape($name), $type);
+        $ens->update($q);
+    } else {
+        $id = DB_ensemble::insert(
+            sprintf("(name, type) values ('%s', %d)",
+                DB::escape($name), $type
+            )
+        );
+    }
+    header("Location: item.php?type=ensemble&id=$id");
 }
+
 function person_role_form() {
     $pid = get_int('person_id');
     $person = DB_person::lookup_id($pid);
@@ -423,6 +485,94 @@ function person_role_action() {
     header("Location: item.php?type=person&id=$person_id");
 }
 
+function venue_form($id) {
+    $ven = null;
+    if ($id) {
+        $ven = DB_venue::lookup($id);
+    }
+    page_head($ven?'Edit venue':'Add venue');
+    form_start('edit.php', 'get');
+    form_input_hidden('type', 'venue');
+    if ($id) {
+        form_input_hidden('id', $id);
+    }
+    form_input_hidden('submit', true);
+    form_input_text('Name', 'name', $ven?$ven->name:'');
+    form_select(
+        'Location', 'location', location_options(), $ven?$ven->location:null
+    );
+    form_input_text('Capacity', 'capacity', $ven?$ven->capacity:null);
+    form_submit('OK');
+    form_end();
+    page_tail();
+}
+
+function venue_action($id) {
+    $name = get_str('name');
+    $location = get_int('location');
+    $capacity = get_int('capacity');
+    if ($id) {
+        $ven = DB_venue::lookup_id($id);
+        $q = sprintf("name='%s', location=%d, capacity=%d",
+            DB::escape($name), $location, $capacity
+        );
+        $ven->update($q);
+    } else {
+        $id = DB_venue::insert(
+            sprintf("(name, location, capacity) values ('%s', %d, %d)",
+                DB::escape($name), $location, $capacity
+            )
+        );
+    }
+    header("Location: item.php?type=venue&id=$id");
+}
+
+function organization_form($id) {
+    $org = null;
+    if ($id) {
+        $org = DB_organization::lookup_id($id);
+    }
+    page_head($org?'Edit organization':'Add organization');
+    form_start('edit.php', 'get');
+    form_input_hidden('type', 'organization');
+    form_input_hidden('submit', true);
+    if ($id) {
+        form_input_hidden('id', $id);
+    }
+    form_input_text('Name', 'name', $org?$org->name:'');
+    form_select(
+        'Type', 'org_type', organization_type_options(), $org?$org->type:null
+    );
+    form_select('Location', 'location', location_options(),
+        $org?$org->location:null
+    );
+    form_input_text('URL', 'url', $org?$org->url:'');
+    form_submit('OK');
+    form_end();
+    page_tail();
+}
+
+function organization_action($id) {
+    $name = get_str('name');
+    $location = get_int('location');
+    $type = get_int('org_type');
+    $url = get_str('url', true);
+    if ($id) {
+        $org = DB_organization::lookup_id($id);
+        $q = sprintf("name='%s', location=%d, type=%d, url='%s'",
+            DB::escape($name), $location, $type, DB::escape($url)
+        );
+        $org->update($q);
+    } else {
+        $id = DB_organization::insert(
+            sprintf("(name, type, location, url) values ('%s', %d, %d, '%s')",
+                DB::escape($name), $type, $location, DB::escape($url)
+            )
+        );
+    }
+    header("Location: item.php?type=organization&id=$id");
+}
+
 $type = get_str('type', true);
 $submit = get_str('submit', true);
 
@@ -438,10 +588,19 @@ case 'person':
     $submit?person_action():person_form();
     break;
 case 'ensemble':
+    $id = get_int('id', true);
     $submit?ensemble_action():ensemble_form();
     break;
 case 'person_role':
     $submit?person_role_action():person_role_form();
+    break;
+case 'venue':
+    $id = get_int('id', true);
+    $submit?venue_action($id):venue_form($id);
+    break;
+case 'organization':
+    $id = get_int('id', true);
+    $submit?organization_action($id):organization_form($id);
     break;
 default:
     error_page("unknown type $type");

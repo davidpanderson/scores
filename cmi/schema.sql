@@ -272,7 +272,7 @@ create table performance (
 
 create table concert (
     id                      integer         not null auto_increment,
-    _when                   datetime,
+    _when                   integer,
     venue                   integer,
     audience_size           integer,
     organization            integer,

@@ -42,11 +42,21 @@ function do_role() {
     DB_role::insert("(name) values ('librettist')");
 }
 
+function do_org_type() {
+    DB_organization_type::insert("(name) values('Music publisher')");
+    DB_organization_type::insert("(name) values('Record company')");
+    DB_organization_type::insert("(name) values('Conservatory')");
+    DB_organization_type::insert("(name) values('Concert series')");
+    DB_organization_type::insert("(name) values('Amateur group')");
+    DB_organization_type::insert("(name) values('Society')");
+}
+
 function do_all() {
     do_loc_type();
     do_sex();
     do_ethnicity();
     do_role();
+    do_org_type();
 }
 
 function do_ser() {
@@ -54,6 +64,7 @@ function do_ser() {
     write_ser_sex();
     write_ser_ethnicity();
     write_ser_role();
+    write_ser_org_type();
 }
 
 do_all();

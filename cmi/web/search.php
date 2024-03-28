@@ -8,6 +8,7 @@ require_once('ser.inc');
 /////////////// LOCATION //////////////////
 
 function do_location() {
+    page_head('Locations');
     $locs = get_locations();
     show_button('edit.php?type=location', 'Add location');
     echo '<p>';
@@ -24,6 +25,7 @@ function do_location() {
         );
     }
     end_table();
+    page_tail();
 }
 
 /////////////// PERSON //////////////////
@@ -60,6 +62,7 @@ function person_encode($params) {
 function do_person($params) {
     $page_size = 50;
     
+    page_head('People');
     person_form($params);
     $x = [];
     if ($params->name) {
@@ -109,6 +112,7 @@ function do_person($params) {
             person_encode($params), $page_size
         );
     }
+    page_tail();
 }
 
 /////////////// COMPOSITION //////////////////
@@ -273,6 +277,7 @@ function show_compositions($comps) {
 
 function do_composition($params) {
     $page_size = 50;
+    select2_head('Compositions');
     comp_form($params);
 
     // make a SQL query based on search params
@@ -390,6 +395,7 @@ function do_composition($params) {
             comp_encode($params), $page_size
         );
     }
+    page_tail();
 }
 
 //////////////////// PERSON ROLE ////////////////////
@@ -424,43 +430,116 @@ function do_person_role($id) {
         );
         break;
     }
+    page_tail();
 }
 
 function do_concert() {
+    page_head("Concerts");
     $cs = DB_concert::enum();
     start_table();
-    table_header('Venue', 'Location', 'Date');
+    table_header('', 'Venue', 'Location', 'Date');
     foreach ($cs as $c) {
-        table_row();
+        $v = DB_venue::lookup_id($c->venue);
+        table_row(
+            "<a href=item.php?type=concert&id=$c->id>View</a>",
+            $v?$v->name:'---',
+            $v?location_id_to_name($v->location):'---',
+            DB::date_num_to_str($c->_when)
+        );
     }
     end_table();
     show_button('edit.php?type=concert', 'Add concert');
+    page_tail();
+}
+
+function do_venue() {
+    page_head("Venues");
+    $vs = DB_venue::enum();
+    start_table();
+    table_header('Name', 'Location');
+    foreach ($vs as $v) {
+        table_row(
+            sprintf('<a href=edit.php?type=venue&id=%d>%s</a>',
+                $v->id, $v->name
+            ),
+            location_id_to_name($v->location)
+        );
+    }
+    end_table();
+    show_button('edit.php?type=venue', 'Add venue');
+    page_tail();
+}
+
+function do_organization() {
+    page_head('Organizations');
+    $orgs = DB_organization::enum();
+    start_table();
+    table_header('Name', 'Type', 'Location');
+    foreach ($orgs as $org) {
+        table_row(
+            sprintf('<a href=item.php?type=organization&id=%d>%s</a>',
+                $org->id, $org->name
+            ),
+            organization_type_str($org->type),
+            location_id_to_name($org->location)
+        );
+    }
+    end_table();
+    show_button('edit.php?type=organization', 'Add organization');
+    page_tail();
+}
+
+function do_ensemble() {
+    page_head('Ensembles');
+    $enss = DB_ensemble::enum();
+    start_table();
+    table_header('Name', 'Type', 'Location');
+    foreach($enss as $ens) {
+        table_row(
+            sprintf('<a href=item.php?type=ensemble&id=%d>%s</a>',
+                $ens->id, $ens->name
+            ),
+            ensemble_type_str($ens->type),
+            location_str($ens->location)
+        );
+    }
+    end_table();
+    show_button('edit.php?type=ensemble', 'Add ensemble');
+    page_tail();
 }
 
 function main($type) {
     switch ($type) {
-    case 'location':
-        page_head('Locations');
-        do_location(); break;
-    case 'person':
-        page_head('People');
-        do_person(person_get()); break;
-    case 'instrument':
-        page_head('Instruments');
-        do_instrument(); break;
-    case 'concert':
-        page_head('Concerts');
-        do_concert(); break;
     case 'composition':
-        select2_head('Compositions');
-        do_composition(comp_get()); break;
+        do_composition(comp_get());
+        break;
+    case 'concert':
+        do_concert();
+        break;
+    case 'ensemble':
+        do_ensemble();
+        break;
+    case 'instrument':
+        do_instrument();
+        break;
+    case 'location':
+        do_location();
+        break;
+    case 'organization':
+        do_organization();
+        break;
+    case 'person':
+        do_person(person_get());
+        break;
     case 'person_role':
-        do_person_role(get_int('id')); break;
+        do_person_role(get_int('id'));
+        break;
+    case 'venue':
+        do_venue();
+        break;
     default:
         error_page("$type not implemented");
     }
-    echo "</body>";
-    page_tail();
 }
 
 main(get_str('type'));
