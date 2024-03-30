@@ -57,11 +57,22 @@ function do_composition($id) {
     if ($c->arrangement_of) {
         $par = DB_composition::lookup_id($c->arrangement_of);
         $page_title = "Arrangment of $par->long_title";
+    } else if ($c->parent) {
+        $par = DB_composition::lookup_id($c->parent);
+        $page_title = "Section of $par->long_title";
     } else {
+        $par = null;
         $page_title = $c->long_title;
     }
     page_head($page_title);
     copy_to_clipboard_script();
+    $arg = [$id, $c, $par];
+    grid(null, 'comp_left', 'comp_right', 7, $arg);
+    page_tail();
+}
+
+function comp_left($arg) {
+    [$id, $c, $par] = $arg;
     start_table();
     if ($c->arrangement_of) {
         row2('Section',
@@ -71,10 +82,6 @@ function do_composition($id) {
         );
     } else {
         row2('Title', $c->title);
-    }
-    if ($c->parent) {
-        $par = DB_composition::lookup_id($c->parent);
-        row2('Sub-composition of', $par->long_title);
     }
     if ($c->alternative_title) {
         row2('Alternative title', $c->alternative_title);
@@ -100,6 +107,7 @@ function do_composition($id) {
     row2('Number of movements', $c->n_movements);
     if (editor()) {
         row2('Code', copy_button(item_code($c->id, 'composition')));
+        row2('', button_text("edit.php?type=composition&id=$id", 'Edit composition'));
     }
     end_table();
 
@@ -129,7 +137,9 @@ function do_composition($id) {
         table_header('Title', 'Metronome', 'Key', 'Measures', 'Code');
         foreach ($children as $child) {
             table_row(
-                $child->title,
+                sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
+                    $child->id, $child->title
+                ),
                 $child->metronome_markings,
                 $child->_keys,
                 $child->nbars?$child->nbars:'',
@@ -138,7 +148,11 @@ function do_composition($id) {
         }
         end_table();
     }
-    page_tail();
+}
+
+function comp_right($arg) {
+    [$id, $c, $par] = $arg;
+    echo "right";
 }
 
 function do_location($id) {

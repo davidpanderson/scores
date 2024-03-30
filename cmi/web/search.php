@@ -143,6 +143,7 @@ function comp_form($params) {
         'id=arr_others_ok'
     );
     form_submit('Search');
+    form_general('', button_text('edit.php?type=composition', 'Add composition'));
     form_end();
     echo "
 <script>
