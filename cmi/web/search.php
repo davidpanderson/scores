@@ -5,6 +5,8 @@ require_once('cmi_db.inc');
 require_once('cmi.inc');
 require_once('ser.inc');
 
+define('PAGE_SIZE', 50);
+
 /////////////// LOCATION //////////////////
 
 function do_location() {
@@ -60,8 +62,6 @@ function person_encode($params) {
 }
 
 function do_person($params) {
-    $page_size = 50;
-    
     page_head('People');
     person_form($params);
     $x = [];
@@ -80,12 +80,12 @@ function do_person($params) {
     $y = implode(' and ', $x);
     $pers = DB_person::enum(
         $y,
-        sprintf('order by last_name limit %d,%d', $params->offset, $page_size+1)
+        sprintf('order by last_name limit %d,%d', $params->offset, PAGE_SIZE+1)
     );
     if ($params->offset) {
-        $params->offset = max($params->offset-$page_size, 0);
+        $params->offset = max($params->offset-PAGE_SIZE, 0);
         echo sprintf('<a href=search.php?type=person%s>Previous %d</a>',
-            person_encode($params), $page_size
+            person_encode($params), PAGE_SIZE 
         );
     }
     start_table();
@@ -94,7 +94,7 @@ function do_person($params) {
     );
     $i = 0;
     foreach ($pers as $p) {
-        if (++$i == $page_size+1) break;
+        if (++$i == PAGE_SIZE+1) break;
         table_row(
             sprintf('<a href=item.php?type=person&id=%d>%s %s</a>',
                 $p->id,
@@ -106,10 +106,10 @@ function do_person($params) {
         );
     }
     end_table();
-    if (count($pers) > $page_size) {
-        $params->offset += $page_size;
+    if (count($pers) > PAGE_SIZE) {
+        $params->offset += PAGE_SIZE;
         echo sprintf('<a href=search.php?type=person%s>Next %d</a>',
-            person_encode($params), $page_size
+            person_encode($params), PAGE_SIZE
         );
     }
     page_tail();
@@ -277,7 +277,6 @@ function show_compositions($comps) {
 }
 
 function do_composition($params) {
-    $page_size = 50;
     select2_head('Compositions');
     comp_form($params);
 
@@ -366,7 +365,7 @@ function do_composition($params) {
             make_int_list($arr_inst_combos)
         );
     }
-    $query .= sprintf(' limit %d,%d', $params->offset, $page_size+1);
+    $query .= sprintf(' limit %d,%d', $params->offset, PAGE_SIZE+1);
 
     if (DEBUG_QUERY) {
         echo "QUERY: $query\n";
@@ -380,9 +379,9 @@ function do_composition($params) {
 
     if ($params->offset) {
         $p2 = clone $params;
-        $p2->offset = max($params->offset-$page_size, 0);
+        $p2->offset = max($params->offset-PAGE_SIZE, 0);
         echo sprintf('<a href=search.php?type=composition%s>Previous %d</a>',
-            comp_encode($p2), $page_size
+            comp_encode($p2), PAGE_SIZE
         );
     }
     if ($params->arr) {
@@ -390,10 +389,10 @@ function do_composition($params) {
     } else {
         show_compositions($comps);
     }
-    if (count($comps) > $page_size) {
-        $params->offset += $page_size;
+    if (count($comps) > PAGE_SIZE) {
+        $params->offset += PAGE_SIZE;
         echo sprintf('<a href=search.php?type=composition%s>Next %d</a>',
-            comp_encode($params), $page_size
+            comp_encode($params), PAGE_SIZE
         );
     }
     page_tail();
@@ -509,6 +508,54 @@ function do_ensemble() {
     page_tail();
 }
 
+///////////////////// INSTRUMENT COMBO //////////////////////
+
+function inst_combo_form($params) {
+    form_start('search.php');
+    form_input_hidden('type', 'inst_combo');
+    select2_multi(
+        'Instruments',
+        'insts', instrument_options(), $params->insts
+    );
+    form_submit('search');
+    form_general('', button_text('edit.php?type=inst_combo', 'Add instrument combination'));
+    form_end();
+}
+
+function inst_combo_get() {
+    $params = new StdClass;
+    $params->insts = get_str('insts', true);
+    return $params;
+}
+
+function do_inst_combo($params) {
+    select2_head('Instrument combinations');
+    inst_combo_form($params);
+    $combo_ids = get_combos($params->insts, true);
+    start_table();
+    if (editor()) {
+        copy_to_clipboard_script();
+        table_header('Instruments', 'Code');
+    } else {
+        table_header('Instruments');
+    }
+    foreach ($combo_ids as $id) {
+        $ic = DB_instrument_combo::lookup_id($id);
+        if (editor()) {
+            table_row(
+                instrument_combo_str($ic),
+                copy_button(item_code($id, 'inst_combo'))
+            );
+        } else {
+            table_row(instrument_combo_str($ic));
+        }
+    }
+    end_table();
+    page_tail();
+}
+
+///////////////////////////////////////
+
 function main($type) {
     switch ($type) {
     case 'composition':
@@ -537,6 +584,9 @@ function main($type) {
         break;
     case 'venue':
         do_venue();
+        break;
+    case 'inst_combo':
+        do_inst_combo(inst_combo_get());
         break;
     default:
         error_page("$type not implemented");

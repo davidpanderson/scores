@@ -30,6 +30,14 @@ function period_name_to_id($name) {
 
 /////////////// composition type /////////////////
 
+function get_comp_types() {
+    static $cts = null;
+    if (!$cts) {
+        $cts = unserialize(file_get_contents('data/comp_type_by_id.ser'));
+    }
+    return $cts;
+}
+
 function comp_type_by_code($code) {
     static $cts;
     if (!$cts) {
@@ -42,10 +50,7 @@ function comp_type_by_code($code) {
 }
 
 function comp_type_id_to_name($id) {
-    static $cts = null;
-    if (!$cts) {
-        $cts = unserialize(file_get_contents('data/comp_type_by_id.ser'));
-    }
+    $cts = get_comp_types();
     return $cts[$id]->name;
 }
 

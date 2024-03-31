@@ -28,7 +28,10 @@ function do_person($id) {
     if ($prs) {
         $x = [];
         foreach ($prs as $pr) {
-            $s = '&bull; '.role_id_to_name($pr->role);
+            $s = sprintf('%s %s as %s',
+                $p->first_name, $p->last_name,
+                role_id_to_name($pr->role)
+            );
             if ($pr->instrument) {
                 $s .= sprintf(' (%s)', instrument_id_to_name($pr->instrument));
             }
@@ -88,10 +91,10 @@ function comp_left($arg) {
     }
     row2('Opus', $c->opus_catalogue);
     row2('Composed', DB::date_num_to_str($c->composed));
-    row2('Published', DB::date_num_to_str($c->published));
-    row2('First performed', DB::date_num_to_str($c->performed));
+    //row2('Published', DB::date_num_to_str($c->published));
+    //row2('First performed', DB::date_num_to_str($c->performed));
     row2('Dedication', $c->dedication);
-    row2('Types', comp_types_str($c->comp_types));
+    row2('Composition types', comp_types_str($c->comp_types));
     row2('Creators', creators_str($c->creators, true));
     if ($c->languages) {
         row2('Languages', languages_str(json_decode($c->languages)));
@@ -103,7 +106,7 @@ function comp_left($arg) {
     if ($c->period) {
         row2('Period', period_name($c->period));
     }
-    row2('Average duration', $c->average_duration);
+    row2('Approximate duration', $c->average_duration);
     row2('Number of movements', $c->n_movements);
     if (editor()) {
         row2('Code', copy_button(item_code($c->id, 'composition')));

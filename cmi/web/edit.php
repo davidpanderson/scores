@@ -581,6 +581,16 @@ function composition_form($id) {
     if ($id) {
         $comp = DB_composition::lookup_id($id);
         $comp->creators = json_decode($comp->creators);
+        if ($comp->instrument_combos) {
+            $comp->instrument_combos = json_decode($comp->instrument_combos);
+        } else {
+            $comp->instrument_combos = [];
+        }
+        if ($comp->comp_types) {
+            $comp->comp_types = json_decode($comp->comp_types);
+        } else {
+            $comp->comp_types = [];
+        }
         $comp_json = json_encode($comp);
     } else {
         $comp_json = get_str('comp', true);
@@ -592,6 +602,7 @@ function composition_form($id) {
             $comp->title = '';
             $comp->opus_catalogue = '';
             $comp->creators = [];
+            $comp->instrument_combos = [];
             $comp_json = json_encode($comp);
         }
     }
@@ -637,15 +648,39 @@ function composition_form($id) {
         $comp_json = json_encode($comp);
         $message = 'Removed creator';
         break;
+    case 'add_ic':
+        $ic_code = get_str('ic_code', true);
+        $ic_id = parse_code($ic_code, 'inst_combo');
+        if (!$ic_id) error_page('bad ic code');
+        if (in_array($ic_id, $comp->instrument_combos)) {
+            $error_msg = 'Duplicate instrumentation';
+        } else {
+            $comp->instrument_combos[] = $ic_id;
+            $comp_json = json_encode($comp);
+            $message = 'Added instrumentation';
+        }
+        break;
+    case 'remove_ic':
+        $ic_id = get_int('ic_id');
+        $comp->instrument_combos = array_diff($comp->instrument_combos, [$ic_id]);
+        $comp_json = json_encode($comp);
+        $message = 'Removed instrumentation';
+        break;
+    case '':
+        break;
+    default:
+        error_page("Bad op $op");
     }
 
-    page_head($id?'Edit composition':'Add composition');
+    select2_head($id?'Edit composition':'Add composition');
     
     if ($message) echo "$message<p>\n";
     if ($error_msg) echo "$error_msg<p>\n";
 
     // show page
     //
+
+    // creators
     echo sprintf('
         <div class="form-group">
             <label align=right class="%s">%s</label>
@@ -655,7 +690,7 @@ function composition_form($id) {
     );
     foreach ($comp->creators as $prole_id) {
         $prole = DB_person_role::lookup_id($prole_id);
-        echo sprintf("<li> %s\n", person_role_str($prole));
+        echo sprintf("%s\n", person_role_str($prole));
         show_button(
             sprintf(
                 'edit.php?type=composition&comp="%s"&prole_id=%d&op=remove_creator',
@@ -681,6 +716,43 @@ function composition_form($id) {
     );
     echo '</div></div><p>&nbsp;</p>';
 
+    // inst combos
+    echo sprintf('
+        <div class="form-group">
+            <label align=right class="%s">%s</label>
+            <div class="%s">
+        ',
+        FORM_LEFT_CLASS, 'Instrumentations', FORM_RIGHT_CLASS
+    );
+    foreach ($comp->instrument_combos as $icid) {
+        $ic = DB_instrument_combo::lookup_id($icid);
+        echo instrument_combo_str($ic);
+        show_button(
+            sprintf(
+                'edit.php?type=composition&comp="%s"&ic_id=%d&op=remove_ic',
+                urlencode($comp_json),
+                $icid
+            ),
+            'Remove',
+            '', BUTTON_CLASS_REMOVE
+        );
+        echo '<p>';
+    }
+    echo sprintf('
+        <form action=edit.php>
+        <input type=hidden name=type value=composition>
+        <input type=hidden name=comp value="%s">
+        <input type=hidden name=op value=add_ic>
+        <input type=hidden name=id value=%d>
+        <input type=submit class="%s" value="Add instrumentation:">
+        <input name=ic_code placeholder="instrumentation code">
+        </form>
+        ',
+        urlencode($comp_json), $id,
+        BUTTON_CLASS_ADD
+    );
+    echo '</div></div><p>&nbsp;</p>';
+
     form_start('edit.php', 'get');
     form_input_hidden('comp', urlencode($comp_json));
     form_input_hidden('type', 'composition');
@@ -688,6 +760,9 @@ function composition_form($id) {
     form_input_hidden('id', $id);
     form_input_text('Title', 'title', $comp?$comp->title:'');
     form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
+    select2_multi('Composition types', 'comp_types', comp_type_options(),
+        $comp->comp_types
+    );
     form_submit($id?'Update composition':'Add composition');
     form_end();
     page_tail();
@@ -698,6 +773,7 @@ function composition_action($id) {
     $comp = json_decode($comp_json);
     $title = get_str('title');
     $opus = get_str('opus');
+    $comp_types = get_str('comp_types');
 
     if (!$comp->creators) {
         error_page("Must specify a composer");
@@ -713,20 +789,24 @@ function composition_action($id) {
         $c = DB_composition::lookup_id($id);
         if (!$c) error_page("No composition $id");
         $q = sprintf(
-            "long_title='%s', title='%s', opus_catalogue='%s', creators='%s'",
+            "long_title='%s', title='%s', opus_catalogue='%s', creators='%s', instrument_combos='%s', comp_types='%s'",
             DB::escape($long_title),
             DB::escape($title),
             DB::escape($opus),
-            json_encode($comp->creators)
+            json_encode($comp->creators),
+            json_encode($comp->instrument_combos),
+            json_encode($comp_types)
         );
         $c->update($q);
     } else {
         $q = sprintf(
-            "(long_title, title, opus_catalogue, creators) values('%s', '%s', '%s', '%s')",
+            "(long_title, title, opus_catalogue, creators, instrument_combos, comp_types) values('%s', '%s', '%s', '%s', '%s', '%s')",
             DB::escape($long_title),
             DB::escape($title),
             DB::escape($opus),
-            json_encode($comp->creators)
+            json_encode($comp->creators),
+            json_encode($comp->instrument_combos),
+            json_encode($comp_types)
         );
         $id = DB_composition::insert($q);
     }

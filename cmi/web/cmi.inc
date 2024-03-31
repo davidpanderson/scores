@@ -106,8 +106,7 @@ function pluralize($x) {
     return $x.'s';
 }
 
-function instrument_combo_str($id) {
-    $ic = DB_instrument_combo::lookup_id($id);
+function instrument_combo_str($ic) {
     $is = json_decode($ic->instruments);
     $x = [];
     for ($i=0; $i<count($is->count); $i++) {
@@ -128,9 +127,10 @@ function instrument_combos_str($ics) {
     $ics = json_decode($ics);
     $x = [];
     foreach ($ics as $id) {
-        $x[] = instrument_combo_str($id);
+        $ic = DB_instrument_combo::lookup_id($id);
+        $x[] = instrument_combo_str($ic);
     }
-    return implode('; ', $x);
+    return implode('<br>', $x);
 }
 
 function sex_options() {
@@ -254,6 +254,15 @@ function organization_options() {
     return $x;
 }
 
+function comp_type_options() {
+    $cts = get_comp_types();
+    $x = [[0, '---']];
+    foreach ($cts as $ct) {
+        $x[] = [$ct->id, $ct->name];
+    }
+    return $x;
+}
+
 function organization_type_str($id) {
     $ot = DB_organization_type::lookup_id($id);
     return $ot->name;
@@ -263,6 +272,8 @@ function item_code($id, $type) {
     switch ($type) {
     case 'composition': return "com$id";
     case 'person_role': return "prl$id";
+    case 'inst_combo': return "ico$id";
+    case 'comp_type': return "cpt$id";
     }
     return 'bad type';
 }
@@ -273,6 +284,8 @@ function parse_code($code, $type) {
     switch ($type) {
     case 'composition': if ($t != 'com') return 0; break;
     case 'person_role': if ($t != 'prl') return 0; break;
+    case 'inst_combo': if ($t != 'ico') return 0; break;
+    case 'comp_type': if ($t != 'ctp') return 0; break;
     }
     if (!is_numeric($n)) return 0;
     return (int)$n;
