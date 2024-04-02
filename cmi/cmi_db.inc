@@ -98,5 +98,13 @@ class DB_release extends Table {
     public static $table_name = '_release';
     public static $class_name = 'DB_release';
 }
+class DB_comp_rating extends Table {
+    public static $table_name = 'comp_rating';
+    public static $class_name = 'DB_comp_rating';
+}
+class DB_comp_rating_useful extends Table {
+    public static $table_name = 'comp_rating_useful';
+    public static $class_name = 'DB_comp_rating_useful';
+}
 
 ?>

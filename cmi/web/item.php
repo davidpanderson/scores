@@ -6,6 +6,7 @@ require_once('../inc/util.inc');
 require_once('cmi_db.inc');
 require_once('cmi.inc');
 require_once('ser.inc');
+require_once('rate.inc');
 
 function do_person($id) {
     $p = DB_person::lookup_id($id);
@@ -69,13 +70,13 @@ function do_composition($id) {
     }
     page_head($page_title);
     copy_to_clipboard_script();
-    $arg = [$id, $c, $par];
+    $arg = [$c, $par];
     grid(null, 'comp_left', 'comp_right', 7, $arg);
     page_tail();
 }
 
 function comp_left($arg) {
-    [$id, $c, $par] = $arg;
+    [$c, $par] = $arg;
     start_table();
     if ($c->arrangement_of) {
         row2('Section',
@@ -110,11 +111,11 @@ function comp_left($arg) {
     row2('Number of movements', $c->n_movements);
     if (editor()) {
         row2('Code', copy_button(item_code($c->id, 'composition')));
-        row2('', button_text("edit.php?type=composition&id=$id", 'Edit composition'));
+        row2('', button_text("edit.php?type=composition&id=$c->id", 'Edit composition'));
     }
     end_table();
 
-    $arrs = DB_composition::enum(sprintf('arrangement_of=%d', $id));
+    $arrs = DB_composition::enum(sprintf('arrangement_of=%d', $c->id));
     if ($arrs) {
         echo "<h3>Arrangements</h3>\n";
         start_table();
@@ -133,7 +134,7 @@ function comp_left($arg) {
         }
         end_table();
     }
-    $children = DB_composition::enum(sprintf('parent=%d', $id));
+    $children = DB_composition::enum(sprintf('parent=%d', $c->id));
     if ($children) {
         echo "<h3>Sections</h3>\n";
         start_table();
@@ -151,11 +152,6 @@ function comp_left($arg) {
         }
         end_table();
     }
-}
-
-function comp_right($arg) {
-    [$id, $c, $par] = $arg;
-    echo "right";
 }
 
 function do_location($id) {

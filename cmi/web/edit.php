@@ -7,7 +7,7 @@ require_once('cmi.inc');
 require_once('write_ser.inc');
 
 define('BUTTON_CLASS_ADD', 'btn btn-md btn-success py-0');
-define('BUTTON_CLASS_REMOVE', 'btn btn-md btn-warning');
+define('BUTTON_CLASS_REMOVE', 'btn btn-xs btn-warning');
 
 function concert_form() {
     // get concert params, from DB or from URL args
@@ -702,6 +702,7 @@ function composition_form($id) {
         );
     }
     echo sprintf('
+        <p>
         <form action=edit.php>
         <input type=hidden name=type value=composition>
         <input type=hidden name=comp value="%s">
@@ -813,6 +814,90 @@ function composition_action($id) {
     header("Location: item.php?type=composition&id=$id");
 }
 
+function inst_combo_form() {
+    $ids = get_str('ids', true);
+    $counts = get_str('counts', true);
+    if ($counts) {
+        $ids = json_decode(urldecode($ids));
+        $counts = json_decode(urldecode($counts));
+    } else {
+        $counts=[];
+        $ids = [];
+    }
+
+    if (get_str('op', true) == 'add_inst') {
+        $counts[] = get_int('new_count');
+        $ids[] = get_int('new_id');
+    }
+
+    $n = count($counts);
+    page_head('Add instrumentation');
+    start_table();
+    table_header('Instrument', 'Number');
+    for ($i=0; $i<$n; $i++) {
+        table_row(
+            instrument_id_to_name($ids[$i]),
+            $counts[$i]
+        );
+    }
+    echo sprintf('
+        <form action=edit.php>
+        <input type=hidden name=type value=inst_combo>
+        <input type=hidden name=op value=add_inst>
+        <input type=hidden name=ids value="%s">
+        <input type=hidden name=counts value="%s">
+        ',
+        urlencode(json_encode($ids)),
+        urlencode(json_encode($counts))
+    );
+    $s = ['<select name=new_id>'];
+    foreach (instrument_options(true) as [$id, $name]) {
+        $s[] = "<option value=$id>$name</option>";
+    }
+    $s[] = '</select>';
+    $s = implode("\n", $s);
+
+    $t = ['<select name=new_count>'];
+    for ($i=1; $i<20; $i++) {
+        $t[] = "<option value=$i>$i</option>";
+    }
+    $t[] = '</select>';
+    $t = implode("\n", $t);
+
+    table_row($s, $t);
+    table_row('', '<input type=submit value="Add instrument">');
+    echo '</form>';
+    end_table();
+    show_button(
+        sprintf('edit.php?type=inst_combo&counts=%s&ids=%s&submit=1',
+            urlencode(json_encode($counts)), urlencode(json_encode($ids))
+        ),
+        'Create instrumentation'
+    );
+    page_tail();
+}
+
+function inst_combo_action() {
+    $ids = json_decode(urldecode(get_str('ids')));
+    $counts = json_decode(urldecode(get_str('counts')));
+    $x = new StdClass;
+    $x->count = $counts;
+    $x->id = $ids;
+    $ic_json = json_encode($x, JSON_NUMERIC_CHECK);
+    $ic_md5 = md5($ic_json);
+    // TODO: check for dup
+    // TODO: sort by inst ID; same in populate_util.inc
+    DB_instrument_combo::insert(
+        sprintf("(instruments, md5) values ('%s', '%s')",
+            DB::escape($ic_json),
+            DB::escape($ic_md5)
+        )
+    );
+    write_ser_instrument_combo();
+    page_head('Instrumentation added');
+    page_tail();
+}
+
 $type = get_str('type', true);
 $submit = get_str('submit', true);
 
@@ -845,6 +930,9 @@ case 'person_role':
 case 'venue':
     $id = get_int('id', true);
     $submit?venue_action($id):venue_form($id);
+    break;
+case 'inst_combo':
+    $submit?inst_combo_action():inst_combo_form();
     break;
 default:
     error_page("unknown type $type");

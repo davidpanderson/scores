@@ -109,7 +109,9 @@ function pluralize($x) {
 function instrument_combo_str($ic) {
     $is = json_decode($ic->instruments);
     $x = [];
-    for ($i=0; $i<count($is->count); $i++) {
+    $n= count($is->count);
+    if (!$n) return '';
+    for ($i=0; $i<$n; $i++) {
         if ($is->count[$i] == 1) {
             $x[] = instrument_id_to_name($is->id[$i]);
         } else {
@@ -119,7 +121,14 @@ function instrument_combo_str($ic) {
             );
         }
     }
-    return implode(' + ', $x);
+    $s = $x[0];
+    for ($i=1; $i<$n-1; $i++) {
+        $s .= ', '.$x[$i];
+    }
+    if ($n>1) {
+        $s .= ' and '.$x[$n-1];
+    }
+    return $s;
 }
 
 function instrument_combos_str($ics) {

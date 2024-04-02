@@ -517,14 +517,15 @@ function inst_combo_form($params) {
         'Instruments',
         'insts', instrument_options(), $params->insts
     );
-    form_submit('search');
-    form_general('', button_text('edit.php?type=inst_combo', 'Add instrument combination'));
+    form_submit('Search');
+    form_general('', button_text('edit.php?type=inst_combo', 'Add new instrument combination'));
     form_end();
 }
 
 function inst_combo_get() {
     $params = new StdClass;
     $params->insts = get_str('insts', true);
+    if (!$params->insts) $params->insts=[];
     return $params;
 }
 
@@ -532,23 +533,20 @@ function do_inst_combo($params) {
     select2_head('Instrument combinations');
     inst_combo_form($params);
     $combo_ids = get_combos($params->insts, true);
-    start_table();
-    if (editor()) {
-        copy_to_clipboard_script();
-        table_header('Instruments', 'Code');
-    } else {
-        table_header('Instruments');
+    if (!$combo_ids) {
+        echo 'There are currently no instrumentations with those instruments.';
+        page_tail();
+        exit();
     }
+    start_table();
+    copy_to_clipboard_script();
+    table_header('Instruments', 'Code');
     foreach ($combo_ids as $id) {
         $ic = DB_instrument_combo::lookup_id($id);
-        if (editor()) {
-            table_row(
-                instrument_combo_str($ic),
-                copy_button(item_code($id, 'inst_combo'))
-            );
-        } else {
-            table_row(instrument_combo_str($ic));
-        }
+        table_row(
+            instrument_combo_str($ic),
+            copy_button(item_code($id, 'inst_combo'))
+        );
     }
     end_table();
     page_tail();
@@ -593,6 +591,7 @@ function main($type) {
     }
 }
 
+if (!editor()) error_page("Not authorized to edit");
 main(get_str('type'));
 
 ?>

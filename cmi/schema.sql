@@ -301,3 +301,25 @@ create table _release (
         # organization
     primary key(id)
 );
+
+create table comp_rating (
+    id                      integer         not null auto_increment,
+    created                 integer,
+    user                    integer,
+    composition             integer,
+    quality                 integer,
+    difficulty              integer,
+    review                  text,
+    primary key(id)
+);
+alter table comp_rating add unique(user, composition);
+
+create table comp_rating_useful (
+    id                      integer         not null auto_increment,
+    created                 integer,
+    user                    integer,
+    comp_rating             integer,
+    useful                  tinyint,        -- 1 = useful
+    primary key(id)
+);
+alter table comp_rating_useful add unique(user, comp_rating);
