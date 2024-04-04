@@ -30,19 +30,19 @@ define ('QUALITY_TERMS', [
     'excellent',
 ]);
 
-function rating_buttons($is_diff, $sel, $type, $id) {
+function rating_buttons($is_diff, $sel, $action, $id) {
     $terms = $is_diff?DIFFICULTY_TERMS:QUALITY_TERMS;
     $x = '<nobr>';
     for ($i=0; $i<=10; $i++) {
         if ($i === $sel) {
             $x .= sprintf(
-                '<button title="%s" style="height:%dpx;width:%dpx;font-size:%dpx;background-color:lightgreen;border-width:.1px">%d</button>',
+                '<button title="%s" style="height:%dpx;width:%dpx;font-size:%dpx;background-color:palegreen;border-width:.1px">%d</button>',
                 $terms[$i], 20, 24, 10, $i
             );
         } else {
             $x .= sprintf(
-                '<a href=rate.php?type=%s&id=%d&val=%d><button title="%s" style="height:%dpx;width:%dpx;font-size:%dpx">%d</button></a>',
-                $type, $id, $i,
+                '<a href=rate.php?action=%s&id=%d&val=%d><button title="%s" style="height:%dpx;width:%dpx;font-size:%dpx">%d</button></a>',
+                $action, $id, $i,
                 $terms[$i], 20, 24, 10, $i
             );
         }
@@ -57,7 +57,7 @@ function rating_bar($frac) {
     return sprintf('
         <table>
             <tr>
-                <td width=%d align=center bgcolor=lightgreen>%.1f</td>
+                <td width=%d align=center bgcolor=palegreen>%.1f</td>
                 <td width=%d bgcolor=lightgray></td>
             </tr>
         </table>
@@ -106,7 +106,7 @@ function comp_right($arg) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'composition_q', $c->id)
+            rating_buttons(false, $rq, 'comp_q', $c->id)
         );
     }
     [$qavg, $davg] = avg_rating_comp($c);
@@ -115,14 +115,35 @@ function comp_right($arg) {
     echo '<b>Technical difficulty</b>';
     start_table();
     if ($user) {
-        row2('Your rating', rating_buttons(true, $rd, 'composition_d', $c->id));
+        row2('Your rating', rating_buttons(true, $rd, 'comp_d', $c->id));
     }
-    row2('Average rating', rating_bar($rd));
+    row2('Average rating', rating_bar($davg));
+    end_table();
+    echo '<b>Reviews</b><p>';
+    start_table();
+    if ($user) {
+        if ($r && $r->review) {
+            row2('Your review', show_review($r->review));
+        } else {
+            row2('',
+                button_text(
+                    "rate.php?action=comp_rev_form&id=$c->id", 'Write a review'
+                )
+            );
+        }
+    }
+    $revs = DB_comp_rating::enum("composition=$c->id and review<>''");
+    foreach ($revs as $rev) {
+        if ($user && $user->id == $rev->user) continue;
+        $u = BOINCUser::lookup_id($rev->user);
+        echo "<href=cmi_user.php?id=$rev->user>$user->name</a>";
+        show_review($rev->review);
+    }
     end_table();
     echo '
+        <p>
         <b>People who liked this also liked:</b>
         <p>
-        <b>Reviews:</b>
     ';
 }
 
