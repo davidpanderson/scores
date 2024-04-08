@@ -302,24 +302,28 @@ create table _release (
     primary key(id)
 );
 
-create table comp_rating (
+create table rating (
     id                      integer         not null auto_increment,
     created                 integer,
     user                    integer,
-    composition             integer,
+    target                  integer,
+    type                    integer,        -- see cmi_db.inc
     quality                 integer,
     difficulty              integer,
     review                  text,
     primary key(id)
 );
-alter table comp_rating add unique(user, composition);
+alter table rating add unique(user, target, type);
 
-create table comp_rating_useful (
+create table rating_useful (
     id                      integer         not null auto_increment,
     created                 integer,
     user                    integer,
-    comp_rating             integer,
-    useful                  tinyint,        -- 1 = useful
+    rating                  integer,
+    useful                  tinyint,        -- 1 = useful, 0 = not useful
     primary key(id)
 );
-alter table comp_rating_useful add unique(user, comp_rating);
+alter table rating_useful add unique(user, rating);
+
+create table person_role_rating (
+);

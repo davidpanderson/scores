@@ -23,7 +23,12 @@ function do_person($id) {
     row2('Locations', locations_str($p->locations));
     row2('Sex', sex_id_to_name($p->sex));
     if (editor()) {
-        row2('', button_text("edit.php?type=person&id=$id", "Edit info"));
+        row2('',
+            button_text(
+                sprintf('edit.php?type=%d&id=%d', PERSON, $id),
+                'Edit info'
+            )
+        );
     }
     $prs = DB_person_role::enum("person=$id");
     if ($prs) {
@@ -45,7 +50,8 @@ function do_person($id) {
     if (editor()) {
         $x[] = '<hr>';
         $x[] = button_text(
-            "edit.php?type=person_role&person_id=$id", 'Add role'
+            sprintf('edit.php?type=%d&person_id=%d', PERSON_ROLE, $id),
+            'Add role'
         );
     }
     if ($x) {
@@ -80,8 +86,8 @@ function comp_left($arg) {
     start_table();
     if ($c->arrangement_of) {
         row2('Section',
-            sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
-                $par->id, $par->long_title
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                COMPOSITION, $par->id, $par->long_title
             )
         );
     } else {
@@ -111,7 +117,12 @@ function comp_left($arg) {
     row2('Number of movements', $c->n_movements);
     if (editor()) {
         row2('Code', copy_button(item_code($c->id, 'composition')));
-        row2('', button_text("edit.php?type=composition&id=$c->id", 'Edit composition'));
+        row2('',
+            button_text(
+                sprintf('edit.php?type=%d&id=%d', COMPOSITION, $c->id),
+                'Edit composition'
+            )
+        );
     }
     end_table();
 
@@ -124,7 +135,8 @@ function comp_left($arg) {
             $ics = instrument_combos_str($arr->instrument_combos);
             table_row(
                 $arr->title?$arr->title:'Complete',
-                sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
+                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                    COMPOSITION,
                     $arr->id,
                     $ics?$ics:'---'
                 ),
@@ -141,8 +153,8 @@ function comp_left($arg) {
         table_header('Title', 'Metronome', 'Key', 'Measures', 'Code');
         foreach ($children as $child) {
             table_row(
-                sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
-                    $child->id, $child->title
+                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                    COMPOSITION, $child->id, $child->title
                 ),
                 $child->metronome_markings,
                 $child->_keys,
@@ -170,7 +182,8 @@ function do_location($id) {
     row2('Type', location_type_id_to_name($loc->type));
     if ($loc->parent) {
         row2('Parent',
-            sprintf('<a href=item.php?type=location&id=%d>%s</a>',
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                LOCATION,
                 $loc->parent,
                 location_id_to_name($loc->parent)
             )
@@ -178,7 +191,12 @@ function do_location($id) {
     } else {
         row2('Parent', '---');
     }
-    row2('', button_text("edit.php?type=location&id=$loc->id", 'Edit'));
+    row2('',
+        button_text(
+            sprintf('edit.php?type=%d&id=%d', LOCATION, $loc->id),
+            'Edit'
+        )
+    );
     end_table();
     page_tail();
 }
@@ -192,7 +210,12 @@ function do_venue($id) {
     row2('Location', location_id_to_name($v->location));
     row2('Capacity', $v->capacity);
     if (editor()) {
-        row2('', button_text("edit.php?type=venue&id=$id", 'Edit'));
+        row2('',
+            button_text(
+                sprintf('edit.php?type=%d&id=%d', VENUE, $id),
+                'Edit'
+            )
+        );
     }
     end_table();
     page_tail();
@@ -209,7 +232,12 @@ function do_concert($id) {
     row2('Organizer', organization_id_to_name($c->organization));
     row2('Program', program_str(json_decode($c->program)));
     if (editor()) {
-        row2('', button_text("edit.php?type=concert&id=$id", 'Edit'));
+        row2('',
+            button_text(
+                sprintf('edit.php?type=%d&id=%d', CONCERT, $id),
+                'Edit'
+            )
+        );
     }
     end_table();
     page_tail();
@@ -224,7 +252,12 @@ function do_organization($id) {
     row2('Location', location_id_to_name($org->location));
     row2('URL', sprintf('<a href=%s>%s</a>', $org->url, $org->url));
     if (editor()) {
-        row2('', button_text("edit.php?type=organization&id=$id", 'Edit'));
+        row2('',
+            button_text(
+                sprintf('edit.php?type=%d&id=%d', ORGANIZATION, $id),
+                'Edit'
+            )
+        );
     }
     end_table();
     page_tail();
@@ -232,22 +265,22 @@ function do_organization($id) {
 
 function main($type, $id) {
     switch ($type) {
-    case 'person':
+    case PERSON:
         do_person($id);
         break;
-    case 'composition':
+    case COMPOSITION:
         do_composition($id);
         break;
-    case 'location':
+    case LOCATION:
         do_location($id);
         break;
-    case 'venue':
+    case VENUE:
         do_venue($id);
         break;
-    case 'concert':
+    case CONCERT:
         do_concert($id);
         break;
-    case 'organization':
+    case ORGANIZATION:
         do_organization($id);
         break;
     default: error_page("No type $type");

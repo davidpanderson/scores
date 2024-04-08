@@ -12,7 +12,10 @@ define('PAGE_SIZE', 50);
 function do_location() {
     page_head('Locations');
     $locs = get_locations();
-    show_button('edit.php?type=location', 'Add location');
+    show_button(
+        sprintf('edit.php?type=%d', LOCATION),
+        'Add location'
+    );
     echo '<p>';
     start_table();
     table_header(
@@ -20,7 +23,9 @@ function do_location() {
     );
     foreach ($locs as $loc) {
         table_row(
-            "<a href=item.php?type=location&id=$loc->id>$loc->name</a>",
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                LOCATION, $loc->id, $loc->name
+            ),
             $loc->adjective,
             location_type_id_to_name($loc->type),
             $loc->parent?location_id_to_name($loc->parent):''
@@ -39,7 +44,12 @@ function person_form($params) {
     form_select('Sex', 'sex', sex_options(), $params->sex);
     form_select('Nationality', 'location', country_options(), $params->location);
     form_submit('Search');
-    form_general('', button_text('edit.php?type=person', 'Add person'));
+    form_general('',
+        button_text(
+            sprintf('edit.php?type=%d', PERSON),
+            'Add person'
+        )
+    );
     form_end();
 }
 
@@ -96,7 +106,8 @@ function do_person($params) {
     foreach ($pers as $p) {
         if (++$i == PAGE_SIZE+1) break;
         table_row(
-            sprintf('<a href=item.php?type=person&id=%d>%s %s</a>',
+            sprintf('<a href=item.php?type=%d&id=%d>%s %s</a>',
+                PERSON,
                 $p->id,
                 $p->first_name, $p->last_name
             ),
@@ -143,7 +154,12 @@ function comp_form($params) {
         'id=arr_others_ok'
     );
     form_submit('Search');
-    form_general('', button_text('edit.php?type=composition', 'Add composition'));
+    form_general('',
+        button_text(
+            sprintf('edit.php?type=%d', COMPOSITION),
+            'Add composition'
+        )
+    );
     form_end();
     echo "
 <script>
@@ -230,8 +246,8 @@ function show_arrangements($comps) {
         $c2 = DB_composition::lookup_id($c->arrangement_of);
         table_row(
             sprintf(
-                '<a href=item.php?type=composition&id=%d>%s</a>',
-                $c2->id, $c2->long_title
+                '<a href=item.php?type=%d&id=%d>%s</a>',
+                COMPOSITION, $c2->id, $c2->long_title
             ),
             $c->title,
             sprintf('<a href=%s>View</a>', imslp_url($c2)),
@@ -259,9 +275,8 @@ function show_compositions($comps) {
     );
     foreach ($comps as $c) {
         table_row(
-            sprintf('<a href=item.php?type=composition&id=%d>%s</a>',
-                $c->id,
-                $c->title
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                COMPOSITION, $c->id, $c->title
             ),
             creators_str($c->creators, true),
             sprintf('<a href=%s>View</a>', imslp_url($c)),
@@ -441,14 +456,19 @@ function do_concert() {
     foreach ($cs as $c) {
         $v = DB_venue::lookup_id($c->venue);
         table_row(
-            "<a href=item.php?type=concert&id=$c->id>View</a>",
+            sprintf('<a href=item.php?type=%d&id=%d>View</a>',
+                CONCERT, $c->id
+            ),
             $v?$v->name:'---',
             $v?location_id_to_name($v->location):'---',
             DB::date_num_to_str($c->_when)
         );
     }
     end_table();
-    show_button('edit.php?type=concert', 'Add concert');
+    show_button(
+        sprintf('edit.php?type=%d', CONCERT),
+        'Add concert'
+    );
     page_tail();
 }
 
@@ -459,14 +479,17 @@ function do_venue() {
     table_header('Name', 'Location');
     foreach ($vs as $v) {
         table_row(
-            sprintf('<a href=edit.php?type=venue&id=%d>%s</a>',
-                $v->id, $v->name
+            sprintf('<a href=edit.php?type=%d&id=%d>%s</a>',
+                VENUE, $v->id, $v->name
             ),
             location_id_to_name($v->location)
         );
     }
     end_table();
-    show_button('edit.php?type=venue', 'Add venue');
+    show_button(
+        sprintf('edit.php?type=%d', VENUE),
+        'Add venue'
+    );
     page_tail();
 }
 
@@ -477,15 +500,18 @@ function do_organization() {
     table_header('Name', 'Type', 'Location');
     foreach ($orgs as $org) {
         table_row(
-            sprintf('<a href=item.php?type=organization&id=%d>%s</a>',
-                $org->id, $org->name
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                ORGANIZATION, $org->id, $org->name
             ),
             organization_type_str($org->type),
             location_id_to_name($org->location)
         );
     }
     end_table();
-    show_button('edit.php?type=organization', 'Add organization');
+    show_button(
+        sprintf('edit.php?type=%d', ORGANIZATION),
+        'Add organization'
+    );
     page_tail();
 }
 
@@ -496,15 +522,18 @@ function do_ensemble() {
     table_header('Name', 'Type', 'Location');
     foreach($enss as $ens) {
         table_row(
-            sprintf('<a href=item.php?type=ensemble&id=%d>%s</a>',
-                $ens->id, $ens->name
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                ENSEMBLE, $ens->id, $ens->name
             ),
             ensemble_type_str($ens->type),
             location_str($ens->location)
         );
     }
     end_table();
-    show_button('edit.php?type=ensemble', 'Add ensemble');
+    show_button(
+        sprintf('edit.php?type=%d', ENSEMBLE),
+        'Add ensemble'
+    );
     page_tail();
 }
 
@@ -518,7 +547,12 @@ function inst_combo_form($params) {
         'insts', instrument_options(), $params->insts
     );
     form_submit('Search');
-    form_general('', button_text('edit.php?type=inst_combo', 'Add new instrument combination'));
+    form_general('',
+        button_text(
+            sprintf('edit.php?type=%d', INST_COMBO),
+            'Add new instrument combination'
+        )
+    );
     form_end();
 }
 

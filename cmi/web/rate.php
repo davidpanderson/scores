@@ -5,52 +5,74 @@
 require_once('../inc/util.inc');
 require_once('cmi_db.inc');
 
-function comp_review_form($id) {
+function review_form($type, $target) {
     $user = get_logged_in_user();
-    $c = DB_composition::lookup_id($id);
-    $review = '';
-    $r = DB_comp_rating::lookup("user=$user->id&id=$id");
+    $r = DB_rating::lookup(
+        sprintf('user=%d and type=%d and target=%d',
+            $user->id, $type, $target
+        )
+    );
     if ($r) {
         $review = $r->review;
+        page_head('Edit review');
+    } else {
+        page_head('Review');
     }
-    page_head('Review');
-    echo "
-        Please write a brief review of $c->long_title,
-        perhaps including:
-        <ul>
-        <li> Why you do or don't like it.
-        <li> What it expresses to you.
-        <li> Your experiences hearing or playing it.
-        </ul>
-    ";
+    switch($type) {
+    case COMPOSITION:
+        $c = DB_composition::lookup_id($target);
+        echo "
+            Please write a brief review of $c->long_title,
+            perhaps including:
+            <ul>
+            <li> Why you do or don't like it.
+            <li> What it expresses to you.
+            <li> Your experiences hearing or playing it.
+            </ul>
+        ";
+        break;
+    default: error_page('bad type');
+    }
     form_start('rate.php');
-    form_input_textarea('review', $review);
+    form_input_textarea('Review', 'review', $review);
+    form_input_hidden('type', $type);
+    form_input_hidden('target', $target);
+    form_input_hidden('action', 'rev_action');
     form_submit('OK');
     form_end();
     page_tail();
 }
 
-function comp_review_action($id) {
+function review_action($type, $target) {
     $user = get_logged_in_user();
     $rev = get_str('review');
-    header("Location: item.php?type=composition&id=$id");
-    $r = DB_comp_rating::lookup("user=$user->id and composition=$id");
+    $r = DB_rating::lookup(
+        sprintf('user=%d and type=%d and target=%d',
+            $user->id, $type, $target
+        )
+    );
     if ($r) {
-        $r->update(sprintf("review='%s'", DB_escape($rev)));
+        $r->update(sprintf("review='%s'", DB::escape($rev)));
     } else {
-        DB_comp_rating::insert(
-            sprintf("(created, user, composition, review) vaues (%d, %d, %d, '%s')",
-                time(), $user->id, $id, DB::escape($rev)
+        DB_rating::insert(
+            sprintf("(created, user, type, target, review) vaues (%d, %d, %d, %d, '%s')",
+                time(), $user->id, $type, $target, DB::escape($rev)
             )
         );
     }
-    header("Location: item.php?type=composition&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', $type, $target)
+    );
 }
 
 function do_comp($id, $is_diff) {
     $user = get_logged_in_user();
     $val = get_int('val');
-    $r = DB_comp_rating::lookup("user=$user->id and composition=$id");
+    $r = DB_rating::lookup(
+        sprintf('user=%d and type=%d and target=%d',
+            $user->id, COMPOSITION, $id
+        )
+    );
     if ($r) {
         $r->update(
             sprintf('%s=%d, created=%d',
@@ -59,30 +81,33 @@ function do_comp($id, $is_diff) {
             )
         );
     } else {
-        DB_comp_rating::insert(
-            sprintf('(created, user, composition, %s) values (%d, %d, %d, %d)',
+        DB_rating::insert(
+            sprintf('(created, user, type, target, %s) values (%d, %d, %d, %d, %d)',
                 $is_diff?'difficulty':'quality',
-                time(), $user->id, $id, $val
+                time(), $user->id, COMPOSITION, $id, $val
             )
         );
     }
-    header("Location: item.php?type=composition&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', COMPOSITION, $id)
+    );
 }
 
 $action = get_str('action');
-$id = get_int('id');
+$type = get_int('type', true);
+$target = get_int('target');
 switch($action) {
 case 'comp_q':
-    do_comp($id, false);
+    do_comp($target, false);
     break;
 case 'comp_d':
-    do_comp($id, true);
+    do_comp($target, true);
     break;
-case 'comp_rev_form':
-    comp_review_form($id);
+case 'rev_form':
+    review_form($type, $target);
     break;
-case 'comp_rev_action':
-    comp_review_action($id);
+case 'rev_action':
+    review_action($type, $target);
     break;
 }
 ?>

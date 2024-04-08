@@ -98,13 +98,24 @@ class DB_release extends Table {
     public static $table_name = '_release';
     public static $class_name = 'DB_release';
 }
-class DB_comp_rating extends Table {
-    public static $table_name = 'comp_rating';
-    public static $class_name = 'DB_comp_rating';
+class DB_rating extends Table {
+    public static $table_name = 'rating';
+    public static $class_name = 'DB_rating';
 }
-class DB_comp_rating_useful extends Table {
-    public static $table_name = 'comp_rating_useful';
-    public static $class_name = 'DB_comp_rating_useful';
+class DB_rating_useful extends Table {
+    public static $table_name = 'rating_useful';
+    public static $class_name = 'DB_rating_useful';
 }
+
+define('COMPOSITION', 1);
+define('PERSON_ROLE', 2);
+define('ENSEMBLE', 3);
+define('VENUE', 4);
+define('PERFORMANCE', 5);
+define('CONCERT', 6);
+define('PERSON', 7);
+define('LOCATION', 8);
+define('ORGANIZATION', 9);
+define('INST_COMBO', 10);
 
 ?>

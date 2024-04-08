@@ -184,7 +184,7 @@ function concert_form() {
         echo sprintf('
             <p>
             <form action=edit.php>
-            <input type=hidden name=type value=concert>
+            <input type=hidden name=type value=%d>
             <input type=hidden name=con value="%s">
             <input type=hidden name=op value=add_perf>
             <input type=hidden name=perf_id value=%d>
@@ -192,13 +192,15 @@ function concert_form() {
             <input title="paste a role code here" name=prole_code placeholder="role code">
             </form>
             ',
+            CONCERT,
             urlencode($con_json), $perf_id,
             BUTTON_CLASS_ADD
         );
         echo '<br>';
         show_button(
             sprintf(
-                'edit.php?type=concert&id=%d&con=%s&perf_id=%d&op=remove_comp',
+                'edit.php?type=%d&id=%d&con=%s&perf_id=%d&op=remove_comp',
+                CONCERT,
                 $id,
                 urlencode($con_json),
                 $perf_id
@@ -210,13 +212,14 @@ function concert_form() {
     }
     echo sprintf('
         <form action=edit.php>
-        <input type=hidden name=type value=concert>
+        <input type=hidden name=type value=%d>
         <input type=hidden name=con value="%s">
         <input type=hidden name=op value=add_comp>
         <input type=submit class="%s" value="Add composition">
         <input name=comp_code placeholder="composition code">
         </form>
         ',
+        CONCERT,
         urlencode($con_json),
         BUTTON_CLASS_ADD
     );
@@ -225,7 +228,7 @@ function concert_form() {
     form_start('edit.php');
     form_input_hidden('con', urlencode($con_json));
     form_input_hidden('id', $id);
-    form_input_hidden('type', 'concert');
+    form_input_hidden('type', CONCERT);
     form_input_hidden('submit', true);
     form_select('Venue', 'venue', venue_options());
     form_input_text('Date', 'when', '', 'text', 'placeholder="YYYY-MM-DD"');
@@ -272,7 +275,9 @@ function concert_action() {
         );
         $id = DB_concert::insert($q);
     }
-    header("Location: item.php?type=concert&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', CONCERT, $id)
+    );
 }
 
 function location_form($id) {
@@ -285,7 +290,7 @@ function location_form($id) {
     }
     page_head($loc?'Edit location':'Add location');
     form_start('edit.php', 'get');
-    form_input_hidden('type', 'location');
+    form_input_hidden('type', LOCATION);
     form_input_hidden('submit', 1);
     if ($id) {
         form_input_hidden('id', $id);
@@ -361,7 +366,7 @@ function person_form() {
         select2_head("Add person");
     }
     form_start('edit.php');
-    form_input_hidden('type', 'person');
+    form_input_hidden('type', PERSON);
     form_input_hidden('submit', true);
     if ($id) {
         form_input_hidden('id', $id);
@@ -418,7 +423,9 @@ function person_action() {
             )
         );
     }
-    header("Location: item.php?type=person&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', PERSON, $id)
+    );
 }
 function ensemble_form($id) {
     $ens = null;
@@ -427,7 +434,7 @@ function ensemble_form($id) {
     }
     page_head($ens?'Edit ensemble':'Add ensemble');
     form_start('edit.php');
-    form_input_hidden('type', 'ensemble');
+    form_input_hidden('type', ENSEMBLE);
     if ($id) {
         form_input_hidden('id', $id);
     }
@@ -453,7 +460,9 @@ function ensemble_action($id) {
             )
         );
     }
-    header("Location: item.php?type=ensemble&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', ENSEMBLE, $id)
+    );
 }
 
 function person_role_form() {
@@ -463,7 +472,7 @@ function person_role_form() {
 
     page_head("Add role for $person->first_name $person->last_name");
     form_start('edit.php');
-    form_input_hidden('type', 'person_role');
+    form_input_hidden('type', PERSON_ROLE);
     form_input_hidden('submit', true);
     form_input_hidden('person_id', $pid);
     form_select('Role', 'role', role_options());
@@ -485,7 +494,9 @@ function person_role_action() {
             $person_id, $instrument, $role
         )
     );
-    header("Location: item.php?type=person&id=$person_id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', PERSON, $person_id)
+    );
 }
 
 function venue_form($id) {
@@ -495,7 +506,7 @@ function venue_form($id) {
     }
     page_head($ven?'Edit venue':'Add venue');
     form_start('edit.php', 'get');
-    form_input_hidden('type', 'venue');
+    form_input_hidden('type', VENUE);
     if ($id) {
         form_input_hidden('id', $id);
     }
@@ -527,7 +538,9 @@ function venue_action($id) {
             )
         );
     }
-    header("Location: item.php?type=venue&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', VENUE, $id)
+    );
 }
 
 function organization_form($id) {
@@ -537,7 +550,7 @@ function organization_form($id) {
     }
     page_head($org?'Edit organization':'Add organization');
     form_start('edit.php', 'get');
-    form_input_hidden('type', 'organization');
+    form_input_hidden('type', ORGANIZATION);
     form_input_hidden('submit', true);
     if ($id) {
         form_input_hidden('id', $id);
@@ -573,7 +586,9 @@ function organization_action($id) {
             )
         );
     }
-    header("Location: item.php?type=organization&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', ORGANIZATION, $id)
+    );
 }
 
 function composition_form($id) {
@@ -693,7 +708,8 @@ function composition_form($id) {
         echo sprintf("%s\n", person_role_str($prole));
         show_button(
             sprintf(
-                'edit.php?type=composition&comp="%s"&prole_id=%d&op=remove_creator',
+                'edit.php?type=%d&comp="%s"&prole_id=%d&op=remove_creator',
+                COMPOSITION,
                 urlencode($comp_json),
                 $prole_id
             ),
@@ -704,7 +720,7 @@ function composition_form($id) {
     echo sprintf('
         <p>
         <form action=edit.php>
-        <input type=hidden name=type value=composition>
+        <input type=hidden name=type value=%d>
         <input type=hidden name=comp value="%s">
         <input type=hidden name=op value=add_creator>
         <input type=hidden name=id value=%d>
@@ -712,6 +728,7 @@ function composition_form($id) {
         <input name=prole_code placeholder="role code">
         </form>
         ',
+        COMPOSITION,
         urlencode($comp_json), $id,
         BUTTON_CLASS_ADD
     );
@@ -730,7 +747,8 @@ function composition_form($id) {
         echo instrument_combo_str($ic);
         show_button(
             sprintf(
-                'edit.php?type=composition&comp="%s"&ic_id=%d&op=remove_ic',
+                'edit.php?type=%d&comp="%s"&ic_id=%d&op=remove_ic',
+                COMPOSITION,
                 urlencode($comp_json),
                 $icid
             ),
@@ -741,7 +759,7 @@ function composition_form($id) {
     }
     echo sprintf('
         <form action=edit.php>
-        <input type=hidden name=type value=composition>
+        <input type=hidden name=type value=%d>
         <input type=hidden name=comp value="%s">
         <input type=hidden name=op value=add_ic>
         <input type=hidden name=id value=%d>
@@ -749,6 +767,7 @@ function composition_form($id) {
         <input name=ic_code placeholder="instrumentation code">
         </form>
         ',
+        COMPOSITION,
         urlencode($comp_json), $id,
         BUTTON_CLASS_ADD
     );
@@ -756,7 +775,7 @@ function composition_form($id) {
 
     form_start('edit.php', 'get');
     form_input_hidden('comp', urlencode($comp_json));
-    form_input_hidden('type', 'composition');
+    form_input_hidden('type', COMPOSITION);
     form_input_hidden('submit', true);
     form_input_hidden('id', $id);
     form_input_text('Title', 'title', $comp?$comp->title:'');
@@ -811,7 +830,9 @@ function composition_action($id) {
         );
         $id = DB_composition::insert($q);
     }
-    header("Location: item.php?type=composition&id=$id");
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', COMPOSITION, $id)
+    );
 }
 
 function inst_combo_form() {
@@ -842,11 +863,12 @@ function inst_combo_form() {
     }
     echo sprintf('
         <form action=edit.php>
-        <input type=hidden name=type value=inst_combo>
+        <input type=hidden name=type value=%d>
         <input type=hidden name=op value=add_inst>
         <input type=hidden name=ids value="%s">
         <input type=hidden name=counts value="%s">
         ',
+        INST_COMBO,
         urlencode(json_encode($ids)),
         urlencode(json_encode($counts))
     );
@@ -869,7 +891,8 @@ function inst_combo_form() {
     echo '</form>';
     end_table();
     show_button(
-        sprintf('edit.php?type=inst_combo&counts=%s&ids=%s&submit=1',
+        sprintf('edit.php?type=%d&counts=%s&ids=%s&submit=1',
+            INST_COMBO,
             urlencode(json_encode($counts)), urlencode(json_encode($ids))
         ),
         'Create instrumentation'
@@ -902,36 +925,36 @@ $type = get_str('type', true);
 $submit = get_str('submit', true);
 
 switch ($type) {
-case 'location':
+case LOCATION:
     $id = get_int('id', true);
     $submit?location_action($id):location_form($id);
     break;
-case 'composition':
+case COMPOSITION:
     $id = get_int('id', true);
     $submit?composition_action($id):composition_form($id);
     break;
-case 'concert':
+case CONCERT:
     $submit?concert_action():concert_form();
     break;
-case 'ensemble':
+case ENSEMBLE:
     $id = get_int('id', true);
     $submit?ensemble_action():ensemble_form();
     break;
-case 'organization':
+case ORGANIZATION:
     $id = get_int('id', true);
     $submit?organization_action($id):organization_form($id);
     break;
-case 'person':
+case PERSON:
     $submit?person_action():person_form();
     break;
-case 'person_role':
+case PERSON_ROLE:
     $submit?person_role_action():person_role_form();
     break;
-case 'venue':
+case VENUE:
     $id = get_int('id', true);
     $submit?venue_action($id):venue_form($id);
     break;
-case 'inst_combo':
+case INST_COMBO:
     $submit?inst_combo_action():inst_combo_form();
     break;
 default:

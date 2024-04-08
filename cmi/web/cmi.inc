@@ -76,7 +76,8 @@ function creators_str($cts, $show_role) {
         $prole = DB_person_role::lookup_id($id);
         $p = DB_person::lookup_id($prole->person);
         $x[] = sprintf(
-            "<a href=item.php?type=person&id=%d>%s %s</a>%s",
+            "<a href=item.php?type=%d&id=%d>%s %s</a>%s",
+            PERSON,
             $p->id,
             $p->first_name, $p->last_name,
             $show_role?' ('.role_id_to_name($prole->role).')':''
