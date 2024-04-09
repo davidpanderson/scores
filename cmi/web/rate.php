@@ -4,6 +4,7 @@
 
 require_once('../inc/util.inc');
 require_once('cmi_db.inc');
+require_once('ser.inc');
 
 function review_form($type, $target) {
     $user = get_logged_in_user();
@@ -26,6 +27,20 @@ function review_form($type, $target) {
             perhaps including:
             <ul>
             <li> Why you do or don't like it.
+            <li> What it expresses to you.
+            <li> Your experiences hearing or playing it.
+            </ul>
+        ";
+        break;
+    case PERSON_ROLE:
+        $pr = DB_person_role::lookup_id($target);
+        $role = role_id_to_name($pr->role);
+        $person = DB_person::lookup_id($pr->person);
+        echo "
+            Please write a brief review of $person->first_name $person->last_name as a $role,
+            perhaps including:
+            <ul>
+            <li> Why you do or don't like their work.
             <li> What it expresses to you.
             <li> Your experiences hearing or playing it.
             </ul>
@@ -60,17 +75,24 @@ function review_action($type, $target) {
             )
         );
     }
-    header(
-        sprintf('Location: item.php?type=%d&id=%d', $type, $target)
-    );
+    if ($type == PERSON_ROLE) {
+        $pr = DB_person_role::lookup_id($target);
+        header(
+            sprintf('Location: item.php?type=%d&id=%d', PERSON, $pr->person)
+        );
+    } else {
+        header(
+            sprintf('Location: item.php?type=%d&id=%d', $type, $id)
+        );
+    }
 }
 
-function do_comp($id, $is_diff) {
+function do_rate($type, $id, $is_diff=false) {
     $user = get_logged_in_user();
     $val = get_int('val');
     $r = DB_rating::lookup(
         sprintf('user=%d and type=%d and target=%d',
-            $user->id, COMPOSITION, $id
+            $user->id, $type, $id
         )
     );
     if ($r) {
@@ -84,13 +106,20 @@ function do_comp($id, $is_diff) {
         DB_rating::insert(
             sprintf('(created, user, type, target, %s) values (%d, %d, %d, %d, %d)',
                 $is_diff?'difficulty':'quality',
-                time(), $user->id, COMPOSITION, $id, $val
+                time(), $user->id, $type, $id, $val
             )
         );
     }
-    header(
-        sprintf('Location: item.php?type=%d&id=%d', COMPOSITION, $id)
-    );
+    if ($type == PERSON_ROLE) {
+        $pr = DB_person_role::lookup_id($id);
+        header(
+            sprintf('Location: item.php?type=%d&id=%d', PERSON, $pr->person)
+        );
+    } else {
+        header(
+            sprintf('Location: item.php?type=%d&id=%d', $type, $id)
+        );
+    }
 }
 
 $action = get_str('action');
@@ -98,10 +127,13 @@ $type = get_int('type', true);
 $target = get_int('target');
 switch($action) {
 case 'comp_q':
-    do_comp($target, false);
+    do_rate(COMPOSITION, $target, false);
     break;
 case 'comp_d':
-    do_comp($target, true);
+    do_rate(COMPOSITION, $target, true);
+    break;
+case 'rate_pr':
+    do_rate(PERSON_ROLE, $target);
     break;
 case 'rev_form':
     review_form($type, $target);
@@ -109,5 +141,7 @@ case 'rev_form':
 case 'rev_action':
     review_action($type, $target);
     break;
+default:
+    error_page("No action $action");
 }
 ?>

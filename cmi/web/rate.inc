@@ -139,8 +139,7 @@ function show_reviews($type, $target, $user, $review) {
     end_table();
 }
 
-// right panel for composition, person, and recording
-// has rating and review stuff
+// right panel for composition: rating and review stuff
 //
 function comp_right($arg) {
     $user = get_logged_in_user(true);
@@ -152,7 +151,7 @@ function comp_right($arg) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'comp_q', $c->id)
+            rating_buttons(false, $rq, 'rate_comp_q', $c->id)
         );
     }
     [$qavg, $davg] = avg_rating(COMPOSITION, $c->id);
@@ -161,7 +160,7 @@ function comp_right($arg) {
     echo '<b>Technical difficulty</b>';
     start_table();
     if ($user) {
-        row2('Your rating', rating_buttons(true, $rd, 'comp_d', $c->id));
+        row2('Your rating', rating_buttons(true, $rd, 'rate_comp_d', $c->id));
     }
     row2('Average rating', rating_bar($davg));
     end_table();
@@ -171,6 +170,27 @@ function comp_right($arg) {
         <b>People who liked this also liked:</b>
         <p>
     ';
+}
+
+// right panel for person
+//
+function person_right($p) {
+    $user = get_logged_in_user(true);
+    $prs = DB_person_role::enum("person=$p->id");
+    foreach ($prs as $pr) {
+        $role = DB_role::lookup_id($pr->role);
+        echo "<b>As $role->name</b>";
+        start_table();
+        [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
+        if ($user) {
+            row2('Your rating', rating_buttons(true, $rd, 'rate_pr', $pr->id));
+        }
+        [$qavg, $davg] = avg_rating(PERSON_ROLE, $pr->id);
+        row2('Average rating', rating_bar($qavg));
+        end_table();
+        show_reviews(PERSON_ROLE, $pr->id, $user, $review);
+        echo '<hr>';
+    }
 }
 
 ?>

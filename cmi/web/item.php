@@ -8,11 +8,7 @@ require_once('cmi.inc');
 require_once('ser.inc');
 require_once('rate.inc');
 
-function do_person($id) {
-    $p = DB_person::lookup_id($id);
-    if (!$p) error_page("no person $id\n");
-    page_head("$p->first_name $p->last_name");
-    copy_to_clipboard_script();
+function person_left($p) {
     start_table();
     row2('First name', $p->first_name);
     row2('Last name', $p->last_name);
@@ -25,12 +21,12 @@ function do_person($id) {
     if (editor()) {
         row2('',
             button_text(
-                sprintf('edit.php?type=%d&id=%d', PERSON, $id),
+                sprintf('edit.php?type=%d&id=%d', PERSON, $p->id),
                 'Edit info'
             )
         );
     }
-    $prs = DB_person_role::enum("person=$id");
+    $prs = DB_person_role::enum("person=$p->id");
     if ($prs) {
         $x = [];
         foreach ($prs as $pr) {
@@ -50,7 +46,7 @@ function do_person($id) {
     if (editor()) {
         $x[] = '<hr>';
         $x[] = button_text(
-            sprintf('edit.php?type=%d&person_id=%d', PERSON_ROLE, $id),
+            sprintf('edit.php?type=%d&person_id=%d', PERSON_ROLE, $p->id),
             'Add role'
         );
     }
@@ -58,6 +54,14 @@ function do_person($id) {
         row2('Roles', implode('<p>', $x));
     }
     end_table();
+}
+
+function do_person($id) {
+    $p = DB_person::lookup_id($id);
+    if (!$p) error_page("no person $id\n");
+    page_head("$p->first_name $p->last_name");
+    copy_to_clipboard_script();
+    grid(null, 'person_left', 'person_right', 7, $p);
     page_tail();
 }
 
