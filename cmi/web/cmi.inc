@@ -7,6 +7,8 @@ display_errors();
 require_once('cmi_db.inc');
 require_once('ser.inc');
 
+//DB::$show_queries = true;
+
 define('DEBUG_QUERY', 0);
 
 // is logged-in user an editor?

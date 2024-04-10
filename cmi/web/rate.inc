@@ -1,6 +1,7 @@
 <?php
 
 require_once('../inc/util.inc');
+require_once('../inc/more.inc');
 
 define('DIFFICULTY_TERMS', [
     'extremely easy',
@@ -93,7 +94,7 @@ function avg_rating($type, $target) {
 }
 
 function show_review($rev) {
-    return $rev;
+    show_text_more($rev, 80);
 }
 
 function get_users_ratings($user, $type, $target) {
@@ -119,10 +120,13 @@ function show_reviews($type, $target, $user, $review) {
     if ($user) {
         $url = "rate.php?action=rev_form&type=$type&target=$target";
         if ($review) {
-            row2(
-                "Your review<br><a href=$url>edit</a>",
-                show_review($review)
+            row2_init(
+                sprintf('Your review<br>%s',
+                    button_text($url, 'edit', 'Edit your review', ' btn-success btn-xs')
+                )
             );
+            show_review($review);
+            echo '</td></tr>';
         } else {
             row2('', button_text($url, 'Write a review'));
         }
@@ -181,9 +185,9 @@ function person_right($p) {
         $role = DB_role::lookup_id($pr->role);
         echo "<b>As $role->name</b>";
         start_table();
-        [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
         if ($user) {
-            row2('Your rating', rating_buttons(true, $rd, 'rate_pr', $pr->id));
+            [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
+            row2('Your rating', rating_buttons(true, $rq, 'rate_pr', $pr->id));
         }
         [$qavg, $davg] = avg_rating(PERSON_ROLE, $pr->id);
         row2('Average rating', rating_bar($qavg));

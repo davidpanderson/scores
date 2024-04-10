@@ -48,6 +48,7 @@ function review_form($type, $target) {
         break;
     default: error_page('bad type');
     }
+    echo 'Text only - no HTML tags.';
     form_start('rate.php');
     form_input_textarea('Review', 'review', $review);
     form_input_hidden('type', $type);
@@ -60,7 +61,7 @@ function review_form($type, $target) {
 
 function review_action($type, $target) {
     $user = get_logged_in_user();
-    $rev = get_str('review');
+    $rev = strip_tags(get_str('review'));
     $r = DB_rating::lookup(
         sprintf('user=%d and type=%d and target=%d',
             $user->id, $type, $target
