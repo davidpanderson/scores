@@ -41,8 +41,8 @@ function review_form($type, $target) {
             perhaps including:
             <ul>
             <li> Why you do or don't like their work.
-            <li> What it expresses to you.
-            <li> Your experiences hearing or playing it.
+            <li> What their work expresses to you.
+            <li> Your experiences hearing or playing their work.
             </ul>
         ";
         break;
@@ -127,10 +127,10 @@ $action = get_str('action');
 $type = get_int('type', true);
 $target = get_int('target');
 switch($action) {
-case 'comp_q':
+case 'rate_comp_q':
     do_rate(COMPOSITION, $target, false);
     break;
-case 'comp_d':
+case 'rate_comp_d':
     do_rate(COMPOSITION, $target, true);
     break;
 case 'rate_pr':

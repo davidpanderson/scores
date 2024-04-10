@@ -89,36 +89,48 @@ function comp_left($arg) {
     [$c, $par] = $arg;
     start_table();
     if ($c->arrangement_of) {
-        row2('Section',
+        row2('Arrangement of',
             sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                COMPOSITION, $par->id, $par->long_title
+                COMPOSITION, $par->id, composition_str($par)
             )
         );
+        row2('Instrumentation', instrument_combos_str($c->instrument_combos));
+        if ($c->ensemble_type) {
+            row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
+        }
+    } else if ($c->parent) {
+        row2('Section of',
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                COMPOSITION, $par->id, composition_str($par)
+            )
+        );
+        row2('Title', $c->title);
+        row2('Approximate duration', $c->average_duration);
     } else {
         row2('Title', $c->title);
+        if ($c->alternative_title) {
+            row2('Alternative title', $c->alternative_title);
+        }
+        row2('Opus', $c->opus_catalogue);
+        row2('Composed', DB::date_num_to_str($c->composed));
+        //row2('Published', DB::date_num_to_str($c->published));
+        //row2('First performed', DB::date_num_to_str($c->performed));
+        row2('Dedication', $c->dedication);
+        row2('Composition types', comp_types_str($c->comp_types));
+        row2('Creators', creators_str($c->creators, true));
+        if ($c->languages) {
+            row2('Languages', languages_str(json_decode($c->languages)));
+        }
+        row2('Instrumentation', instrument_combos_str($c->instrument_combos));
+        if ($c->ensemble_type) {
+            row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
+        }
+        if ($c->period) {
+            row2('Period', period_name($c->period));
+        }
+        row2('Approximate duration', $c->average_duration);
+        row2('Number of movements', $c->n_movements);
     }
-    if ($c->alternative_title) {
-        row2('Alternative title', $c->alternative_title);
-    }
-    row2('Opus', $c->opus_catalogue);
-    row2('Composed', DB::date_num_to_str($c->composed));
-    //row2('Published', DB::date_num_to_str($c->published));
-    //row2('First performed', DB::date_num_to_str($c->performed));
-    row2('Dedication', $c->dedication);
-    row2('Composition types', comp_types_str($c->comp_types));
-    row2('Creators', creators_str($c->creators, true));
-    if ($c->languages) {
-        row2('Languages', languages_str(json_decode($c->languages)));
-    }
-    row2('Instrumentation', instrument_combos_str($c->instrument_combos));
-    if ($c->ensemble_type) {
-        row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
-    }
-    if ($c->period) {
-        row2('Period', period_name($c->period));
-    }
-    row2('Approximate duration', $c->average_duration);
-    row2('Number of movements', $c->n_movements);
     if (editor()) {
         row2('Code', copy_button(item_code($c->id, 'composition')));
         row2('',

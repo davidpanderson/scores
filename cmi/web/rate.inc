@@ -174,6 +174,24 @@ function comp_right($arg) {
         <b>People who liked this also liked:</b>
         <p>
     ';
+    show_recommended_comps($c);
+}
+
+// TODO: use data.  Show only unrated comps
+//
+function show_recommended_comps($c) {
+    $comps = DB_composition::enum("id <> $c->id", 'order by rand() limit 3');
+    echo '<ul>';
+    foreach ($comps as $comp) {
+        show_recommended_comp($comp);
+    }
+    echo '</ul>';
+}
+
+function show_recommended_comp($c) {
+    echo sprintf('<li> <a href=item.php?type=%d&id=%d>%s</a>',
+        COMPOSITION, $c->id, composition_str($c)
+    );
 }
 
 // right panel for person
@@ -193,8 +211,34 @@ function person_right($p) {
         row2('Average rating', rating_bar($qavg));
         end_table();
         show_reviews(PERSON_ROLE, $pr->id, $user, $review);
+        echo sprintf(
+            '<p><b>People who liked %s %s as %s also liked:</b><p>',
+            $p->first_name, $p->last_name, $role->name
+        );
+        show_recommended_prs($p, $role);
         echo '<hr>';
     }
+}
+
+// TODO: use data.  Show only unrated items
+//
+function show_recommended_prs($p, $role) {
+    $prs = DB_person_role::enum(
+        sprintf('role=%d', $role->id),
+        'order by rand() limit 3'
+    );
+    echo '<ul>';
+    foreach ($prs as $pr) {
+        show_recommended_pr($pr);
+    }
+    echo '</ul>';
+}
+
+function show_recommended_pr($pr) {
+    $person = DB_person::lookup_id($pr->person);
+    echo sprintf('<li><a href=item.php?type=%d&id=%d>%s %s</a>',
+        PERSON, $pr->person, $person->first_name, $person->last_name
+    );
 }
 
 ?>
