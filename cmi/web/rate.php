@@ -99,14 +99,14 @@ function do_rate($type, $id, $is_diff=false) {
     if ($r) {
         $r->update(
             sprintf('%s=%d, created=%d',
-                $is_diff?'difficulty':'quality',
+                $is_diff?'attr2':'quality',
                 $val, time()
             )
         );
     } else {
         DB_rating::insert(
             sprintf('(created, user, type, target, %s) values (%d, %d, %d, %d, %d)',
-                $is_diff?'difficulty':'quality',
+                $is_diff?'attr2':'quality',
                 time(), $user->id, $type, $id, $val
             )
         );

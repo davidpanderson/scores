@@ -180,6 +180,25 @@ function comp_left($arg) {
         }
         end_table();
     }
+
+    $scores = DB_score::enum(
+        sprintf('json_overlaps("[%s]", compositions)', $c->id)
+    );
+    if ($scores) {
+        echo "<h3>Scores</h3>\n";
+        start_table();
+        table_header('Description', 'File');
+        foreach ($scores as $score) {
+            $descs = json_decode($score->file_descs);
+            $names = json_decode($score->file_names);
+            $s = [];
+            for ($i=0; $i<count($descs); $i++) {
+                $s[] = sprintf('%s: %s', $descs[$i], $names[$i]);
+            }
+            row2('', implode('<br>', $s));
+        }
+        end_table();
+    }
 }
 
 function do_location($id) {

@@ -472,19 +472,19 @@ function make_audio_file_sets($wid, $audios) {
 // $hier: 3-element array
 //
 // To avoid duplicates,
-// $others is a list of arrangements we've already made for this comp.
-// Each is a struct
-//      person_role_ids: JSON-encoded list of arrangers
-//      inst_combos: JSON-encoded list of inst combos
+// $other_arrs is a list of arrangements we've already made for this comp.
+// Each is a pair [comp_id, struct]
+//      person_role_ids: clause for arrangers
+//      inst_combos: clause for inst combos
 //      title: string (e.g. sections)
-// If this one is already in the list, return null
-// Else return the struct
 //
-function make_arrangement($comp, $item, $hier, $n, $others) {
-    $x = [];
+// Return: a composition ID (new or existing)
+
+function make_arrangement($comp, $item, $hier, &$other_arrs) {
+    $clauses = [];
 
     if (DEBUG_ARRANGEMENTS) {
-        echo "DEBUG_ARRANGEMENTS make_arrangements() start\n";
+        echo "DEBUG_ARRANGEMENTS make_arrangement() start\n";
         echo "item:\n";
         print_r($item);
         echo "hier:\n";
@@ -507,7 +507,7 @@ function make_arrangement($comp, $item, $hier, $n, $others) {
         $pri_clause = sprintf("creators='%s'",
             json_encode($pers_role_ids, JSON_NUMERIC_CHECK)
         );
-        $x[] = $pri_clause;
+        $clauses[] = $pri_clause;
     }
 
     // what instrument combo is arrangement for?
@@ -527,7 +527,7 @@ function make_arrangement($comp, $item, $hier, $n, $others) {
     $combos_clause = '';
     if ($combos) {
         $combos_clause = inst_combos_clause($combos);
-        $x[] = $combos_clause;
+        $clauses[] = $combos_clause;
     }
 
     $title = $hier[1];
@@ -539,13 +539,13 @@ function make_arrangement($comp, $item, $hier, $n, $others) {
     $new_desc->combos = $combos_clause;
     $new_desc->title = $title;
 
-    foreach ($others as $other) {
-        if ($other == $new_desc) {
-            return null;
+    foreach ($other_arrs as [$id, $desc]) {
+        if ($desc == $new_desc) {
+            return $id;
         }
     }
 
-    $long_title = "arr $comp->id $n";
+    $long_title = sprintf('arr %d %d', $comp->id, count($other_arrs));
     $title = mb_convert_encoding($title, 'UTF-8');
     // fix Incorrect string value: '\xC3'
     $id = DB_composition::insert(
@@ -559,31 +559,33 @@ function make_arrangement($comp, $item, $hier, $n, $others) {
 
     if (DEBUG_ARRANGEMENTS) {
         echo "clauses:\n";
-        print_r($x);
+        print_r($clauses);
         echo "DEBUG_ARRANGEMENTS make_arrangement() end\n";
     }
 
-    if ($x) {
-        $query = implode(',', $x);
+    if ($clauses) {
+        $query = implode(',', $clauses);
         $new_comp = new DB_composition;
         $new_comp->id = $id;
         $new_comp->update($query);
     }
 
-    return $new_desc;
+    $other_arrs[] = [$id, $new_desc];
+    return $id;
 }
 
-// make records for a composition's arrangements,
-// cased on files (i.e. scores).
+// make records for a composition's arrangements and scores
+// cased on $c->files (i.e. scores).
 //
-// $comp: the DB_composition
+// $main_comp: the DB_composition
 // $c: parsed mediawiki
 //
-function make_arrangements($comp, $c) {
-    if (empty($c->files)) return;
+function handle_files($main_comp, $c) {
     $hier = ['','',''];
-    $n = 0;
-    $others = [];
+    $other_arrs = [];   // list of descriptors of arrangements we've already created
+    $main_comp_id = $main_comp->id;
+    $cur_comp_id = $main_comp_id;
+    $nsubcomps = 100;
     foreach ($c->files as $item) {
         if (is_string($item)) {
             if (starts_with($item, '===')) {
@@ -592,6 +594,14 @@ function make_arrangements($comp, $c) {
                     $hier[0] = $name;
                     $hier[1] = '';
                     $hier[2] = '';
+                    switch(strtolower($name)) {
+                    case 'complete':
+                    case 'selections':
+                        break;
+                    default:
+                        $cur_comp_id = make_subcomposition($main_comp, $name, $nsubcomps);
+                        break;
+                    }
                 } else if ($level == 4) {
                     $hier[1] = $name;
                     $hier[2] = '';
@@ -604,15 +614,72 @@ function make_arrangements($comp, $c) {
                 echo "unrecognized string in file list: $item\n";
             }
         } else {
-            if ($hier[0] == 'Arrangements and Transcriptions') {
-                $desc = make_arrangement($comp, $item, $hier, $n, $others);
-                if ($desc) {
-                    $others[] = $desc;
-                    $n++;
+            switch (strtolower($hier[0])) {
+            case '':
+                $is_selections = (strtolower($hier[1])=='selections');
+                make_score($item, $main_comp->id, $is_selections);
+                break;
+            case 'parts':
+                switch (strtolower($hier[1])) {
+                case 'complete':
+                    make_score($item, $main_comp->id, PARTS);
+                    break;
+                case 'selections':
+                    make_score($item, $main_comp->id, PARTS|SELECTIONS);
+                    break;
+                case '':
+                    make_score($item, $cur_comp_id, PARTS);
+                    break;
                 }
+                break;
+            case 'vocal scores':
+                switch (strtolower($hier[1])) {
+                case 'complete':
+                    make_score($item, $main_comp->id, VOCAL);
+                    break;
+                case 'selections':
+                    make_score($item, $main_comp->id, VOCAL|SELECTIONS);
+                    break;
+                case '':
+                    make_score($item, $cur_comp_id, VOCAL);
+                    break;
+                }
+                break;
+            case 'arrangements and transcriptions':
+                $id = make_arrangement($main_comp, $item, $hier, $other_arrs);
+                $flags = 0;
+                switch (strtolower($hier[1])) {
+                case 'selections':
+                    $flags = SELECTIONS;
+                    break;
+                }
+                make_score($item, $id, $flags);
             }
         }
     }
+}
+
+// make a score record
+
+function make_score($item, $comp_id, $flags) {
+    if (!$comp_id) throw new Exception('foo');
+    $nfiles = min(count($item->file_names), count($item->file_descs));
+    if ($nfiles == 0) return;
+    $file_names = array_slice($item->file_names, 0, $nfiles);
+    $file_descs = array_slice($item->file_descs, 0, $nfiles);
+    $id = DB_score::insert(
+        sprintf("(compositions, file_names, file_descs, is_parts, is_selections, is_vocal) values ('%s', '%s', '%s', %d, %d, %d)",
+            DB::escape(json_encode([$comp_id]), JSON_NUMERIC_CHECK),
+            DB::escape(json_encode($file_names), JSON_NUMERIC_CHECK),
+            DB::escape(json_encode($file_descs), JSON_NUMERIC_CHECK),
+            $flags&PARTS?1:0,
+            $flags&SELECTIONS?1:0,
+            $flags&VOCAL?1:0
+        )
+    );
+    // TODO: populate publisher, license, languages, published,
+    // edition_number, page_count
+    return $id;
 }
 
 // make sub-compositions; return vector of IDs
@@ -639,9 +706,32 @@ function make_movements($c, $comp_id) {
     return $ids;
 }
 
+// see if subcomp with given title already exists; if not create one
+// in either case return subcomp ID
+//
+function make_subcomposition($main_comp, $title, &$n) {
+    $c = DB_composition::lookup(
+        sprintf("parent=%d and title='%s'",
+            $main_comp->id, DB::escape($title)
+        )
+    );
+    if ($c) {
+        return $c->id;
+    }
+    $id = DB_composition::insert(
+        sprintf("(long_title, title, parent) values ('%s', '%s', %d)",
+            "sub-comp $n of $main_comp->id",
+            DB::escape($title),
+            $main_comp->id
+        )
+    );
+    $n++;
+    return $id;
+}
+
 ///////////////// WORK /////////////////
 
-// create DB records for work and its files
+// create DB records for work and its scores and recordings
 //
 function make_work($c) {
     global $test;
@@ -796,16 +886,19 @@ function make_work($c) {
         }
     }
 
-    // Make arrangments if needed
-    //
-    make_arrangements($comp, $c);
+    echo "======== $long_title ===========\n";
 
-if (0) {
+    // parse c->files; make arrangements, scores, sub-compositions
+    //
     if (!empty($c->files)) {
-        make_score_file_sets($work_id, $c->files);
+        handle_files($comp, $c);
     }
+
+    echo "============== audio ===========\n";
+if (1) {
     if (!empty($c->audios)) {
-        make_audio_file_sets($work_id, $c->audios);
+        print_r($c->audios);
+        //make_audio_file_sets($work_id, $c->audios);
     }
 }
 }
@@ -933,6 +1026,6 @@ DB::$show_queries = true;
 
 // there are 3079 lines
 
-main(0, 10);
+main(0, 1);
 
 ?>

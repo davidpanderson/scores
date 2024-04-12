@@ -233,20 +233,25 @@ alter table composition add index wperiod (period);
 alter table composition add index comp_arr(arrangement_of);
 alter table composition add index comp_parent(parent);
 
+-- a scan of a score, or several of same edition
+-- a set of parts counts as one score
+
 create table score (
     id                      integer         not null auto_increment,
-    compositions            json,
-    parent                  integer,
-    instrument_combos       json,
-    publisher               integer,
+    compositions            json,           -- may be collection of comps
+    file_names              json,
+    file_descs              json,           -- e.g. 'Cellos and Basses'
+    publisher               integer,        -- organization
     license                 integer,
     languages               json,
     published               integer,
     edition_number          text,
     page_count              integer,
+    is_parts                tinyint,
+    is_selections           tinyint,
+    is_vocal                tinyint,
     primary key(id)
 );
-alter table score add index sic( (cast(instrument_combos->'$' as unsigned array)) );
 alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
 
 create table venue (
@@ -260,13 +265,24 @@ create table venue (
     primary key(id)
 );
 
+-- a past or present performance, possibly recorded
+-- may consists of several parts (e.g. movements)
+-- You can rate a performance but not its parts.
+
 create table performance (
     id                      integer         not null auto_increment,
     composition             integer,
     performers              json,
-        # person_roles
+        -- person_roles
+    files                   json,
+        -- depends on release type; e.g. IMSLP filenames
+    descs                   json,
+        -- parallel array of descriptions, e.g. mvt titles
     tentative               tinyint,
-        # part of a concert being edited; can delete if old
+        -- part of a concert being edited; can delete if old
+    synthesized             tinyint,
+    instrumentation         text,
+        -- null if native instrumentation
     primary key(id)
 );
 
@@ -276,31 +292,33 @@ create table concert (
     venue                   integer,
     audience_size           integer,
     organization            integer,
-        # sponsor or organizer
+        -- sponsor or organizer
     program                 json,
-        # performances
+        -- performances (in order)
     primary key(id)
 );
 
-create table recording (
-    id                      integer         not null auto_increment,
-    performance             integer,
-    concert                 integer,
-    primary key(id)
-);
+-- a way that you can hear recordings:
+-- a CD, IMSLP file set, YouTube video
 
 create table _release (
     id                      integer         not null auto_increment,
-    title                   text,
+    title                   text,           -- e.g. CD title
+    performances            json,
     release_date            integer,
     catalog_num             text,
     url                     text,
     license                 integer,
-    recordings              json,
     publisher               integer,
         # organization
     primary key(id)
 );
+
+-- things you can rate:
+-- composition
+-- score
+-- performance
+-- person-role
 
 create table rating (
     id                      integer         not null auto_increment,
@@ -309,7 +327,11 @@ create table rating (
     target                  integer,
     type                    integer,        -- see cmi_db.inc
     quality                 integer,
-    difficulty              integer,
+        -- for scores, quality of edition
+    attr2                   integer,
+        -- for compositions, difficulty
+        -- for recorded performance, sound quality
+        -- for scores, quality of scan
     review                  text,
     primary key(id)
 );
@@ -324,6 +346,3 @@ create table rating_useful (
     primary key(id)
 );
 alter table rating_useful add unique(user, rating);
-
-create table person_role_rating (
-);

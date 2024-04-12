@@ -90,10 +90,6 @@ class DB_concert extends Table {
     public static $table_name = 'concert';
     public static $class_name = 'DB_concert';
 }
-class DB_recording extends Table {
-    public static $table_name = 'recording';
-    public static $class_name = 'DB_recording';
-}
 class DB_release extends Table {
     public static $table_name = '_release';
     public static $class_name = 'DB_release';
@@ -118,4 +114,8 @@ define('LOCATION', 8);
 define('ORGANIZATION', 9);
 define('INST_COMBO', 10);
 
+// bits for score types
+define ('PARTS', 1);
+define ('SELECTIONS', 2);
+define ('VOCAL', 4);
 ?>

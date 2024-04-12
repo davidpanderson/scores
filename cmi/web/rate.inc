@@ -82,8 +82,8 @@ function avg_rating($type, $target) {
             $qsum += $r->quality;
             $qn++;
         }
-        if ($r->difficulty !== null) {
-            $dsum += $r->difficulty;
+        if ($r->attr2 !== null) {
+            $dsum += $r->attr2;
             $dn++;
         }
     }
@@ -108,7 +108,7 @@ function get_users_ratings($user, $type, $target) {
     );
     if ($r) {
         if ($r->quality !== null) $rq = (int)$r->quality;
-        if ($r->difficulty !== null) $rd = (int)$r->difficulty;
+        if ($r->attr2 !== null) $rd = (int)$r->attr2;
         $review = $r->review;
     }
     return [$rq, $rd, $review];
