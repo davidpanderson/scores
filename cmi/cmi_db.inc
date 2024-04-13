@@ -103,6 +103,7 @@ class DB_rating_useful extends Table {
     public static $class_name = 'DB_rating_useful';
 }
 
+// table codes
 define('COMPOSITION', 1);
 define('PERSON_ROLE', 2);
 define('ENSEMBLE', 3);
@@ -118,4 +119,5 @@ define('INST_COMBO', 10);
 define ('PARTS', 1);
 define ('SELECTIONS', 2);
 define ('VOCAL', 4);
+define ('SKETCHES', 5);
 ?>

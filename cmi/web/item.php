@@ -73,7 +73,7 @@ function do_composition($id) {
         $page_title = "Arrangment of $par->long_title";
     } else if ($c->parent) {
         $par = DB_composition::lookup_id($c->parent);
-        $page_title = "Section of $par->long_title";
+        $page_title = "$c->title from $par->title";
     } else {
         $par = null;
         $page_title = $c->long_title;
@@ -146,9 +146,11 @@ function comp_left($arg) {
     if ($arrs) {
         echo "<h3>Arrangements</h3>\n";
         start_table();
-        table_header('Section', 'Arranged for', 'Creator', 'Code');
+        table_header('Section', 'Arranged for', 'Arranger', 'Code');
         foreach ($arrs as $arr) {
             $ics = instrument_combos_str($arr->instrument_combos);
+            $arr->ics = $ics;
+            $arr->arranger = creators_str($arr->creators, false);
             table_row(
                 $arr->title?$arr->title:'Complete',
                 sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
@@ -156,7 +158,7 @@ function comp_left($arg) {
                     $arr->id,
                     $ics?$ics:'---'
                 ),
-                creators_str($arr->creators, true),
+                $arr->arranger,
                 copy_button(item_code($arr->id, 'composition'))
             );
         }
@@ -181,24 +183,70 @@ function comp_left($arg) {
         end_table();
     }
 
+    echo "<h3>Scores</h3>\n";
+    start_table();
+    table_header('Type', 'File');
     $scores = DB_score::enum(
         sprintf('json_overlaps("[%s]", compositions)', $c->id)
     );
-    if ($scores) {
-        echo "<h3>Scores</h3>\n";
-        start_table();
-        table_header('Description', 'File');
+    foreach ($scores as $score) {
+        score_row($score);
+    }
+    foreach ($arrs as $arr) {
+        $scores = DB_score::enum(
+            sprintf('json_overlaps("[%s]", compositions)', $arr->id)
+        );
         foreach ($scores as $score) {
-            $descs = json_decode($score->file_descs);
-            $names = json_decode($score->file_names);
-            $s = [];
-            for ($i=0; $i<count($descs); $i++) {
-                $s[] = sprintf('%s: %s', $descs[$i], $names[$i]);
+            if ($arr->ics) {
+                $s = "<nobr>Arrangement for $arr->ics</nobr>";
+            } else {
+                $s = "Arrangement";
             }
-            row2('', implode('<br>', $s));
+            $s .= "<br><nobr>by $arr->arranger</nobr></br>";
+            score_row($score, $s);
+        }
+    }
+    end_table();
+
+    $perfs = DB_performance::enum("composition=$c->id");
+    if ($perfs) {
+        echo "<h3>Recordings</h3>\n";
+        start_table();
+        table_header('Type', 'Section', 'Instruments', 'File');
+        foreach ($perfs as $perf) {
+            $descs = json_decode($perf->file_descs);
+            $names = json_decode($perf->file_names);
+            $f = [];
+            for ($i=0; $i<count($descs); $i++) {
+                $f[] = sprintf('%s <a href=%s>file</a>', $descs[$i], $names[$i]);
+            }
+            table_row(
+                $perf->is_synthesized?'Synthesized':'',
+                $perf->section,
+                $perf->instrumentation,
+                implode('<br>', $f)
+            );
         }
         end_table();
     }
+}
+
+function score_row($score, $prefix='') {
+    $type = [];
+    if ($score->is_parts) $type[] = 'parts';
+    if ($score->is_selections) $type[] = 'selections';
+    if ($score->is_vocal) $type[] = 'vocal score';
+    $descs = json_decode($score->file_descs);
+    $names = json_decode($score->file_names);
+    $s = [];
+    for ($i=0; $i<count($descs); $i++) {
+        if ($score->is_parts) {
+            $s[] = sprintf('%s <a href=%s>file</a>', $descs[$i], $names[$i]);
+        } else {
+            $s[] = sprintf('<a href=%s>file</a>', $names[$i]);
+        }
+    }
+    table_row($prefix.implode(',', $type), implode('<br>', $s));
 }
 
 function do_location($id) {

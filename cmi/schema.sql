@@ -247,6 +247,7 @@ create table score (
     published               integer,
     edition_number          text,
     page_count              integer,
+    image_type              text,           -- e.g. typeset, normal scan
     is_parts                tinyint,
     is_selections           tinyint,
     is_vocal                tinyint,
@@ -274,17 +275,21 @@ create table performance (
     composition             integer,
     performers              json,
         -- person_roles
-    files                   json,
-        -- depends on release type; e.g. IMSLP filenames
-    descs                   json,
-        -- parallel array of descriptions, e.g. mvt titles
     tentative               tinyint,
         -- part of a concert being edited; can delete if old
-    synthesized             tinyint,
+    -- the following relevant if recording
+    file_names              json,
+        -- depends on release type; e.g. IMSLP filenames
+    file_descs              json,
+        -- parallel array of descriptions, e.g. mvt titles
+    is_synthesized          tinyint,
+    section                 text,
+        -- 'Complete' or 'Selections' or name of section/mvt
     instrumentation         text,
         -- null if native instrumentation
     primary key(id)
 );
+alter table performance add index perf_comp(composition);
 
 create table concert (
     id                      integer         not null auto_increment,

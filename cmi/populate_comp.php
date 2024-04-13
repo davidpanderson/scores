@@ -575,7 +575,7 @@ function make_arrangement($comp, $item, $hier, &$other_arrs) {
 }
 
 // make records for a composition's arrangements and scores
-// cased on $c->files (i.e. scores).
+// based on $c->files (i.e. scores).
 //
 // $main_comp: the DB_composition
 // $c: parsed mediawiki
@@ -594,6 +594,9 @@ function handle_files($main_comp, $c) {
                     $hier[0] = $name;
                     $hier[1] = '';
                     $hier[2] = '';
+                } else if ($level == 4) {
+                    $hier[1] = $name;
+                    $hier[2] = '';
                     switch(strtolower($name)) {
                     case 'complete':
                     case 'selections':
@@ -602,9 +605,6 @@ function handle_files($main_comp, $c) {
                         $cur_comp_id = make_subcomposition($main_comp, $name, $nsubcomps);
                         break;
                     }
-                } else if ($level == 4) {
-                    $hier[1] = $name;
-                    $hier[2] = '';
                 } else if ($level == 5) {
                     $hier[2] = $name;
                 } else {
@@ -616,8 +616,14 @@ function handle_files($main_comp, $c) {
         } else {
             switch (strtolower($hier[0])) {
             case '':
-                $is_selections = (strtolower($hier[1])=='selections');
-                make_score($item, $main_comp->id, $is_selections);
+                $flags = 0;
+                if (strtolower($hier[1])=='selections') {
+                    $flags = SELECTIONS;
+                }
+                make_score($item, $main_comp->id, $flags);
+                break;
+            case 'sketches and drafts':
+                make_score($item, $main_comp->id, SKETCHES);
                 break;
             case 'parts':
                 switch (strtolower($hier[1])) {
@@ -654,6 +660,9 @@ function handle_files($main_comp, $c) {
                     break;
                 }
                 make_score($item, $id, $flags);
+            default:
+                echo sprintf("unrecognized hier[0]: %s\n", $hier[0]);
+                break;
             }
         }
     }
@@ -680,6 +689,61 @@ function make_score($item, $comp_id, $flags) {
     // TODO: populate publisher, license, languages, published,
     // edition_number, page_count
     return $id;
+}
+
+// make Performance records for recordings,
+// based on c->audios
+//
+function handle_audios($comp, $c) {
+    $hier = ['','',''];
+    foreach ($c->audios as $item) {
+        if (is_string($item)) {
+            if (starts_with($item, '===')) {
+                [$level, $name] = hier_label($item);
+                if ($level == 3) {
+                    $hier[0] = $name;
+                    $hier[1] = '';
+                    $hier[2] = '';
+                } else if ($level == 4) {
+                    $hier[1] = $name;
+                    $hier[2] = '';
+                } else if ($level == 5) {
+                    $hier[2] = $name;
+                } else {
+                    echo "unrecognized hierarchy level: $item\n";
+                }
+            } else {
+                echo "unrecognized string in file list: $item\n";
+            }
+        } else {
+            $is_synthesized = (strtolower($hier[0]) == 'synthesized/midi');
+            $section = $hier[1];
+            $instrumentation = $hier[2];
+            make_performance(
+                $item, $comp, $is_synthesized, $section, $instrumentation
+            );
+        }
+    }
+}
+
+function make_performance(
+    $item, $comp, $is_synthesized, $section, $instrumentation
+) {
+    $nfiles = min(count($item->file_names), count($item->file_descs));
+    if ($nfiles == 0) return;
+    $file_names = array_slice($item->file_names, 0, $nfiles);
+    $file_descs = array_slice($item->file_descs, 0, $nfiles);
+    DB_performance::insert(
+        sprintf(
+            "(composition, file_names, file_descs, is_synthesized, section, instrumentation) values (%d, '%s', '%s', %d, '%s', '%s')",
+            $comp->id,
+            DB::escape(json_encode($file_names), JSON_NUMERIC_CHECK),
+            DB::escape(json_encode($file_descs), JSON_NUMERIC_CHECK),
+            $is_synthesized?1:0,
+            DB::escape($section),
+            DB::escape($instrumentation)
+        )
+    );
 }
 
 // make sub-compositions; return vector of IDs
@@ -888,19 +952,18 @@ function make_work($c) {
 
     echo "======== $long_title ===========\n";
 
-    // parse c->files; make arrangements, scores, sub-compositions
+    // process c->files; make arrangements, scores, sub-compositions
     //
     if (!empty($c->files)) {
+        //print_r($c->files);
         handle_files($comp, $c);
     }
 
     echo "============== audio ===========\n";
-if (1) {
     if (!empty($c->audios)) {
-        print_r($c->audios);
-        //make_audio_file_sets($work_id, $c->audios);
+        //print_r($c->audios);
+        handle_audios($comp, $c);
     }
-}
 }
 
 // given a list of inst combos (as count/code list),
@@ -1012,6 +1075,7 @@ function main($start_line, $end_line) {
                 continue;
             }
             make_work($comp);
+            //break;
         }
         DB::commit_transaction();
     }
