@@ -185,7 +185,7 @@ function comp_left($arg) {
 
     echo "<h3>Scores</h3>\n";
     start_table();
-    table_header('Type', 'Publisher', 'File');
+    table_header('ID', 'Type', 'Publisher', 'File');
     $scores = DB_score::enum(
         sprintf('json_overlaps("[%s]", compositions)', $c->id)
     );
@@ -244,15 +244,24 @@ function score_row($score, $prefix='') {
     $names = json_decode($score->file_names);
     $s = [];
     for ($i=0; $i<count($descs); $i++) {
-        if ($score->is_parts) {
+        //if ($score->is_parts) {
+        if (1) {
             $s[] = sprintf('%s <a href=%s>file</a>', $descs[$i], $names[$i]);
         } else {
             $s[] = sprintf('<a href=%s>file</a>', $names[$i]);
         }
     }
+    $pub_str = '---';
+    if ($pub) {
+        $pub_str = $pub->name;
+        if ($score->publish_date) {
+            $pub_str .= ', '.DB::date_num_to_str($score->publish_date);
+        }
+    }
     table_row(
+        $score->id,
         $prefix.implode(',', $type),
-        $pub?$pub->name:'',
+        $pub_str,
         implode('<br>', $s)
     );
 }

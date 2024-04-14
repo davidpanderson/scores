@@ -183,11 +183,6 @@ function make_score_file_set($wid, $f, $hier) {
     }
     if (!empty($f->pub)) {
         $pub = $f->pub;
-        // sometimes the name is missing
-        //
-        if ($pub->imprint && !$pub->name) {
-            $pub->name = $pub->imprint;
-        }
         $publisher_id = get_publisher($pub->name, $pub->imprint, $pub->location);
         $x[] = sprintf("publisher_id=%d", $publisher_id);
         if (!empty($pub->date)) {
@@ -582,11 +577,12 @@ function make_arrangement($comp, $item, $hier, &$other_arrs) {
 // $main_comp: the DB_composition
 // $c: parsed mediawiki
 //
+// see notes_parse.txt
+//
 function handle_files($main_comp, $c) {
     $hier = ['','',''];
     $other_arrs = [];   // list of descriptors of arrangements we've already created
     $main_comp_id = $main_comp->id;
-    $cur_comp_id = $main_comp_id;
     $nsubcomps = 100;
     foreach ($c->files as $item) {
         if (is_string($item)) {
@@ -599,14 +595,6 @@ function handle_files($main_comp, $c) {
                 } else if ($level == 4) {
                     $hier[1] = $name;
                     $hier[2] = '';
-                    switch(strtolower($name)) {
-                    case 'complete':
-                    case 'selections':
-                        break;
-                    default:
-                        $cur_comp_id = make_subcomposition($main_comp, $name, $nsubcomps);
-                        break;
-                    }
                 } else if ($level == 5) {
                     $hier[2] = $name;
                 } else {
@@ -622,34 +610,34 @@ function handle_files($main_comp, $c) {
                 if (strtolower($hier[1])=='selections') {
                     $flags = SELECTIONS;
                 }
-                make_score($item, $main_comp->id, $flags);
+                make_score($item, $main_comp_id, $flags);
                 break;
             case 'sketches and drafts':
-                make_score($item, $main_comp->id, SKETCHES);
+                make_score($item, $main_comp_id, SKETCHES);
                 break;
             case 'parts':
                 switch (strtolower($hier[1])) {
                 case 'complete':
-                    make_score($item, $main_comp->id, PARTS);
+                    make_score($item, $main_comp_id, PARTS);
                     break;
                 case 'selections':
-                    make_score($item, $main_comp->id, PARTS|SELECTIONS);
+                    make_score($item, $main_comp_id, PARTS|SELECTIONS);
                     break;
                 case '':
-                    make_score($item, $cur_comp_id, PARTS);
+                    make_score($item, $main_comp_id, PARTS);
                     break;
                 }
                 break;
             case 'vocal scores':
                 switch (strtolower($hier[1])) {
                 case 'complete':
-                    make_score($item, $main_comp->id, VOCAL);
+                    make_score($item, $main_comp_id, VOCAL);
                     break;
                 case 'selections':
-                    make_score($item, $main_comp->id, VOCAL|SELECTIONS);
+                    make_score($item, $main_comp_id, VOCAL|SELECTIONS);
                     break;
                 case '':
-                    make_score($item, $cur_comp_id, VOCAL);
+                    make_score($item, $main_comp_id, VOCAL);
                     break;
                 }
                 break;
@@ -974,15 +962,11 @@ function make_work($c) {
 
     if ($x) {
         $query = implode(',', $x);
-        if ($test) {
-            echo "comp update: $query\n";
-        } else {
-            $comp = new DB_composition;
-            $comp->id = $comp_id;
-            $ret = $comp->update($query);
-            if (!$ret) {
-                echo "comp update failed\n";
-            }
+        $comp = new DB_composition;
+        $comp->id = $comp_id;
+        $ret = $comp->update($query);
+        if (!$ret) {
+            echo "comp update failed\n";
         }
     }
 
@@ -1111,7 +1095,6 @@ function main($start_line, $end_line) {
                 continue;
             }
             make_work($comp);
-            break;
         }
         DB::commit_transaction();
     }

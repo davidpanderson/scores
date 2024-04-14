@@ -67,6 +67,7 @@ function parse_publisher($str) {
             $n = count($args);
             switch ($item->name) {
             case 'P':
+            case 'P2':
             case 'p':
                 $pub->name = $n>0?$args[0]:'';
                 $pub->imprint = $n>1?$args[1]:'';
@@ -75,6 +76,19 @@ function parse_publisher($str) {
                 $pub->year = $n>4?(int)$args[4]:0;
                 $pub->edition_number = $n>5?$args[5]:'';
                 $pub->plate_number = empty($args[6])?'':$args[6];
+
+                if (!$pub->name && $pub->imprint) {
+                    $pub->name = $pub->imprint;
+                    $pub->imprint = '';
+                }
+
+                // name can be {{LinkName...}}
+                if (strstr($pub->name, '{{') !== false) {
+                    $str = $pub->name;
+                    $pos = 0;
+                    $pub->name = null;
+                    continue 2;
+                }
                 break;
             case 'RC':
                 $pub->name = $n>1?$args[1]:'';
@@ -144,6 +158,7 @@ function parse_publisher($str) {
                 $pub->year = $n>1?(int)$args[1]:0;
                 break;
             case 'ChopinScholtzEP':
+            case 'BrahmsSauer':
                 $pub->name = 'C.F. Peters';
                 break;
             case 'ChopinKlindworth':
@@ -173,14 +188,52 @@ function parse_publisher($str) {
             case 'CVartist':
                 $pub->name = 'Clasica Viva';
                 break;
+            case 'MssAu':
+            case 'MssD':
+                $pub->name = 'Manuscript';
+                if ($n>1) {
+                    $pub->year = (100*(int)$args[0])+(int)$args[1];
+                }
+                break;
+            case 'Mss':
+                $pub->name = 'Manuscript';
+                break;
+            case 'Plain':
+                $pub->name = $args[1];
+                break;
+            case 'LinkName':
+                $pub->name = $args[0];
+                if ($n>1) $pub->name .= ' '.$args[1];
+                break;
             }
-            if ($pub->name) {
-                return $pub;
+            if (!empty($pub->name)) {
+                break;
             }
         }
     }
-    if (strstr($other_text, '[[')) $other_text = '';
-    $pub->name = $other_text;
+    if (empty($pub->name)) {
+        if (strstr($other_text, '[[')) $other_text = '';
+        $pub->name = $other_text;
+    }
+
+    // check for e.g. 'foobar, 1789'
+    //
+    $s = $pub->name;
+    $n1 = strpos($s, ',');
+    if ($n1 !== false) {
+        $y = (int)substr($s, $n1+2);
+        if ($y) $pub->year = $y;
+        $s = substr($s, 0, $n1);
+        $pub->name = trim($s);
+    }
+
+    // if X<br>Y, use Y
+    //
+    $s = $pub->name;
+    $n1 = strpos($s, '<br>');
+    if ($n1 !== false) {
+        $pub->name = trim(substr($s, $n1+4));
+    }
     return $pub;
 }
 

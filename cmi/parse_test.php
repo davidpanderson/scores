@@ -176,6 +176,20 @@ function test_opus() {
     }
 }
 
+////////////////////// publisher /////////////////////
+
+function test_publisher() {
+    $ts = [
+        '{{MssAu|17|79}}, dated July 9.',
+        '{{BeethovenComplete|16:<br>Sonaten für das Pianoforte|134|1862|165-88}}'
+    ];
+    foreach ($ts as $t) {
+        echo "----------------\ninput: $t\noutput: ";
+        print_r(parse_publisher($t));
+        echo "\n";
+    }
+}
+
 ////////////////////// template expansion /////////////////////
 
 function test_template() {
@@ -185,7 +199,6 @@ function test_template() {
         '{{knuth}}',
         '{{Liszt-Stiftung|IV|2-3 (pp.141–228)|1922|I-IX B}}',
         '{{RC||Deutsche Grammophon|||1958}}',
-        '{{MssAu|18|22-24}}',
         '{{NeueLisztAusgabe|2|19|1993|13 356}}',
         '{{BeethovenComplete|1|9|1863}}',
         '{{CCARH|2008}}',
@@ -212,7 +225,11 @@ function test_template() {
         '{{Mss}}',
         '{{MssUA|18|22}}',
         '{{KlassischerStucke|III (no.5)|6248}}',
-        '{{CVartist|stefanoligoratti|Stefano Ligoratti}}'
+        '{{CVartist|stefanoligoratti|Stefano Ligoratti}}',
+        '{{MssAu|17|79}}, dated July 9.',
+        '{{Mss}} (Copyist)',
+        'London: {{MssD|19|16}} (March)',
+        '{{BrahmsSauer|1|a|9487}}'
     ];
     foreach ($ts as $t) {
         echo "----------------\ninput: $t\noutput: ";
@@ -230,5 +247,6 @@ function test_template() {
 //test_tags();
 //test_title();
 //test_opus();
+//test_publisher();
 test_template();
 ?>
