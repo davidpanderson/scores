@@ -185,7 +185,7 @@ function comp_left($arg) {
 
     echo "<h3>Scores</h3>\n";
     start_table();
-    table_header('Type', 'File');
+    table_header('Type', 'Publisher', 'File');
     $scores = DB_score::enum(
         sprintf('json_overlaps("[%s]", compositions)', $c->id)
     );
@@ -232,6 +232,10 @@ function comp_left($arg) {
 }
 
 function score_row($score, $prefix='') {
+    $pub = null;
+    if ($score->publisher) {
+        $pub = DB_organization::lookup_id($score->publisher);
+    }
     $type = [];
     if ($score->is_parts) $type[] = 'parts';
     if ($score->is_selections) $type[] = 'selections';
@@ -246,7 +250,11 @@ function score_row($score, $prefix='') {
             $s[] = sprintf('<a href=%s>file</a>', $names[$i]);
         }
     }
-    table_row($prefix.implode(',', $type), implode('<br>', $s));
+    table_row(
+        $prefix.implode(',', $type),
+        $pub?$pub->name:'',
+        implode('<br>', $s)
+    );
 }
 
 function do_location($id) {
@@ -346,6 +354,22 @@ function do_organization($id) {
     page_tail();
 }
 
+function do_performance($id) {
+    $p = DB_performance::lookup_id($id);
+    page_head("Performance");
+    start_table();
+    end_table();
+    page_tail();
+}
+
+function do_score($id) {
+    $p = DB_score::lookup_id($id);
+    page_head("Score");
+    start_table();
+    end_table();
+    page_tail();
+}
+
 function main($type, $id) {
     switch ($type) {
     case PERSON:
@@ -365,6 +389,12 @@ function main($type, $id) {
         break;
     case ORGANIZATION:
         do_organization($id);
+        break;
+    case PERFORMANCE:
+        do_performance($id);
+        break;
+    case SCORE:
+        do_score($id);
         break;
     default: error_page("No type $type");
     }

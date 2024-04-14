@@ -111,7 +111,7 @@ function write_ser_license() {
     write_ser_id(DB_license::enum(), 'license');
 }
 function write_ser_org_type() {
-    write_ser_id(DB_organization_type::enum(), 'organization_type');
+    write_ser_id_name(DB_organization_type::enum(), 'organization_type');
 }
 
 /////////////// instrument combos ///////////////

@@ -114,6 +114,7 @@ define('PERSON', 7);
 define('LOCATION', 8);
 define('ORGANIZATION', 9);
 define('INST_COMBO', 10);
+define('SCORE', 11);
 
 // bits for score types
 define ('PARTS', 1);

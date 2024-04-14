@@ -326,6 +326,7 @@ function get_ethnicities() {
     }
     return $ethnicities;
 }
+
 /////////////// role /////////////////
 
 function role_name_to_id($name) {
@@ -347,5 +348,19 @@ function role_id_to_name($id) {
     }
     return ucfirst($roles[$id]->name);
 }
+
+/////////////// organization_type /////////////////
+
+function organization_type_name_to_id($name) {
+    static $types = null;
+    if (!$types) {
+        $types = unserialize(file_get_contents('data/organization_type_by_name.ser'));
+    }
+    if (array_key_exists($name, $types)) {
+        return $types[$name]->id;
+    }
+    die("Unknown org type $name\n");
+}
+
 
 ?>

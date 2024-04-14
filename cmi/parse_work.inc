@@ -46,13 +46,15 @@ function add_elements($name, $val, &$arr) {
 
 // $x is the publisher_information arg for a score file.
 // If it contains a {{P template call,
-// parse the args and return a PHP object.
+// parse the args and return a PHP object with
+// name, imprint, location, year, edition_number, plate_numer
 // Else return null
 //
 function parse_publisher($str) {
     $pos = 0;
     $other_text = '';
     $pub = null;
+    $pub = new StdClass;
     while (true) {
         [$item, $new_pos] = parse_item($str, $pos);
         $pos = $new_pos;
@@ -61,10 +63,11 @@ function parse_publisher($str) {
         if (is_string($item)) {
             $other_text .= " $item";
         } else {
-            if ($item->name === 'P') {
-                $pub = new StdClass;
-                $args = $item->args;
-                $n = count($args);
+            $args = $item->args;
+            $n = count($args);
+            switch ($item->name) {
+            case 'P':
+            case 'p':
                 $pub->name = $n>0?$args[0]:'';
                 $pub->imprint = $n>1?$args[1]:'';
                 $pub->location = $n>2?$args[2]:'';
@@ -72,9 +75,112 @@ function parse_publisher($str) {
                 $pub->year = $n>4?(int)$args[4]:0;
                 $pub->edition_number = $n>5?$args[5]:'';
                 $pub->plate_number = empty($args[6])?'':$args[6];
+                break;
+            case 'RC':
+                $pub->name = $n>1?$args[1]:'';
+                $pub->year = $n>4?(int)$args[4]:0;
+                $pub->edition_number = $n>6?$args[6]:'';
+                break;
+            case 'knuth':
+                $pub->name = 'Jürgen Knuth';
+                break;
+            case 'BeethovenComplete':
+                $pub->name = 'Breitkopf und Härtel';
+                $pub->year = $n>2?(int)$args[2]:0;
+                break;
+            case 'MozartComplete':
+                $pub->name = 'Breitkopf und Härtel';
+                $pub->year = $n>2?(int)$args[2]:0;
+                break;
+            case 'BrahmsComplete':
+                $pub->name = 'Breitkopf und Härtel';
+                break;
+            case 'Liszt-Stiftung':
+                $pub->name = 'Breitkopf und Härtel';
+                $pub->year = $n>2?(int)$args[2]:0;
+                break;
+            case 'NeueLisztAusgabe':
+                $pub->name = 'Editio Musica';
+                $pub->location = 'Budapest';
+                $pub->year = $n>2?(int)$args[2]:0;
+                break;
+            case 'CCARH':
+                $pub->name = 'CCARH';
+                break;
+            case 'MozartNMA':
+                $pub->name = 'Bärenreiter-Verlag';
+                $pub->year = $n>5?(int)$args[5]:0;
+                break;
+            case 'Mutopia':
+                $pub->name = 'Mutopia';
+                break;
+            case 'BulowLebertAlbumSch':
+                $pub->name = 'G. Schirmer';
+                $pub->year = 1896;
+                break;
+            case 'GardnerMus':
+                $pub->name = 'Isabella Stewart Gardner Museum';
+                $pub->location = 'Boston';
+                break;
+            case 'BeethPfsonCasella':
+                $pub->name = 'Edizione Ricordi';
+                $pub->location = 'Milan';
+                $pub->year = $n>1?(int)$args[1]:0;
+                break;
+            case 'SMPlink':
+                $pub->name = 'Ullstein';
+                $pub->location = 'Berlin';
+                break;
+            case 'plain':
+                $pub->name = $args[1];
+                break;
+            case 'AGarch':
+                $pub->name = 'Pandora Records/Al Goldstein Archive';
+                break;
+            case 'ChopinJoseffyEd':
+            case 'ChopinMikuliSch':
+            case 'ChopinKullakS':
+                $pub->name = 'G. Schirmer';
+                $pub->year = $n>1?(int)$args[1]:0;
+                break;
+            case 'ChopinScholtzEP':
+                $pub->name = 'C.F. Peters';
+                break;
+            case 'ChopinKlindworth':
+                $pub->name = 'Bote & Bock';
+                $pub->location = 'Berlin';
+                break;
+            case 'ChopinComplete':
+                $pub->name = 'Breitkopf und Härtel';
+                break;
+            case 'ChopinPaderewskiPWM':
+                $pub->name = 'Polskie Wydawnictwo Muzyczne';
+                break;
+            case 'EinzelAus':
+                $pub->name = 'Schott';
+                $pub->year = $n>2?(int)$args[2]:0;
+                break;
+            case 'Sarro':
+                $pub->name = 'Felipe Sarro';
+                break;
+            case 'BestWTarMasters':
+                $pub->name = 'Novello, Ewer & Co.';
+                $pub->location = 'London';
+                break;
+            case 'KlassischerStucke':
+                $pub->name = 'Edition Peters';
+                break;
+            case 'CVartist':
+                $pub->name = 'Clasica Viva';
+                break;
+            }
+            if ($pub->name) {
+                return $pub;
             }
         }
     }
+    if (strstr($other_text, '[[')) $other_text = '';
+    $pub->name = $other_text;
     return $pub;
 }
 

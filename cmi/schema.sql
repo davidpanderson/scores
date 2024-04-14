@@ -125,13 +125,14 @@ create table organization_type (
 
 create table organization (
     id                      integer         not null auto_increment,
-    name                    text            not null,
+    name                    varchar(255)    not null,
     type                    integer,
     started                 integer,
     ended                   integer,
-    location                integer,
+    location                text,           -- ideally should be an ID
     url                     varchar(255),
-    primary key(id)
+    primary key(id),
+    unique(name)
 );
 
 
@@ -244,9 +245,9 @@ create table score (
     publisher               integer,        -- organization
     license                 integer,
     languages               json,
-    published               integer,
+    publish_date            integer,
     edition_number          text,
-    page_count              integer,
+    page_counts             json,
     image_type              text,           -- e.g. typeset, normal scan
     is_parts                tinyint,
     is_selections           tinyint,
@@ -277,6 +278,8 @@ create table performance (
         -- person_roles
     tentative               tinyint,
         -- part of a concert being edited; can delete if old
+    is_recording            tinyint,
+
     -- the following relevant if recording
     file_names              json,
         -- depends on release type; e.g. IMSLP filenames

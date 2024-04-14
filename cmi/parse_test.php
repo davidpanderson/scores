@@ -4,6 +4,7 @@
 require_once('parse_work.inc');
 require_once('parse_combo.inc');
 require_once('parse_tags.inc');
+require_once('template.inc');
 
 ////////// work.number_of_movements_sections ///////////////
 
@@ -175,6 +176,51 @@ function test_opus() {
     }
 }
 
+////////////////////// template expansion /////////////////////
+
+function test_template() {
+    $ts = [
+        '{{HaydnHob|n801|XVI:52}}',
+        '{{P|Breitkopf und Härtel|Breitkopf & Härtel|Leipzig||||Orch.B. 92}}',
+        '{{knuth}}',
+        '{{Liszt-Stiftung|IV|2-3 (pp.141–228)|1922|I-IX B}}',
+        '{{RC||Deutsche Grammophon|||1958}}',
+        '{{MssAu|18|22-24}}',
+        '{{NeueLisztAusgabe|2|19|1993|13 356}}',
+        '{{BeethovenComplete|1|9|1863}}',
+        '{{CCARH|2008}}',
+        '{{MozartComplete|VIII:<br>Symphonien, Bd.1, No.21|134|1880|1-18 (271-288)}}',
+        '{{MozartNMA|IV|11|3|Sinfonien|4502|1956}}',
+        '{{Mutopia||2008}}',
+        '{{BulowLebertAlbumSch|II|24|12589|124-42}}',
+        '{{GardnerMus}}',
+        '{{BeethPfsonCasella|3|1920|144-59}}',
+        "{{SMPlink|Samtliche-Sonaten-Band-II/2656603|''Klaviersonaten, Band II''}}<br>{{P||Ullstein|Berlin|n.d.(ca.1918)|||}}<br>Reissue - {{P|Breitkopf und Härtel|Breitkopf & Härtel|Leipzig||1923||28727}}",
+        '{{BrahmsComplete|1|1}}',
+        '{{AGarch}}',
+        '{{ChopinJoseffyEd|5: Ballades (LMC 31)|1916|25646.}}',
+        "{{ChopinMikuliSch|5|1894|11490}}<br>''Reissue'' — Vol.5, 1934. Plate 36391.",
+        '{{ChopinKullakS|III: Ballades|1882|7288(4)}}',
+        '{{ChopinComplete|I|n.d.[1878]|I. 4.}}',
+        '{{ChopinKlindworth|1: Ballades|12274.}}',
+        '{{ChopinScholtzEP|II|6216}}',
+        '{{ChopinPaderewskiPWM|III: Ballades|232|1949|30-40}}',
+        "{{LinkWork|4 Ballades||Chopin|Frédéric|0}}<br>{{P|Litolff|Henry Litolff's Verlag|Braunschweig|||1048 Collection Litolff}}",
+        '{{EinzelAus|06662||1917|06662}}',
+        '{{Sarro}}',
+        '{{BestWTarMasters|Vol.|3||2229|772-780}}',
+        '{{Mss}}',
+        '{{MssUA|18|22}}',
+        '{{KlassischerStucke|III (no.5)|6248}}',
+        '{{CVartist|stefanoligoratti|Stefano Ligoratti}}'
+    ];
+    foreach ($ts as $t) {
+        echo "----------------\ninput: $t\noutput: ";
+        echo expand_mw_text($t);
+        echo "\n";
+    }
+}
+
 //test_movement_lines();
 //test_nmvts_sections();
 //test_keys();
@@ -183,5 +229,6 @@ function test_opus() {
 //test_arrangement_target();
 //test_tags();
 //test_title();
-test_opus();
+//test_opus();
+test_template();
 ?>

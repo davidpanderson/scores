@@ -574,7 +574,9 @@ function make_arrangement($comp, $item, $hier, &$other_arrs) {
     return $id;
 }
 
-// make records for a composition's arrangements and scores
+// make records for a composition's
+// - arrangements
+// - scores
 // based on $c->files (i.e. scores).
 //
 // $main_comp: the DB_composition
@@ -676,18 +678,52 @@ function make_score($item, $comp_id, $flags) {
     if ($nfiles == 0) return;
     $file_names = array_slice($item->file_names, 0, $nfiles);
     $file_descs = array_slice($item->file_descs, 0, $nfiles);
+
+    $license = 0;
+    $publisher = 0;
+    $publish_year = 0;
+    $edition_number = '';
+    $image_type = '';
+    
+    if (!empty($item->copyright)) {
+        $license = get_license_id($item->copyright);
+    }
+    if (!empty($item->image_type)) {
+        $image_type = $item->image_type;
+    }
+    if (!empty($item->pub)) {
+        $pub = $item->pub;
+        // sometimes the name is missing
+        //
+        if (!empty($pub->imprint) && empty($pub->name)) {
+            $pub->name = $pub->imprint;
+        }
+        $publisher = get_publisher($pub, 'Music publisher');
+        if (!empty($pub->year)) {
+            if (is_numeric($pub->year)) {
+                $publish_year = (int)$pub->year;
+            }
+        }
+        if (!empty($pub->edition_number)) {
+            $edition_numer = $pub->edition_number;
+        }
+    }
     $id = DB_score::insert(
-        sprintf("(compositions, file_names, file_descs, is_parts, is_selections, is_vocal) values ('%s', '%s', '%s', %d, %d, %d)",
+        sprintf("(compositions, file_names, file_descs, publisher, license, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal) values ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, %d)",
             DB::escape(json_encode([$comp_id]), JSON_NUMERIC_CHECK),
             DB::escape(json_encode($file_names), JSON_NUMERIC_CHECK),
             DB::escape(json_encode($file_descs), JSON_NUMERIC_CHECK),
+            $publisher,
+            $license,
+            DB::date_num($publish_year),
+            $edition_number,
+            $image_type,
             $flags&PARTS?1:0,
             $flags&SELECTIONS?1:0,
             $flags&VOCAL?1:0
         )
     );
-    // TODO: populate publisher, license, languages, published,
-    // edition_number, page_count
+    // TODO: populate languages, page_count
     return $id;
 }
 
@@ -735,7 +771,7 @@ function make_performance(
     $file_descs = array_slice($item->file_descs, 0, $nfiles);
     DB_performance::insert(
         sprintf(
-            "(composition, file_names, file_descs, is_synthesized, section, instrumentation) values (%d, '%s', '%s', %d, '%s', '%s')",
+            "(composition, is_recording, file_names, file_descs, is_synthesized, section, instrumentation) values (%d, 1, '%s', '%s', %d, '%s', '%s')",
             $comp->id,
             DB::escape(json_encode($file_names), JSON_NUMERIC_CHECK),
             DB::escape(json_encode($file_descs), JSON_NUMERIC_CHECK),
@@ -955,13 +991,13 @@ function make_work($c) {
     // process c->files; make arrangements, scores, sub-compositions
     //
     if (!empty($c->files)) {
-        //print_r($c->files);
+        print_r($c->files);
         handle_files($comp, $c);
     }
 
     echo "============== audio ===========\n";
     if (!empty($c->audios)) {
-        //print_r($c->audios);
+        print_r($c->audios);
         handle_audios($comp, $c);
     }
 }
@@ -1075,7 +1111,7 @@ function main($start_line, $end_line) {
                 continue;
             }
             make_work($comp);
-            //break;
+            break;
         }
         DB::commit_transaction();
     }

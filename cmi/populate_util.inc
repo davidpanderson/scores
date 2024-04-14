@@ -341,31 +341,24 @@ function get_location_id($name) {
     return $id;
 }
 
-function get_publisher($name, $imprint, $location) {
-    global $test;
-    if (!$name) return 0;
-    $p = DB_publisher::lookup(
-        sprintf("name='%s' and imprint='%s' and location='%s'",
-            DB::escape($name),
-            DB::escape($imprint),
-            DB::escape($location)
-        )
+// $pub is object with
+// name/imprint/location/year/edition_number/plate_number
+//
+function get_publisher($pub, $type_name) {
+    if (!$pub->name) return 0;
+    $p = DB_organization::lookup(
+        sprintf("name='%s'", DB::escape($pub->name))
     );
     if ($p) return (int)$p->id;
-    $q = sprintf("(name, imprint, location) values ('%s', '%s', '%s')",
-        DB::escape($name),
-        DB::escape($imprint),
-        DB::escape($location)
+    $q = sprintf("(name, type, location) values ('%s', '%s', '%s')",
+        DB::escape($pub->name),
+        organization_type_name_to_id($type_name),
+        empty($pub->location)?'':DB::escape($pub->location)
     );
-    if ($test) {
-        echo "publisher insert: $q\n";
-        $id = 0;
-    } else {
-        $id = DB_publisher::insert($q);
-        if (!$id) {
-            echo "publisher insert failed\n";
-            exit;
-        }
+    $id = DB_organization::insert($q);
+    if (!$id) {
+        echo "publisher insert failed\n";
+        exit;
     }
     return $id;
 }
