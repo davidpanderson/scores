@@ -241,4 +241,12 @@ function show_recommended_pr($pr) {
     );
 }
 
+function perf_right($perf) {
+    echo 'rate';
+}
+
+function score_right($score) {
+    echo 'rate';
+}
+
 ?>

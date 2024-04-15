@@ -230,9 +230,13 @@ function concert_form() {
     form_input_hidden('id', $id);
     form_input_hidden('type', CONCERT);
     form_input_hidden('submit', true);
-    form_select('Venue', 'venue', venue_options());
-    form_input_text('Date', 'when', '', 'text', 'placeholder="YYYY-MM-DD"');
-    form_select('Sponsor', 'organization', organization_options());
+    form_select('Venue', 'venue', venue_options(), $con->venue);
+    if ($con->_when) {
+        form_input_text('Date', 'when', DB::date_num_to_str($con->_when));
+    } else {
+        form_input_text('Date', 'when', '', 'text', 'placeholder="YYYY-MM-DD"');
+    }
+    form_select('Sponsor', 'organization', organization_options(), $con->organization);
     form_submit($id?'Update concert':'Add concert');
     form_end();
 

@@ -83,7 +83,7 @@ class DB {
         return $num + $m*100 + $d;
     }
     public static function date_num_to_str($num) {
-        if (!$num) return '---';
+        if (!$num) return '';
         $year = intdiv($num, 10000);
         $mod = $num % 10000;
         if ($mod) {

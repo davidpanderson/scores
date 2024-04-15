@@ -105,7 +105,7 @@ function comp_left($arg) {
             )
         );
         row2('Title', $c->title);
-        row2('Approximate duration', $c->average_duration);
+        row2('Approximate duration', dash($c->average_duration));
     } else {
         row2('Title', $c->title);
         if ($c->alternative_title) {
@@ -115,7 +115,7 @@ function comp_left($arg) {
         row2('Composed', DB::date_num_to_str($c->composed));
         //row2('Published', DB::date_num_to_str($c->published));
         //row2('First performed', DB::date_num_to_str($c->performed));
-        row2('Dedication', $c->dedication);
+        row2('Dedication', dash($c->dedication));
         row2('Composition types', comp_types_str($c->comp_types));
         row2('Creators', creators_str($c->creators, true));
         if ($c->languages) {
@@ -146,20 +146,22 @@ function comp_left($arg) {
     if ($arrs) {
         echo "<h3>Arrangements</h3>\n";
         start_table();
-        table_header('Section', 'Arranged for', 'Arranger', 'Code');
+        table_header('Details', 'Section', 'Arranged for', 'Arranger');
         foreach ($arrs as $arr) {
             $ics = instrument_combos_str($arr->instrument_combos);
             $arr->ics = $ics;
             $arr->arranger = creators_str($arr->creators, false);
             table_row(
+                sprintf('<a href=item.php?type=%d&id=%d>view</a>',
+                    COMPOSITION, $arr->id
+                ),
                 $arr->title?$arr->title:'Complete',
                 sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
                     COMPOSITION,
                     $arr->id,
                     $ics?$ics:'---'
                 ),
-                $arr->arranger,
-                copy_button(item_code($arr->id, 'composition'))
+                $arr->arranger
             );
         }
         end_table();
@@ -168,51 +170,54 @@ function comp_left($arg) {
     if ($children) {
         echo "<h3>Sections</h3>\n";
         start_table();
-        table_header('Title', 'Metronome', 'Key', 'Measures', 'Code');
+        table_header('Title<br><small>click for details</small>',
+            'Metronome', 'Key', 'Measures'
+        );
         foreach ($children as $child) {
             table_row(
                 sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
                     COMPOSITION, $child->id, $child->title
                 ),
-                $child->metronome_markings,
-                $child->_keys,
-                $child->nbars?$child->nbars:'',
-                copy_button(item_code($child->id, 'composition'))
+                dash($child->metronome_markings),
+                dash($child->_keys),
+                dash($child->nbars)
             );
         }
         end_table();
     }
 
-    echo "<h3>Scores</h3>\n";
-    start_table();
-    table_header('ID', 'Type', 'Publisher', 'File');
     $scores = DB_score::enum(
         sprintf('json_overlaps("[%s]", compositions)', $c->id)
     );
-    foreach ($scores as $score) {
-        score_row($score);
-    }
-    foreach ($arrs as $arr) {
-        $scores = DB_score::enum(
-            sprintf('json_overlaps("[%s]", compositions)', $arr->id)
-        );
+    if ($scores || $arrs) {
+        echo "<h3>Scores</h3>\n";
+        start_table();
+        table_header('Details', 'Type', 'Publisher', 'Date', 'File');
         foreach ($scores as $score) {
-            if ($arr->ics) {
-                $s = "<nobr>Arrangement for $arr->ics</nobr>";
-            } else {
-                $s = "Arrangement";
-            }
-            $s .= "<br><nobr>by $arr->arranger</nobr></br>";
-            score_row($score, $s);
+            score_row($score);
         }
+        foreach ($arrs as $arr) {
+            $scores = DB_score::enum(
+                sprintf('json_overlaps("[%s]", compositions)', $arr->id)
+            );
+            foreach ($scores as $score) {
+                if ($arr->ics) {
+                    $s = "<nobr>Arrangement for $arr->ics</nobr>";
+                } else {
+                    $s = "Arrangement";
+                }
+                $s .= "<br><nobr>by $arr->arranger</nobr></br>";
+                score_row($score, $s);
+            }
+        }
+        end_table();
     }
-    end_table();
 
     $perfs = DB_performance::enum("composition=$c->id");
     if ($perfs) {
         echo "<h3>Recordings</h3>\n";
         start_table();
-        table_header('Type', 'Section', 'Instruments', 'File');
+        table_header('Details', 'Type', 'Section', 'Instruments', 'File');
         foreach ($perfs as $perf) {
             $descs = json_decode($perf->file_descs);
             $names = json_decode($perf->file_names);
@@ -221,8 +226,11 @@ function comp_left($arg) {
                 $f[] = sprintf('%s <a href=%s>file</a>', $descs[$i], $names[$i]);
             }
             table_row(
+                sprintf('<a href=item.php?type=%d&id=%d>view</a>',
+                    PERFORMANCE, $perf->id
+                ),
                 $perf->is_synthesized?'Synthesized':'',
-                $perf->section,
+                dash($perf->section),
                 $perf->instrumentation,
                 implode('<br>', $f)
             );
@@ -246,22 +254,24 @@ function score_row($score, $prefix='') {
     for ($i=0; $i<count($descs); $i++) {
         //if ($score->is_parts) {
         if (1) {
-            $s[] = sprintf('%s <a href=%s>file</a>', $descs[$i], $names[$i]);
+            $s[] = sprintf('%s &middot; <a href=%s>view</a>', $descs[$i], $names[$i]);
         } else {
-            $s[] = sprintf('<a href=%s>file</a>', $names[$i]);
+            $s[] = sprintf('<a href=%s>view</a>', $names[$i]);
         }
     }
-    $pub_str = '---';
+    $pub_str = '';
+    $pub_year = '';
     if ($pub) {
         $pub_str = $pub->name;
         if ($score->publish_date) {
-            $pub_str .= ', '.DB::date_num_to_str($score->publish_date);
+            $pub_year = DB::date_num_to_str($score->publish_date);
         }
     }
     table_row(
-        $score->id,
-        $prefix.implode(',', $type),
-        $pub_str,
+        sprintf('<a href=item.php?type=%d&id=%d>view</a>', SCORE, $score->id),
+        dash($prefix.implode(',', $type)),
+        dash($pub_str),
+        dash($pub_year),
         implode('<br>', $s)
     );
 }
@@ -364,19 +374,96 @@ function do_organization($id) {
 }
 
 function do_performance($id) {
-    $p = DB_performance::lookup_id($id);
+    $perf = DB_performance::lookup_id($id);
     page_head("Performance");
-    start_table();
-    end_table();
+    copy_to_clipboard_script();
+    grid(null, 'perf_left', 'perf_right', 7, $perf);
     page_tail();
 }
 
-function do_score($id) {
-    $p = DB_score::lookup_id($id);
-    page_head("Score");
+function perf_left($perf) {
     start_table();
+    $comp = DB_composition::lookup_id($perf->composition);
+    row2('Composition', $comp->long_title);
+    row2('Performers', creators_str($perf->performers, true));
+    row2('Recording?', $perf->is_recording?'Yes':'No');
+    row2('Synthesized?', $perf->is_synthesized?'Yes':'No');
+    row2('Section', dash($perf->section));
+    row2('Instrumentation', dash($perf->instrumentation));
     end_table();
+
+    echo '<h3>Files</h3>';
+    $names = json_decode($perf->file_names);
+    $descs = json_decode($perf->file_descs);
+    start_table();
+    table_header('Description', 'Name');
+    for ($i=0; $i<count($names); $i++) {
+        table_row(
+            sprintf('<nobr>%s</nobr>', $descs[$i]),
+            $names[$i]
+        );
+    }
+    end_table();
+}
+
+function do_score($id) {
+    $score = DB_score::lookup_id($id);
+    page_head("Score");
+    grid(null, 'score_left', 'score_right', 7, $score);
     page_tail();
+}
+
+function score_left($score) {
+    start_table();
+    $comp_str = [];
+    $comp_ids = json_decode($score->compositions);
+    foreach ($comp_ids as $id) {
+        $comp = DB_composition::lookup_id($id);
+        $comp_str[] = $comp->long_title;
+    }
+    row2('Composition', implode('<br>', $comp_str));
+    $pub_str = '';
+    if ($score->publisher) {
+        $pub = DB_organization::lookup_id($score->publisher);
+        $pub_str = $pub->name;
+    }
+    row2('Publisher', dash($pub_str));
+    $x = '';
+    if ($score->languages) {
+        languages_str(json_decode($score->languages));
+    }
+    row2('Languages', dash($x));
+
+    $lic_str = '';
+    if ($score->license) {
+        $lic = DB_license::lookup_id($score->license);
+        $lic_str = $lic->name;
+    }
+    row2('License', dash($lic_str));
+    row2('Published', DB::date_num_to_str($score->publish_date));
+    row2('Edition', dash($score->edition_number));
+    row2('Parts?', $score->is_parts?'Yes':'No');
+    row2('Selections?', $score->is_selections?'Yes':'No');
+    row2('Vocal score?', $score->is_vocal?'Yes':'No');
+    end_table();
+
+    echo '<h3>Files</h3>';
+    $names = json_decode($score->file_names);
+    $descs = json_decode($score->file_descs);
+    $page_counts = null;
+    if ($score->page_counts) {
+        $page_counts = json_decode($score->page_counts);
+    }
+    start_table();
+    table_header('Description', 'Names', 'Pages');
+    for ($i=0; $i<count($names); $i++) {
+        table_row(
+            $descs[$i],
+            $names[$i],
+            $page_counts?$page_counts[$i]:dash('')
+        );
+    }
+    end_table();
 }
 
 function main($type, $id) {

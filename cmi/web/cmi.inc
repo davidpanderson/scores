@@ -9,7 +9,13 @@ require_once('ser.inc');
 
 //DB::$show_queries = true;
 
-define('DEBUG_QUERY', 0);
+define('SHOW_COMP_QUERY', 0);       // show comp search queries
+
+// if arg is blank, return em dash
+//
+function dash($s) {
+    return $s?$s:'&mdash;';
+}
 
 // is logged-in user an editor?
 //

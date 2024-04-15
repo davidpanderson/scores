@@ -264,7 +264,7 @@ function show_compositions($comps) {
     copy_to_clipboard_script();
     start_table();
     table_header(
-        'Title',
+        'Title<br><small>click for details</small>',
         'Creators',
         'IMSLP',
         'Key',
@@ -382,7 +382,7 @@ function do_composition($params) {
     }
     $query .= sprintf(' limit %d,%d', $params->offset, PAGE_SIZE+1);
 
-    if (DEBUG_QUERY) {
+    if (SHOW_COMP_QUERY) {
         echo "QUERY: $query\n";
     }
     $comps = DB::enum($query);
@@ -452,7 +452,7 @@ function do_concert() {
     page_head("Concerts");
     $cs = DB_concert::enum();
     start_table();
-    table_header('', 'Venue', 'Location', 'Date');
+    table_header('Details', 'Venue', 'Location', 'Date');
     foreach ($cs as $c) {
         $v = DB_venue::lookup_id($c->venue);
         table_row(
