@@ -88,7 +88,7 @@ function review_action($type, $target) {
     }
 }
 
-function do_rate($type, $id, $is_diff=false) {
+function do_rate($type, $id, $attr='attr1') {
     $user = get_logged_in_user();
     $val = get_int('val');
     $r = DB_rating::lookup(
@@ -98,16 +98,12 @@ function do_rate($type, $id, $is_diff=false) {
     );
     if ($r) {
         $r->update(
-            sprintf('%s=%d, created=%d',
-                $is_diff?'attr2':'quality',
-                $val, time()
-            )
+            sprintf('%s=%d, created=%d', $attr, $val, time())
         );
     } else {
         DB_rating::insert(
             sprintf('(created, user, type, target, %s) values (%d, %d, %d, %d, %d)',
-                $is_diff?'attr2':'quality',
-                time(), $user->id, $type, $id, $val
+                $attr, time(), $user->id, $type, $id, $val
             )
         );
     }
@@ -127,11 +123,23 @@ $action = get_str('action');
 $type = get_int('type', true);
 $target = get_int('target');
 switch($action) {
-case 'rate_comp_q':
-    do_rate(COMPOSITION, $target, false);
+case 'rate_comp_1':
+    do_rate(COMPOSITION, $target, 'attr1');
     break;
-case 'rate_comp_d':
-    do_rate(COMPOSITION, $target, true);
+case 'rate_comp_2':
+    do_rate(COMPOSITION, $target, 'attr2');
+    break;
+case 'rate_perf_1':
+    do_rate(PERFORMANCE, $target, 'attr1');
+    break;
+case 'rate_perf_2':
+    do_rate(PERFORMANCE, $target, 'attr2');
+    break;
+case 'rate_score_1':
+    do_rate(SCORE, $target, 'attr1');
+    break;
+case 'rate_score_2':
+    do_rate(SCORE, $target, 'attr2');
     break;
 case 'rate_pr':
     do_rate(PERSON_ROLE, $target);

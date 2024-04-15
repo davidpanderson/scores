@@ -334,7 +334,8 @@ create table rating (
     user                    integer,
     target                  integer,
     type                    integer,        -- see cmi_db.inc
-    quality                 integer,
+    attr1                   integer,
+        -- how much you like the composition or performance
         -- for scores, quality of edition
     attr2                   integer,
         -- for compositions, difficulty

@@ -78,8 +78,8 @@ function avg_rating($type, $target) {
     $dsum = 0;
     $dn = 0;
     foreach ($rs as $r) {
-        if ($r->quality !== null) {
-            $qsum += $r->quality;
+        if ($r->attr1 !== null) {
+            $qsum += $r->attr1;
             $qn++;
         }
         if ($r->attr2 !== null) {
@@ -107,7 +107,7 @@ function get_users_ratings($user, $type, $target) {
         )
     );
     if ($r) {
-        if ($r->quality !== null) $rq = (int)$r->quality;
+        if ($r->attr1 !== null) $rq = (int)$r->attr1;
         if ($r->attr2 !== null) $rd = (int)$r->attr2;
         $review = $r->review;
     }
@@ -155,7 +155,7 @@ function comp_right($arg) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'rate_comp_q', $c->id)
+            rating_buttons(false, $rq, 'rate_comp_1', $c->id)
         );
     }
     [$qavg, $davg] = avg_rating(COMPOSITION, $c->id);
@@ -164,7 +164,7 @@ function comp_right($arg) {
     echo '<b>Technical difficulty</b>';
     start_table();
     if ($user) {
-        row2('Your rating', rating_buttons(true, $rd, 'rate_comp_d', $c->id));
+        row2('Your rating', rating_buttons(true, $rd, 'rate_comp_2', $c->id));
     }
     row2('Average rating', rating_bar($davg));
     end_table();
@@ -242,11 +242,61 @@ function show_recommended_pr($pr) {
 }
 
 function perf_right($perf) {
-    echo 'rate';
+    $user = get_logged_in_user(true);
+    if ($user) {
+        [$rq, $rd, $review] = get_users_ratings($user, PERFORMANCE, $perf->id);
+    }
+    echo '<b>Performance quality</b>';
+    start_table();
+    if ($user) {
+        row2('Your rating',
+            rating_buttons(false, $rq, 'rate_perf_1', $perf->id)
+        );
+    }
+    [$qavg, $davg] = avg_rating(PERFORMANCE, $c->id);
+    row2('Average rating', rating_bar($qavg));
+    end_table();
+    if ($perf->is_recording) {
+        echo '<b>Recording quality</b>';
+        start_table();
+        if ($user) {
+            row2('Your rating', rating_buttons(true, $rd, 'rate_perf_2', $perf->id));
+        }
+        row2('Average rating', rating_bar($davg));
+        end_table();
+    }
+    show_reviews(PERFORMANCE, $perf->id, $user, $review);
+    echo '
+        <p>
+        <b>People who liked this also liked:</b>
+        <p>
+    ';
+    show_recommended_perfs($perf);
 }
 
 function score_right($score) {
-    echo 'rate';
+    $user = get_logged_in_user(true);
+    if ($user) {
+        [$rq, $rd, $review] = get_users_ratings($user, SCORE, $score->id);
+    }
+    echo '<b>Edition quality</b>';
+    start_table();
+    if ($user) {
+        row2('Your rating',
+            rating_buttons(false, $rq, 'rate_score_1', $score->id)
+        );
+    }
+    [$qavg, $davg] = avg_rating(SCORE, $score->id);
+    row2('Average rating', rating_bar($qavg));
+    end_table();
+    echo '<b>Scan image quality</b>';
+    start_table();
+    if ($user) {
+        row2('Your rating', rating_buttons(true, $rd, 'rate_score_2', $score->id));
+    }
+    row2('Average rating', rating_bar($davg));
+    end_table();
+    show_reviews(SCORE, $score->id, $user, $review);
 }
 
 ?>

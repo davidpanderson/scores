@@ -219,6 +219,7 @@ function comp_left($arg) {
         start_table();
         table_header('Details', 'Type', 'Section', 'Instruments', 'File');
         foreach ($perfs as $perf) {
+            if (!$perf->is_recording) continue;
             $descs = json_decode($perf->file_descs);
             $names = json_decode($perf->file_names);
             $f = [];
