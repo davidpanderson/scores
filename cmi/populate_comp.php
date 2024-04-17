@@ -666,6 +666,18 @@ function make_score($item, $comp_id, $flags) {
     if ($nfiles == 0) return;
     $file_names = array_slice($item->file_names, 0, $nfiles);
     $file_descs = array_slice($item->file_descs, 0, $nfiles);
+    $files = [];
+    for ($i=0; $i<$nfiles; $i++) {
+        $f = new StdClass;
+        $f->desc = $file_descs[$i];
+        $f->name = $file_names[$i];
+        if ($item->page_counts) {
+            $f->pages = $item->page_counts[$i];
+        } else {
+            $f->pages = 0;
+        }
+        $files[] = $f;
+    }
 
     $license = 0;
     $publisher = 0;
@@ -697,10 +709,9 @@ function make_score($item, $comp_id, $flags) {
         }
     }
     $id = DB_score::insert(
-        sprintf("(compositions, file_names, file_descs, publisher, license, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal) values ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, %d)",
+        sprintf("(compositions, files, publisher, license, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal) values ('%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, %d)",
             DB::escape(json_encode([$comp_id]), JSON_NUMERIC_CHECK),
-            DB::escape(json_encode($file_names), JSON_NUMERIC_CHECK),
-            DB::escape(json_encode($file_descs), JSON_NUMERIC_CHECK),
+            DB::escape(json_encode($files), JSON_NUMERIC_CHECK),
             $publisher,
             $license,
             DB::date_num($publish_year),
@@ -757,12 +768,18 @@ function make_performance(
     if ($nfiles == 0) return;
     $file_names = array_slice($item->file_names, 0, $nfiles);
     $file_descs = array_slice($item->file_descs, 0, $nfiles);
+    $files = [];
+    for ($i=0; $i<$nfiles; $i++) {
+        $f = new StdClass;
+        $f->desc = $file_descs[$i];
+        $f->name = $file_names[$i];
+        $files[] = $f;
+    }
     DB_performance::insert(
         sprintf(
-            "(composition, is_recording, file_names, file_descs, is_synthesized, section, instrumentation) values (%d, 1, '%s', '%s', %d, '%s', '%s')",
+            "(composition, is_recording, files, is_synthesized, section, instrumentation) values (%d, 1, '%s', %d, '%s', '%s')",
             $comp->id,
-            DB::escape(json_encode($file_names), JSON_NUMERIC_CHECK),
-            DB::escape(json_encode($file_descs), JSON_NUMERIC_CHECK),
+            DB::escape(json_encode($files), JSON_NUMERIC_CHECK),
             $is_synthesized?1:0,
             DB::escape($section),
             DB::escape($instrumentation)

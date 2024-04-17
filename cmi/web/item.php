@@ -212,6 +212,12 @@ function comp_left($arg) {
         }
         end_table();
     }
+    if (editor()) {
+        show_button(
+            sprintf('edit.php?type=%d', SCORE),
+            'Add score'
+        );
+    }
 
     $perfs = DB_performance::enum("composition=$c->id");
     if ($perfs) {
@@ -220,11 +226,11 @@ function comp_left($arg) {
         table_header('Details', 'Type', 'Section', 'Instruments', 'File');
         foreach ($perfs as $perf) {
             if (!$perf->is_recording) continue;
-            $descs = json_decode($perf->file_descs);
-            $names = json_decode($perf->file_names);
-            $f = [];
-            for ($i=0; $i<count($descs); $i++) {
-                $f[] = sprintf('%s <a href=%s>file</a>', $descs[$i], $names[$i]);
+            $files = json_decode($perf->files);
+            foreach ($files as $file) {
+                $f[] = sprintf('%s <a href=%s>file</a>',
+                    $file->desc, $file->name
+                );
             }
             table_row(
                 sprintf('<a href=item.php?type=%d&id=%d>view</a>',
@@ -238,6 +244,12 @@ function comp_left($arg) {
         }
         end_table();
     }
+    if (editor()) {
+        show_button(
+            sprintf('edit.php?type=%d', PERFORMANCE),
+            'Add recording'
+        );
+    }
 }
 
 function score_row($score, $prefix='') {
@@ -249,16 +261,12 @@ function score_row($score, $prefix='') {
     if ($score->is_parts) $type[] = 'parts';
     if ($score->is_selections) $type[] = 'selections';
     if ($score->is_vocal) $type[] = 'vocal score';
-    $descs = json_decode($score->file_descs);
-    $names = json_decode($score->file_names);
+    $files = json_decode($score->files);
     $s = [];
-    for ($i=0; $i<count($descs); $i++) {
-        //if ($score->is_parts) {
-        if (1) {
-            $s[] = sprintf('%s &middot; <a href=%s>view</a>', $descs[$i], $names[$i]);
-        } else {
-            $s[] = sprintf('<a href=%s>view</a>', $names[$i]);
-        }
+    foreach ($files as $file) {
+        $s[] = sprintf('%s &middot; <a href=%s>view</a>',
+            $file->desc, $file->name
+        );
     }
     $pub_str = '';
     $pub_year = '';
@@ -394,17 +402,22 @@ function perf_left($perf) {
     end_table();
 
     echo '<h3>Files</h3>';
-    $names = json_decode($perf->file_names);
-    $descs = json_decode($perf->file_descs);
+    $files = json_decode($perf->files);
     start_table();
     table_header('Description', 'Name');
-    for ($i=0; $i<count($names); $i++) {
+    foreach ($files as $file) {
         table_row(
-            sprintf('<nobr>%s</nobr>', $descs[$i]),
-            $names[$i]
+            sprintf('<nobr>%s</nobr>', $file->desc, $file->name)
         );
     }
     end_table();
+
+    if (editor()) {
+        show_button(
+            sprintf('edit.php?type=%d&id=%d', PERFORMANCE, $perf->id),
+            'Edit recording'
+        );
+    }
 }
 
 function do_score($id) {
@@ -449,22 +462,24 @@ function score_left($score) {
     end_table();
 
     echo '<h3>Files</h3>';
-    $names = json_decode($score->file_names);
-    $descs = json_decode($score->file_descs);
-    $page_counts = null;
-    if ($score->page_counts) {
-        $page_counts = json_decode($score->page_counts);
-    }
+    $files = json_decode($score->files);
     start_table();
     table_header('Description', 'Names', 'Pages');
-    for ($i=0; $i<count($names); $i++) {
+    foreach ($files as $file) {
         table_row(
-            $descs[$i],
-            $names[$i],
-            $page_counts?$page_counts[$i]:dash('')
+            $file->desc,
+            $file->name,
+            $file->pages?$file->pages:dash('')
         );
     }
     end_table();
+
+    if (editor()) {
+        show_button(
+            sprintf('edit.php?type=%d&id=%d', SCORE, $score->id),
+            'Edit score'
+        );
+    }
 }
 
 function main($type, $id) {

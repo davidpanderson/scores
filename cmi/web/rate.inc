@@ -52,8 +52,8 @@ function rating_buttons($is_diff, $sel, $action, $id) {
 }
 
 function rating_bar($frac) {
-    if ($frac === null) return '---';
-    $width = 264;   // 11*24
+    if ($frac === null) return dash('');
+    $width = 240;   // 11*24
     $n = (int)$width*$frac;
     return sprintf('
         <table>
@@ -63,7 +63,7 @@ function rating_bar($frac) {
             </tr>
         </table>
         ',
-        $n, $frac*10,
+        24+$n, $frac*10,
         $width - $n
     );
 }
@@ -229,16 +229,12 @@ function show_recommended_prs($p, $role) {
     );
     echo '<ul>';
     foreach ($prs as $pr) {
-        show_recommended_pr($pr);
+        $person = DB_person::lookup_id($pr->person);
+        echo sprintf('<li><a href=item.php?type=%d&id=%d>%s %s</a>',
+            PERSON, $pr->person, $person->first_name, $person->last_name
+        );
     }
     echo '</ul>';
-}
-
-function show_recommended_pr($pr) {
-    $person = DB_person::lookup_id($pr->person);
-    echo sprintf('<li><a href=item.php?type=%d&id=%d>%s %s</a>',
-        PERSON, $pr->person, $person->first_name, $person->last_name
-    );
 }
 
 function perf_right($perf) {
@@ -253,7 +249,7 @@ function perf_right($perf) {
             rating_buttons(false, $rq, 'rate_perf_1', $perf->id)
         );
     }
-    [$qavg, $davg] = avg_rating(PERFORMANCE, $c->id);
+    [$qavg, $davg] = avg_rating(PERFORMANCE, $perf->id);
     row2('Average rating', rating_bar($qavg));
     end_table();
     if ($perf->is_recording) {
@@ -268,10 +264,22 @@ function perf_right($perf) {
     show_reviews(PERFORMANCE, $perf->id, $user, $review);
     echo '
         <p>
-        <b>People who liked this also liked:</b>
+        <b>People who liked this recording also liked recordings of:</b>
         <p>
     ';
     show_recommended_perfs($perf);
+}
+
+function show_recommended_perfs($perf) {
+    $ps = DB_performance::enum('', 'order by rand() limit 3');
+    echo '<ul>';
+    foreach ($ps as $p) {
+        $comp = DB_composition::lookup_id($p->composition);
+        echo sprintf('<li><a href=item.php?type=%d&id=%d>%s</a>',
+            PERFORMANCE, $p->id, $comp->long_title
+        );
+    }
+    echo '</ul>';
 }
 
 function score_right($score) {

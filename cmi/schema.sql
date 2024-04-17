@@ -240,14 +240,16 @@ alter table composition add index comp_parent(parent);
 create table score (
     id                      integer         not null auto_increment,
     compositions            json,           -- may be collection of comps
-    file_names              json,
-    file_descs              json,           -- e.g. 'Cellos and Basses'
+    files                   json,
+        -- a list of objects, each with
+        -- desc (e.g. 'Cellos and Basses')
+        -- name
+        -- pages
     publisher               integer,        -- organization
     license                 integer,
     languages               json,
     publish_date            integer,
     edition_number          text,
-    page_counts             json,
     image_type              text,           -- e.g. typeset, normal scan
     is_parts                tinyint,
     is_selections           tinyint,
@@ -281,10 +283,11 @@ create table performance (
     is_recording            tinyint,
 
     -- the following relevant if recording
-    file_names              json,
-        -- depends on release type; e.g. IMSLP filenames
-    file_descs              json,
-        -- parallel array of descriptions, e.g. mvt titles
+    files                   json,
+        -- a list of objects, each with:
+        -- desc (e.g. mvt title)
+        -- name (depends on release type; e.g. IMSLP filenames)
+        -- (could have type, encoding params, size and duration too)
     is_synthesized          tinyint,
     section                 text,
         -- 'Complete' or 'Selections' or name of section/mvt

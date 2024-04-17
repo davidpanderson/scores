@@ -459,8 +459,8 @@ function do_concert() {
             sprintf('<a href=item.php?type=%d&id=%d>View</a>',
                 CONCERT, $c->id
             ),
-            $v?$v->name:'---',
-            $v?location_id_to_name($v->location):'---',
+            dash($v->name),
+            $v?location_id_to_name($v->location):dash(null),
             DB::date_num_to_str($c->_when)
         );
     }

@@ -77,7 +77,7 @@ function comp_types_str($cts) {
 }
 
 function creators_str($cts, $show_role) {
-    if (!$cts) return '---';
+    if (!$cts) return dash(null);
     $cts = json_decode($cts);
     $x = [];
     foreach ($cts as $id) {
@@ -153,7 +153,7 @@ function instrument_combos_str($ics) {
 
 function sex_options() {
     $sexes = get_sexes();
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($sexes as $s) {
         $x[] = [$s->id, $s->name];
     }
@@ -161,7 +161,7 @@ function sex_options() {
 }
 function ethnicity_options() {
     $ethnicities = get_ethnicities();
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($ethnicities as $s) {
         $x[] = [$s->id, $s->name];
     }
@@ -171,7 +171,7 @@ function ethnicity_options() {
 function country_options() {
     $cid = location_type_name_to_id('country');
     $locs = get_locations();
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($locs as $loc) {
         if ($loc->type != $cid) continue;
         $x[] = [$loc->id, $loc->name];
@@ -183,7 +183,7 @@ function instrument_options($include_none=false) {
     $insts = get_instruments();
     $x = [];
     if ($include_none) {
-        $x[] = [0, '---'];
+        $x[] = [0, dash(null)];
     }
     foreach ($insts as $inst) {
         $x[] = [$inst->id, $inst->name];
@@ -194,7 +194,7 @@ function instrument_options($include_none=false) {
 function venue_options() {
     $vs = DB_venue::enum();
     $x = [];
-    $x[] = [0, '---'];
+    $x[] = [0, dash(null)];
     foreach ($vs as $v) {
         $x[] = [$v->id, $v->name];
     }
@@ -202,11 +202,19 @@ function venue_options() {
 }
 
 function venue_str($id) {
-    if (!$id) return '---';
+    if (!$id) return dash(null);
     $v = DB_venue::lookup_id($id);
     return $v->name;
 }
 
+function language_options() {
+    $langs = DB_language::enum();
+    $x = [0, dash(null)];
+    foreach ($langs as $lang) {
+        $x[] = [$lang->id, $lang->name];
+    }
+    return $x;
+}
 function languages_str($langs) {
     $x = [];
     foreach ($langs as $lang) {
@@ -217,7 +225,7 @@ function languages_str($langs) {
 
 function location_type_options() {
     $lts = DB_location_type::enum('', 'order by name');
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($lts as $lt) {
         $x[] = [$lt->id, $lt->name];
     }
@@ -238,7 +246,7 @@ function location_name($loc) {
 }
 function location_options() {
     $lts = DB_location::enum('', 'order by name');
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($lts as $lt) {
         $x[] = [$lt->id, location_name($lt)];
     }
@@ -247,7 +255,7 @@ function location_options() {
 
 function role_options() {
     $rs = DB_role::enum();
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($rs as $r) {
         $x[] = [$r->id, $r->name];
     }
@@ -256,7 +264,7 @@ function role_options() {
 
 function organization_type_options() {
     $types = DB_organization_type::enum();
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($types as $type) {
         $x[] = [$type->id, $type->name];
     }
@@ -265,16 +273,25 @@ function organization_type_options() {
 
 function organization_options() {
     $orgs = DB_organization::enum();
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($orgs as $org) {
         $x[] = [$org->id, $org->name];
     }
     return $x;
 }
 
+function license_options() {
+    $lics = DB_license::enum();
+    $x = [[0, dash(null)]];
+    foreach ($lics as $lic) {
+        $x[] = [$lic->id, $lic->name];
+    }
+    return $x;
+}
+
 function comp_type_options() {
     $cts = get_comp_types();
-    $x = [[0, '---']];
+    $x = [[0, dash(null)]];
     foreach ($cts as $ct) {
         $x[] = [$ct->id, $ct->name];
     }
@@ -382,9 +399,17 @@ function performance_str($n, $perf) {
 }
 
 function organization_id_to_name($id) {
-    if (!$id) return '---';
+    if (!$id) return dash(null);
     $org = DB_organization::lookup_id($id);
     return $org->name;
 }
 
+function image_type_options() {
+    return [
+        [0, dash('')],
+        [1, 'Normal Scan'],
+        [2, 'Manuscript Scan'],
+        [3, 'Typeset']
+    ];
+}
 ?>

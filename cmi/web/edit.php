@@ -1,19 +1,82 @@
 <?php
 
-// create or edit items
+// create and edit items
+//
+// Some types (score, concert, etc.) have fields that are lists of things.
+// To handle this we use an approach where we pass a JSON-encoded
+// version of the item in the form URL.
+// You can add/remove list items.
+// Only when you click Add/Update at the bottom does it get written to the DB.
+//
+// For fields that are links to other tables:
+// if the other table is small (instrument, language)
+// we use select or select-multi.
+// For large tables we use 'item codes',
+// which are a DB ID plus a type symbol (e.g. comp2345).
+// You look up the item you want, then copy/paste the code.
 
 require_once('../inc/util.inc');
 require_once('cmi.inc');
 require_once('write_ser.inc');
 
-define('BUTTON_CLASS_ADD', 'btn btn-md btn-success py-0');
+define('BUTTON_CLASS_ADD', 'btn btn-xs btn-success py-0');
 define('BUTTON_CLASS_REMOVE', 'btn btn-xs btn-warning');
 
-function concert_form() {
+// start a form row with the given title
+//
+function form_row_start($title) {
+    echo sprintf('
+        <div class="form-group">
+            <label align=right class="%s">%s</label>
+            <div class="%s">
+        ',
+        FORM_LEFT_CLASS, $title, FORM_RIGHT_CLASS
+    );
+}
+
+function form_row_end() {
+    echo '</div></div><p>&nbsp;</p>';
+}
+
+function comp_code_msg() {
+    return "
+        <p class=\"text-danger h4\">
+        Invalid or missing composition code.
+        </p>
+        <p>
+        To get a composition code:
+        <ul>
+        <li> In a different browser tab,
+            locate the composition.
+        <li> Click on the Copy button;
+            this copies the role code to the clipboard.
+        <li> Paste the code (e.g. <code>com1234</code>) into the form.
+        </ul>
+    ";
+}
+
+function person_role_code_msg() {
+    return "
+        <p class=\"text-danger h4\">
+        Invalid or missing role code.
+        </p>
+        <p>
+        To get a role code:
+        <ul>
+        <li> In a different browser tab,
+            locate the performer (person or ensemble).
+        <li> Find the appropriate role, e.g. 'performer (piano)'.
+        <li> Click on the Copy button next to the role;
+            this copies the role code to the clipboard.
+        <li> Paste the role code (e.g. <code>rol1234</code>) into the form.
+        </ul>
+    ";
+}
+
+function concert_form($id) {
     // get concert params, from DB or from URL args
     //
     $con = null;
-    $id = get_int('id', true);
     if ($id) {
         $con = DB_concert::lookup_id($id);
         if (!$con) {
@@ -50,23 +113,9 @@ function concert_form() {
     case 'add_comp':
         $comp_code = get_str('comp_code', true);
         $comp_id = parse_code($comp_code, 'composition');
-
         $comp = DB_composition::lookup_id($comp_id);
         if (!$comp) {
-            $error_msg = "
-                <p class=\"text-danger h4\">
-                Invalid or missing composition code.
-                </p>
-                <p>
-                To get a composition code:
-                <ul>
-                <li> In a different browser tab,
-                    locate the composition.
-                <li> Click on the Copy button;
-                    this copies the role code to the clipboard.
-                <li> Paste the code (e.g. <code>com1234</code>) into the form.
-                </ul>
-            ";
+            $error_msg = comp_code_msg();
             break;
         }
 
@@ -100,21 +149,7 @@ function concert_form() {
         $prole_code = get_str('prole_code', true);
         $prole_id = parse_code($prole_code, 'person_role');
         if (!$prole_id) {
-            $error_msg = "
-                <p class=\"text-danger h4\">
-                Invalid or missing role code.
-                </p>
-                <p>
-                To get a role code:
-                <ul>
-                <li> In a different browser tab,
-                    locate the performer (person or ensemble).
-                <li> Find the appropriate role, e.g. 'performer (piano)'.
-                <li> Click on the Copy button next to the role;
-                    this copies the role code to the clipboard.
-                <li> Paste the role code (e.g. <code>rol1234</code>) into the form.
-                </ul>
-            ";
+            $error_msg = person_role_code_msg();
             break;
         }
         $perf_id = get_int('perf_id');
@@ -161,13 +196,7 @@ function concert_form() {
     if ($message) echo "$message<p>\n";
     if ($error_msg) echo "$error_msg<p>\n";
 
-    echo sprintf('
-        <div class="form-group">
-            <label align=right class="%s">%s</label>
-            <div class="%s">
-        ',
-        FORM_LEFT_CLASS, 'Program', FORM_RIGHT_CLASS
-    );
+    form_row_start('Program');
     $n = 1;
     foreach ($con->program as $perf_id) {
         $perf = DB_performance::lookup_id($perf_id);
@@ -181,6 +210,9 @@ function concert_form() {
             echo sprintf("<li> %s\n", person_role_str($role));
         }
         echo "</ul>";
+
+        // form for adding performer to this comp
+        //
         echo sprintf('
             <p>
             <form action=edit.php>
@@ -197,6 +229,9 @@ function concert_form() {
             BUTTON_CLASS_ADD
         );
         echo '<br>';
+
+        // button for removing comp from program
+        //
         show_button(
             sprintf(
                 'edit.php?type=%d&id=%d&con=%s&perf_id=%d&op=remove_comp',
@@ -210,6 +245,9 @@ function concert_form() {
         );
         echo '<hr>';
     }
+
+    // form for adding another composition to program
+    //
     echo sprintf('
         <form action=edit.php>
         <input type=hidden name=type value=%d>
@@ -223,7 +261,9 @@ function concert_form() {
         urlencode($con_json),
         BUTTON_CLASS_ADD
     );
-    echo '</div></div><p>&nbsp;</p>';
+    form_row_end();
+
+    // main form with other items
 
     form_start('edit.php');
     form_input_hidden('con', urlencode($con_json));
@@ -243,7 +283,7 @@ function concert_form() {
     page_tail();
 }
 
-function concert_action() {
+function concert_action($id) {
     $con_json = urldecode(get_str('con'));
     $con = json_decode($con_json);
     $venue = get_int('venue');
@@ -261,7 +301,6 @@ function concert_action() {
         $p->update('tentative=0');
     }
 
-    $id = get_int('id', true);
     if ($id) {
         $c = DB_concert::lookup_id($id);
         if (!$c) error_page("No concert $id");
@@ -348,8 +387,7 @@ function location_action($id) {
     write_ser_location();
 }
 
-function person_form() {
-    $id = get_int('id', true);
+function person_form($id) {
     if ($id) {
         $p = DB_person::lookup_id($id);
         if (!$p) die("No person $id");
@@ -393,7 +431,7 @@ function person_form() {
     page_tail();
 }
 
-function person_action() {
+function person_action($id) {
     $first_name = get_str('first_name');    
     $last_name = get_str('last_name');
     $born = DB::date_num_parse(get_str('born'));
@@ -405,7 +443,6 @@ function person_action() {
     $sex = get_int('sex');
     $ethnicity = get_str('ethnicity', true);
     if (!$ethnicity) $ethnicity = [];
-    $id = get_int('id', true);
     if ($id) {
         $p = DB_person::lookup_id($id);
         if (!$p) error_page("No person $id");
@@ -621,6 +658,7 @@ function composition_form($id) {
             $comp->title = '';
             $comp->opus_catalogue = '';
             $comp->creators = [];
+            $comp->comp_types = [];
             $comp->instrument_combos = [];
             $comp_json = json_encode($comp);
         }
@@ -697,16 +735,41 @@ function composition_form($id) {
     if ($error_msg) echo "$error_msg<p>\n";
 
     // show page
-    //
+
+    echo sprintf('
+        <form action=edit.php id=add_creator>
+        <input type=hidden name=type value=%d>
+        <input type=hidden name=comp value="%s">
+        <input type=hidden name=op value=add_creator>
+        <input type=hidden name=id value=%d>
+        </form>
+        ',
+        COMPOSITION, urlencode($comp_json), $id
+    );
+    echo sprintf('
+        <form action=edit.php id=add_inst>
+        <input type=hidden name=type value=%d>
+        <input type=hidden name=comp value="%s">
+        <input type=hidden name=op value=add_ic>
+        <input type=hidden name=id value=%d>
+        </form>
+        ',
+        COMPOSITION, urlencode($comp_json), $id
+    );
+
+    form_start('edit.php', 'get');
+    form_input_hidden('comp', urlencode($comp_json));
+    form_input_hidden('type', COMPOSITION);
+    form_input_hidden('submit', true);
+    form_input_hidden('id', $id);
+    form_input_text('Title', 'title', $comp?$comp->title:'');
+    form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
+    select2_multi('Composition types', 'comp_types', comp_type_options(),
+        $comp->comp_types
+    );
 
     // creators
-    echo sprintf('
-        <div class="form-group">
-            <label align=right class="%s">%s</label>
-            <div class="%s">
-        ',
-        FORM_LEFT_CLASS, 'Creators', FORM_RIGHT_CLASS
-    );
+    form_row_start('Creators');
     foreach ($comp->creators as $prole_id) {
         $prole = DB_person_role::lookup_id($prole_id);
         echo sprintf("%s\n", person_role_str($prole));
@@ -722,30 +785,16 @@ function composition_form($id) {
         );
     }
     echo sprintf('
-        <p>
-        <form action=edit.php>
-        <input type=hidden name=type value=%d>
-        <input type=hidden name=comp value="%s">
-        <input type=hidden name=op value=add_creator>
-        <input type=hidden name=id value=%d>
-        <input type=submit class="%s" value="Add creator:">
-        <input name=prole_code placeholder="role code">
-        </form>
+        <p><p>
+        <input type=submit class="%s" value="Add creator:" form=add_creator>
+        <input name=prole_code placeholder="role code" form=add_creator>
         ',
-        COMPOSITION,
-        urlencode($comp_json), $id,
         BUTTON_CLASS_ADD
     );
-    echo '</div></div><p>&nbsp;</p>';
+    form_row_end();
 
     // inst combos
-    echo sprintf('
-        <div class="form-group">
-            <label align=right class="%s">%s</label>
-            <div class="%s">
-        ',
-        FORM_LEFT_CLASS, 'Instrumentations', FORM_RIGHT_CLASS
-    );
+    form_row_start('Instrumentations');
     foreach ($comp->instrument_combos as $icid) {
         $ic = DB_instrument_combo::lookup_id($icid);
         echo instrument_combo_str($ic);
@@ -762,31 +811,23 @@ function composition_form($id) {
         echo '<p>';
     }
     echo sprintf('
-        <form action=edit.php>
-        <input type=hidden name=type value=%d>
-        <input type=hidden name=comp value="%s">
-        <input type=hidden name=op value=add_ic>
-        <input type=hidden name=id value=%d>
-        <input type=submit class="%s" value="Add instrumentation:">
-        <input name=ic_code placeholder="instrumentation code">
-        </form>
+        <p><p>
+        <input type=submit class="%s" value="Add instrumentation:" form=add_inst>
+        <input name=ic_code placeholder="instrumentation code" form=add_inst>
         ',
-        COMPOSITION,
-        urlencode($comp_json), $id,
         BUTTON_CLASS_ADD
     );
-    echo '</div></div><p>&nbsp;</p>';
+    form_row_end();
+    form_input_text('Composed', 'composed', DB::date_num_to_str($comp->composed));
+    form_input_text('Published', 'published', DB::date_num_to_str($comp->published));
+    form_input_text('Dedication', 'dedication', $comp->dedication);
+    form_input_text('Tempo markings', 'tempo_markings', $comp->tempo_markings);
+    form_input_text('Metronome markings', 'metronome_markings', $comp->metronome_markings);
+    form_input_text('Keys', 'keys', $comp->_keys);
+    form_input_text('Time signatures', 'time_signatures', $comp->time_signatures);
+    form_input_text('Average duration', 'average_duration', $comp->average_duration);
+    form_input_text('# measures', 'nbars', $comp->nbars);
 
-    form_start('edit.php', 'get');
-    form_input_hidden('comp', urlencode($comp_json));
-    form_input_hidden('type', COMPOSITION);
-    form_input_hidden('submit', true);
-    form_input_hidden('id', $id);
-    form_input_text('Title', 'title', $comp?$comp->title:'');
-    form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
-    select2_multi('Composition types', 'comp_types', comp_type_options(),
-        $comp->comp_types
-    );
     form_submit($id?'Update composition':'Add composition');
     form_end();
     page_tail();
@@ -925,41 +966,221 @@ function inst_combo_action() {
     page_tail();
 }
 
+function score_form($id) {
+    $score = null;
+    if ($id) {
+        $score = DB_score::lookup_id($id);
+        $score->compositions = json_decode($score->compositions);
+        $score->file_names = json_decode($score->file_names);
+        $score->file_descs = json_decode($score->file_descs);
+        $score->languages = $score->languages?json_decode($score->languages):[];
+        $score->page_counts = $score->page_counts?json_decode($score->page_counts):[];
+        $score_json = json_encode($score);
+    } else {
+        $score_json = get_str('score', true);
+        if ($score_json) {
+            $score_json = urldecode($score_json);
+            $score = json_decode($score_json);
+        } else {
+            $score = new StdClass;
+            $score->id = 0;
+            $score->compositions = [];
+            $score->file_names = [];
+            $score->file_descs = [];
+            $score->publisher = 0;
+            $score->license = 0;
+            $score->languages = [];
+            $score->publish_date = 0;
+            $score->edition_number = '';
+            $score->page_counts = [];
+            $score->image_type = '';
+            $score->is_parts = 0;
+            $score->is_selections = 0;
+            $score->is_vocal = 0;
+            $score_json = json_encode($score);
+        }
+    }
+    // actions: add/remove file, add/remove comp
+    $message = '';
+    $error_msg = '';
+    $op = get_str('op', true);
+    switch ($op) {
+    case 'add_file':
+        $score->file_names[] = get_str('name');
+        $score->file_descs[] = get_str('desc');
+        $score->page_counts[]= get_int('page_counts');
+        $message = 'Added composition';
+        break;
+    case 'remove_file':
+        $index = get_str('index');
+        array_splice($score->file_names, $index);
+        array_splice($score->file_descs, $index);
+        array_splice($score->page_counts, $index);
+        $message = 'Removed composition';
+        break;
+    case 'add_comp':
+        $comp_code = get_str('comp_code');
+        $comp_id = parse_code($comp_code, 'composition');
+        if ($comp_id) {
+            $error_msg = comp_code_msg();
+            break;
+        }
+        $score->compositions[] = $comp_id;
+        $message = 'Added composition';
+        break;
+    case 'remove_comp':
+        $comp_id = get_int('comp_id');
+        $score->compositions = array_diff($score->compositions, [$comp_id]);
+        $message = 'Removed composition';
+        break;
+    }
+
+    select2_head($id?'Edit score':'Add score');
+    if ($message) echo "$message<p>\n";
+    if ($error_msg) echo "$error_msg<p>\n";
+
+    form_row_start('Compositions');
+    $i = 1;
+    foreach ($score->compositions as $cid) {
+        $comp = DB_composition::lookup_id($cid);
+        echo sprintf(
+            '%d. %s
+            <p>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <a href=edit.php>Delete</a>
+            <p>
+            ',
+            $i++,
+            $comp->long_title
+        );
+    }
+    echo '
+        <p>
+        <form action=edit.php>
+        <p>
+        <input type=submit value="Add composition">
+        <input name=comp_code placeholder="Composition code">
+        <p>
+        </form>
+    ';
+    form_row_end();
+
+    form_row_start('Files');
+    $n = count($score->file_names);
+    for ($i=0; $i<$n; $i++) {
+        echo sprintf(
+            '%d. %s
+            <p>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            %s
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <a href=edit.php>Delete</a>
+            <p>
+            ',
+            $i+1,
+            $score->file_descs[$i],
+            $score->file_names[$i]
+        );
+    }
+    echo '<hr>
+        <form action=edit.php>
+        <p>
+        Filename: <input name=name>
+        <p>
+        Description: <input name=desc>
+        <p>
+        Pages: <input name=pages>
+        <p>
+        <input type=submit value="Add file">
+        </form>
+    ';
+    form_row_end();
+
+    form_start('edit.php');
+    form_select('Publisher', 'publisher', organization_options(), $score->publisher);
+    form_select('License', 'license', license_options(), $score->license);
+    select2_multi('Languages', 'languages', language_options(), $score->languages);
+    form_input_text('Publish date', 'publish_date', $score->publish_date);
+    form_input_text('Edition number', 'edition_number', $score->edition_number);
+    form_select('Image type', 'image_type', image_type_options(), $score->image_type);
+    $x = [
+        ['is_parts', 'Separate parts', $score->is_parts],
+        ['is_selections', 'Selections', $score->is_selections],
+        ['is_vocal', 'Vocal score', $score->is_vocal]
+    ];
+    form_checkboxes('Attributes', $x);
+    form_submit('OK');
+    form_end();
+    page_tail();
+}
+
+function score_action($id) {
+    $score_json = urldecode(get_str('score'));
+    $score = json_decode($score_json);
+
+    if ($id) {
+        $score = DB_score::lookup_id($id);
+        if (!$score) error_page("No score $id");
+        $q = sprintf(
+            "",
+        );
+        $score->update($q);
+    } else {
+        $q = sprintf(
+            "() values ()",
+        );
+        $id = DB_score::insert($q);
+    }
+    header(
+        sprintf('Location: item.php?type=%d&id=%d', SCORE, $id)
+    );
+}
+
+// lists: performers, files
+function perf_form($id) {
+}
+
+function perf_action($id) {
+}
+
 $type = get_str('type', true);
 $submit = get_str('submit', true);
+$id = get_int('id', true);
 
 switch ($type) {
 case LOCATION:
-    $id = get_int('id', true);
     $submit?location_action($id):location_form($id);
     break;
 case COMPOSITION:
-    $id = get_int('id', true);
     $submit?composition_action($id):composition_form($id);
     break;
 case CONCERT:
-    $submit?concert_action():concert_form();
+    $submit?concert_action($id):concert_form($id);
     break;
 case ENSEMBLE:
-    $id = get_int('id', true);
-    $submit?ensemble_action():ensemble_form();
+    $submit?ensemble_action($id):ensemble_form($id);
     break;
 case ORGANIZATION:
-    $id = get_int('id', true);
     $submit?organization_action($id):organization_form($id);
     break;
 case PERSON:
-    $submit?person_action():person_form();
+    $submit?person_action($id):person_form($id);
     break;
 case PERSON_ROLE:
     $submit?person_role_action():person_role_form();
     break;
 case VENUE:
-    $id = get_int('id', true);
     $submit?venue_action($id):venue_form($id);
     break;
 case INST_COMBO:
     $submit?inst_combo_action():inst_combo_form();
+    break;
+case SCORE:
+    $submit?score_action($id):score_form($id);
+    break;
+case PERFORMANCE:
+    $submit?perf_action($id):perf_form($id);
     break;
 default:
     error_page("unknown type $type");
