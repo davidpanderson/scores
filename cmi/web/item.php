@@ -70,7 +70,7 @@ function do_composition($id) {
     if (!$c) error_page("no composition $id\n");
     if ($c->arrangement_of) {
         $par = DB_composition::lookup_id($c->arrangement_of);
-        $page_title = "Arrangment of $par->long_title";
+        $page_title = "Arrangement of $par->long_title";
     } else if ($c->parent) {
         $par = DB_composition::lookup_id($c->parent);
         $page_title = "$c->title from $par->title";
@@ -88,7 +88,10 @@ function do_composition($id) {
 function comp_left($arg) {
     [$c, $par] = $arg;
     start_table();
-    if ($c->arrangement_of) {
+    $is_arrangement = $c->arrangement_of;
+    $is_section = $c->parent;
+
+    if ($is_arrangement) {
         row2('Arrangement of',
             sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
                 COMPOSITION, $par->id, composition_str($par)
@@ -98,99 +101,141 @@ function comp_left($arg) {
         if ($c->ensemble_type) {
             row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
         }
-    } else if ($c->parent) {
+    } else if ($is_section) {
         row2('Section of',
             sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
                 COMPOSITION, $par->id, composition_str($par)
             )
         );
         row2('Title', $c->title);
-        row2('Approximate duration', dash($c->average_duration));
+        row2('Tempo markings', dash($c->tempo_markings));
+        row2('Metronome markings', dash($c->metronome_markings));
+        row2('Keys', dash($c->_keys));
+        row2('Time signatures', dash($c->time_signatures));
+        row2('Average duration (sec)', dash($c->avg_duration_sec));
+        row2('Number of measures', dash($c->n_bars));
     } else {
         row2('Title', $c->title);
         if ($c->alternative_title) {
             row2('Alternative title', $c->alternative_title);
         }
         row2('Opus', $c->opus_catalogue);
-        row2('Composed', DB::date_num_to_str($c->composed));
-        //row2('Published', DB::date_num_to_str($c->published));
+        row2('Composed', dash(DB::date_num_to_str($c->composed)));
+        row2('First published', dash(DB::date_num_to_str($c->published)));
         //row2('First performed', DB::date_num_to_str($c->performed));
         row2('Dedication', dash($c->dedication));
-        row2('Composition types', comp_types_str($c->comp_types));
-        row2('Creators', creators_str($c->creators, true));
-        if ($c->languages) {
-            row2('Languages', languages_str(json_decode($c->languages)));
+        row2('Tempo markings', dash($c->tempo_markings));
+        row2('Metronome markings', dash($c->metronome_markings));
+        row2('Keys', dash($c->_keys));
+        row2('Time signatures', dash($c->time_signatures));
+        row2('Average duration (sec)', dash($c->avg_duration_sec));
+        row2('Number of measures', dash($c->n_bars));
+        row2('Composition types', dash(comp_types_str($c->comp_types)));
+        row2('Creators', dash(creators_str($c->creators, true)));
+        if ($c->language) {
+            row2('Language', languages_str([$c->language]));
         }
-        row2('Instrumentation', instrument_combos_str($c->instrument_combos));
+        row2('Instrumentation', dash(instrument_combos_str($c->instrument_combos)));
         if ($c->ensemble_type) {
             row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
         }
         if ($c->period) {
             row2('Period', period_name($c->period));
         }
-        row2('Approximate duration', $c->average_duration);
-        row2('Number of movements', $c->n_movements);
+        row2('Number of movements', dash($c->n_movements));
     }
     if (editor()) {
         row2('Code', copy_button(item_code($c->id, 'composition')));
+        if ($is_section) $x = 'section';
+        else if ($is_arrangement) $x = 'arrangement';
+        else $x = 'composition';
         row2('',
             button_text(
                 sprintf('edit.php?type=%d&id=%d', COMPOSITION, $c->id),
-                'Edit composition'
+                "Edit $x"
             )
         );
     }
     end_table();
 
-    $arrs = DB_composition::enum(sprintf('arrangement_of=%d', $c->id));
-    if ($arrs) {
-        echo "<h3>Arrangements</h3>\n";
-        start_table();
-        table_header('Details', 'Section', 'Arranged for', 'Arranger');
-        foreach ($arrs as $arr) {
-            $ics = instrument_combos_str($arr->instrument_combos);
-            $arr->ics = $ics;
-            $arr->arranger = creators_str($arr->creators, false);
-            table_row(
-                sprintf('<a href=item.php?type=%d&id=%d>view</a>',
-                    COMPOSITION, $arr->id
-                ),
-                $arr->title?$arr->title:'Complete',
-                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    COMPOSITION,
-                    $arr->id,
-                    $ics?$ics:'---'
-                ),
-                $arr->arranger
-            );
-        }
-        end_table();
-    }
-    $children = DB_composition::enum(sprintf('parent=%d', $c->id));
-    if ($children) {
+    if (!$is_section && !$is_arrangement) {
         echo "<h3>Sections</h3>\n";
-        start_table();
-        table_header('Title<br><small>click for details</small>',
-            'Metronome', 'Key', 'Measures'
-        );
-        foreach ($children as $child) {
-            table_row(
-                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    COMPOSITION, $child->id, $child->title
+        $children = DB_composition::enum(sprintf('parent=%d', $c->id));
+        if ($children) {
+            start_table();
+            table_header('Title<br><small>click for details</small>',
+                'Metronome', 'Key', 'Measures'
+            );
+            foreach ($children as $child) {
+                table_row(
+                    sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                        COMPOSITION, $child->id, $child->title
+                    ),
+                    dash($child->metronome_markings),
+                    dash($child->_keys),
+                    dash($child->n_bars)
+                );
+            }
+            end_table();
+        } else {
+            echo '<p>(No sections)<p>';
+        }
+        if (editor()) {
+            show_button(
+                sprintf(
+                    'edit.php?type=%d&parent=%d',
+                    COMPOSITION, $c->id
                 ),
-                dash($child->metronome_markings),
-                dash($child->_keys),
-                dash($child->nbars)
+                'Add section'
             );
         }
-        end_table();
     }
 
+    if ($is_arrangement) {
+        $arrs = [];
+    } else {
+        echo "<h3>Arrangements</h3>\n";
+        $arrs = DB_composition::enum(sprintf('arrangement_of=%d', $c->id));
+        if ($arrs) {
+            start_table();
+            table_header('Details', 'Section', 'Arranged for', 'Arranger');
+            foreach ($arrs as $arr) {
+                $ics = instrument_combos_str($arr->instrument_combos);
+                $arr->ics = $ics;
+                $arr->arranger = creators_str($arr->creators, false);
+                table_row(
+                    sprintf('<a href=item.php?type=%d&id=%d>view</a>',
+                        COMPOSITION, $arr->id
+                    ),
+                    $arr->title?$arr->title:'Complete',
+                    sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                        COMPOSITION,
+                        $arr->id,
+                        $ics?$ics:'---'
+                    ),
+                    $arr->arranger
+                );
+            }
+            end_table();
+        } else {
+            echo '<p>(No arrangements)<p>';
+        }
+        if (editor()) {
+            show_button(
+                sprintf(
+                    'edit.php?type=%d&arrangement_of=%d',
+                    COMPOSITION, $c->id
+                ),
+                'Add arrangement'
+            );
+        }
+    }
+
+    echo "<h3>Scores</h3>\n";
     $scores = DB_score::enum(
         sprintf('json_overlaps("[%s]", compositions)', $c->id)
     );
     if ($scores || $arrs) {
-        echo "<h3>Scores</h3>\n";
         start_table();
         table_header('Details', 'Type', 'Publisher', 'Date', 'File');
         foreach ($scores as $score) {
@@ -211,6 +256,8 @@ function comp_left($arg) {
             }
         }
         end_table();
+    } else {
+        echo '<p>(No scores)<p>';
     }
     if (editor()) {
         show_button(
@@ -219,9 +266,9 @@ function comp_left($arg) {
         );
     }
 
+    echo "<h3>Recordings</h3>\n";
     $perfs = DB_performance::enum("composition=$c->id");
     if ($perfs) {
-        echo "<h3>Recordings</h3>\n";
         start_table();
         table_header('Details', 'Type', 'Section', 'Instruments', 'File');
         foreach ($perfs as $perf) {
@@ -243,6 +290,8 @@ function comp_left($arg) {
             );
         }
         end_table();
+    } else {
+        echo '<p>(No recordings)<p>';
     }
     if (editor()) {
         show_button(

@@ -49,6 +49,7 @@ class DB {
         return static::$db_conn->insert_id;
     }
     public static function escape($string) {
+        if (!$string) return '';
         if (!static::init_conn()) return static::error($q);
         return static::$db_conn->escape_string(trim($string));
     }
@@ -95,11 +96,17 @@ class DB {
         }
     }
     // parse Y-M-D
+    // return 0 if parse error
     public static function date_num_parse($s) {
         $x = explode('-', $s);
         switch (count($x)) {
-        case 1: return static::date_num((int)$x[0]);
-        case 3: return static::date_num((int)$x[0], (int)$x[1], (int)$x[2]);
+        case 1:
+            if (!is_numeric($x[0])) return 0;
+            return static::date_num((int)$x[0]);
+        case 3:
+            if (!is_numeric($x[0])) return 0;
+            if (!is_numeric($x[2])) return 0;
+            return static::date_num((int)$x[0], (int)$x[1], (int)$x[2]);
         }
         return 0;
     }

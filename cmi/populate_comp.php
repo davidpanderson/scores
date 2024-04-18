@@ -540,13 +540,11 @@ function make_arrangement($comp, $item, $hier, &$other_arrs) {
         }
     }
 
-    $long_title = sprintf('arr %d %d', $comp->id, count($other_arrs));
     $title = mb_convert_encoding($title, 'UTF-8');
     // fix Incorrect string value: '\xC3'
     $id = DB_composition::insert(
         sprintf(
-            "(long_title, title, arrangement_of) values ('%s', '%s', %d)",
-            DB::escape($long_title),
+            "(long_title, title, arrangement_of) values ('', '%s', %d)",
             DB::escape($title),
             $comp->id
         )
@@ -671,7 +669,7 @@ function make_score($item, $comp_id, $flags) {
         $f = new StdClass;
         $f->desc = $file_descs[$i];
         $f->name = $file_names[$i];
-        if ($item->page_counts) {
+        if (!empty($item->page_counts[$i])) {
             $f->pages = $item->page_counts[$i];
         } else {
             $f->pages = 0;
@@ -796,8 +794,7 @@ function make_movements($c, $comp_id) {
     $i = 0;
     foreach ($mvts->sections as $section) {
         $ids[] = DB_composition::insert(
-            sprintf("(long_title, title, alternative_title, parent, _keys, nbars, metronome_markings) values ('%s', '%s', '%s', %d, '%s', %d, '%s')",
-                "sub-comp $i of $comp_id",
+            sprintf("(long_title, title, alternative_title, parent, _keys, n_bars, metronome_markings) values ('', '%s', '%s', %d, '%s', %d, '%s')",
                 DB::escape($section->title),
                 DB::escape($section->alt_title),
                 $comp_id,
@@ -811,30 +808,14 @@ function make_movements($c, $comp_id) {
     return $ids;
 }
 
-// see if subcomp with given title already exists; if not create one
-// in either case return subcomp ID
-//
-function make_subcomposition($main_comp, $title, &$n) {
-    $c = DB_composition::lookup(
-        sprintf("parent=%d and title='%s'",
-            $main_comp->id, DB::escape($title)
-        )
-    );
-    if ($c) {
-        return $c->id;
-    }
-    $id = DB_composition::insert(
-        sprintf("(long_title, title, parent) values ('%s', '%s', %d)",
-            "sub-comp $n of $main_comp->id",
-            DB::escape($title),
-            $main_comp->id
-        )
-    );
-    $n++;
-    return $id;
-}
-
 ///////////////// WORK /////////////////
+
+// convert e.g. '4 minutes' to seconds
+function parse_average_duration($s) {
+    if (strstr($s, 'minutes') === false) return 0;
+    $n = (int)$s;
+    return $n*60;
+}
 
 // create DB records for work and its scores and recordings
 //
@@ -899,7 +880,10 @@ function make_work($c) {
     }
     // TODO: deal with stuff like '10-12 minutes'
     if (!empty($c->average_duration)) {
-        $x[] = sprintf("average_duration='%s'", DB::escape($c->average_duration));
+        $secs = parse_average_duration($c->average_duration);
+        if ($secs) {
+            $x[] = sprintf('avg_duration_sec=%d', $secs);
+        }
     }
     // TODO: fix things like {{LinkDed|Ferdinand|Hiller}}
     if (!empty($c->dedication)) {
@@ -1054,9 +1038,11 @@ function process_tags_work(&$x, $tags) {
         $lang_ids[] = $rec->id;
     }
     if ($lang_ids) {
-        $x[] = sprintf("languages='%s'",
-            json_encode($lang_ids, JSON_NUMERIC_CHECK)
-        );
+        // Keep only the first one
+        //$x[] = sprintf("languages='%s'",
+        //    json_encode($lang_ids, JSON_NUMERIC_CHECK)
+        //);
+        $x[] = sprintf('language=%d', $lang_ids[0]);
     }
 }
 

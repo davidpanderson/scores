@@ -191,13 +191,13 @@ create table license (
 create table composition (
     id                      integer         not null auto_increment,
     long_title              varchar(255)    not null,
-        # includes key, opus and/or composer
+        # title, opus (composer)
         # e.g. Symphony No. 11 in D major, K.84/73q (Mozart, Wolfgang Amadeus)
-        # movement: mvt <parent_id> <ordinal>
-        # arrangement: arr <parent_id> <ordinal>
+        # null for sections and arrangements
+        # the main purpose is to avoid duplicate population of IMSLP comps
     title                   text,
         # e.g. Symphony No. 11
-        # movement: title of movement, if any
+        # section: title of movement, if any
         # arrangement: null
     alternative_title       text,
     opus_catalogue          text,
@@ -206,27 +206,26 @@ create table composition (
     performed               integer,
     dedication              text,
     tempo_markings          text,
-    metronome_markings      text,
-    _keys                    text,
+    metronome_markings      text,   -- quarter=120
+    _keys                   text,
         # 'key' is a reserved word in SQL
     time_signatures         text,
     comp_types              json,
     creators                json,
-    parent                  integer,
+    parent                  integer         not null default 0,
     children                json,
-    arrangement_of          integer,
-    languages               json,
+    arrangement_of          integer         not null default 0,
+    language                integer,
     instrument_combos       json,
     ensemble_type           integer,
     period                  integer,
-    average_duration        text,
+    avg_duration_sec        integer,
     n_movements             integer,
-    nbars                   integer,
-    unique(long_title),
+    n_bars                  integer,
     primary key(id)
 );
+alter table composition add index comp_lt(long_title);
 alter table composition add fulltext cindex (title);
-alter table composition add index wlang( (cast(languages->'$' as unsigned array)) );
 alter table composition add index wwt( (cast(comp_types->'$' as unsigned array)) );
 alter table composition add index wic( (cast(instrument_combos->'$' as unsigned array)) );
 alter table composition add index comp_crea( (cast(creators->'$' as unsigned array)) );
@@ -247,7 +246,7 @@ create table score (
         -- pages
     publisher               integer,        -- organization
     license                 integer,
-    languages               json,
+    languages               json,           -- language of editorial notes
     publish_date            integer,
     edition_number          text,
     image_type              text,           -- e.g. typeset, normal scan

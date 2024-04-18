@@ -334,7 +334,7 @@ function do_composition($params) {
         );
     }
     if (!$params->arr) {
-        $query .= ' and comp1.arrangement_of is null and comp1.parent is null
+        $query .= ' and comp1.arrangement_of = 0 and comp1.parent = 0
         ';
     }
     if ($params->insts) {

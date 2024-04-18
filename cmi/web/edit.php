@@ -22,6 +22,27 @@ require_once('write_ser.inc');
 define('BUTTON_CLASS_ADD', 'btn btn-xs btn-success py-0');
 define('BUTTON_CLASS_REMOVE', 'btn btn-xs btn-warning');
 
+function edit_error_page($name, $value) {
+    page_head('Input error');
+    echo "The input field <b>$name</b> had an illegal value '$value'.
+        Please go back and correct it.
+    ";
+    page_tail();
+    exit;
+}
+
+// get a date, convert to int, complain if bad
+//
+function get_date($field_name, $get_name) {
+    $str = get_str($get_name, true);
+    if ($str) {
+        $val = DB::date_num_parse($str);
+        if (!$val) edit_error_page($field_name, $str);
+        return $val;
+    }
+    return 0;
+}
+
 // start a form row with the given title
 //
 function form_row_start($title) {
@@ -632,20 +653,69 @@ function organization_action($id) {
     );
 }
 
+function empty_composition() {
+    $comp = new StdClass;
+    $comp->title = '';
+    $comp->long_title = '';
+    $comp->alternative_title = '';
+    $comp->opus_catalogue = '';
+    $comp->composed = 0;
+    $comp->published = 0;
+    $comp->performed = 0;
+    $comp->dedication = '';
+    $comp->tempo_markings = '';
+    $comp->metronome_markings = '';
+    $comp->_keys = '';
+    $comp->time_signatures = '';
+    $comp->comp_types = [];
+    $comp->creators = [];
+    $comp->parent = 0;
+    $comp->children = [];
+    $comp->arrangement_of = 0;
+    $comp->language = 0;
+    $comp->instrument_combos = [];
+    $comp->ensemble_type = 0;
+    $comp->period = 0;
+    $comp->avg_duration_sec = '';
+    $comp->n_movements = 0;
+    $comp->n_bars = 0;
+    return $comp;
+}
+
+// we use the same code for
+// - top-level compositions
+// - sections
+// - arrangements
+// Some fields are relevant only to one of these
+//
 function composition_form($id) {
     $comp = null;
+    $is_section = false;
+    $is_arrangement = false;
     if ($id) {
         $comp = DB_composition::lookup_id($id);
-        $comp->creators = json_decode($comp->creators);
-        if ($comp->instrument_combos) {
-            $comp->instrument_combos = json_decode($comp->instrument_combos);
-        } else {
-            $comp->instrument_combos = [];
+        if ($comp->parent) {
+            $parent_comp = DB_composition::lookup_id($comp->parent);
+            $is_section = true;
         }
-        if ($comp->comp_types) {
-            $comp->comp_types = json_decode($comp->comp_types);
-        } else {
-            $comp->comp_types = [];
+        if ($comp->arrangement_of) {
+            $parent_comp = DB_composition::lookup_id($comp->arrangement_of);
+            $is_arrangement = true;
+        }
+        if (!$is_section) {
+            $comp->creators = json_decode($comp->creators);
+            if ($comp->instrument_combos) {
+                $comp->instrument_combos = json_decode($comp->instrument_combos);
+            } else {
+                $comp->instrument_combos = [];
+            }
+        }
+        if (!$is_section && !$is_arrangement) {
+            if ($comp->comp_types) {
+                $comp->comp_types = json_decode($comp->comp_types);
+            } else {
+                $comp->comp_types = [];
+            }
         }
         $comp_json = json_encode($comp);
     } else {
@@ -654,14 +724,21 @@ function composition_form($id) {
             $comp_json = urldecode($comp_json);
             $comp = json_decode($comp_json);
         } else {
-            $comp = new StdClass;
-            $comp->title = '';
-            $comp->opus_catalogue = '';
-            $comp->creators = [];
-            $comp->comp_types = [];
-            $comp->instrument_combos = [];
+            $comp = empty_composition();
+            $parent = get_int('parent', true);
+            if ($parent) {
+                $parent_comp = DB_composition::lookup_id($parent);
+                $comp->parent = $parent;
+            }
+            $arrangement_of = get_int('arrangement_of', true);
+            if ($arrangement_of) {
+                $parent_comp = DB_composition::lookup_id($arrangement_of);
+                $comp->arrangement_of = $arrangement_of;
+            }
             $comp_json = json_encode($comp);
         }
+        if ($comp->parent) $is_section = true;
+        if ($comp->arrangement_of) $is_arrangement = true;
     }
 
     // do edits
@@ -729,7 +806,14 @@ function composition_form($id) {
         error_page("Bad op $op");
     }
 
-    select2_head($id?'Edit composition':'Add composition');
+    if ($is_section) {
+        $x = sprintf('section of %s', $parent_comp->title);
+    } else if ($is_arrangement) {
+        $x = sprintf('arrangement of %s', $parent_comp->title);
+    } else {
+        $x = 'composition';
+    }
+    select2_head($id?"Edit $x":"Add $x");
     
     if ($message) echo "$message<p>\n";
     if ($error_msg) echo "$error_msg<p>\n";
@@ -757,123 +841,235 @@ function composition_form($id) {
         COMPOSITION, urlencode($comp_json), $id
     );
 
+    // main form
     form_start('edit.php', 'get');
     form_input_hidden('comp', urlencode($comp_json));
     form_input_hidden('type', COMPOSITION);
     form_input_hidden('submit', true);
     form_input_hidden('id', $id);
-    form_input_text('Title', 'title', $comp?$comp->title:'');
-    form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
-    select2_multi('Composition types', 'comp_types', comp_type_options(),
-        $comp->comp_types
-    );
-
-    // creators
-    form_row_start('Creators');
-    foreach ($comp->creators as $prole_id) {
-        $prole = DB_person_role::lookup_id($prole_id);
-        echo sprintf("%s\n", person_role_str($prole));
-        show_button(
-            sprintf(
-                'edit.php?type=%d&comp="%s"&prole_id=%d&op=remove_creator',
-                COMPOSITION,
-                urlencode($comp_json),
-                $prole_id
-            ),
-            'Remove',
-            '', BUTTON_CLASS_REMOVE
+    if (!$is_arrangement) {
+        form_input_text('Title', 'title', $comp?$comp->title:'');
+    }
+    if (!$is_section && !$is_arrangement) {
+        form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
+        select2_multi('Composition types', 'comp_types', comp_type_options(),
+            $comp->comp_types
         );
     }
-    echo sprintf('
-        <p><p>
-        <input type=submit class="%s" value="Add creator:" form=add_creator>
-        <input name=prole_code placeholder="role code" form=add_creator>
-        ',
-        BUTTON_CLASS_ADD
-    );
-    form_row_end();
 
-    // inst combos
-    form_row_start('Instrumentations');
-    foreach ($comp->instrument_combos as $icid) {
-        $ic = DB_instrument_combo::lookup_id($icid);
-        echo instrument_combo_str($ic);
-        show_button(
-            sprintf(
-                'edit.php?type=%d&comp="%s"&ic_id=%d&op=remove_ic',
-                COMPOSITION,
-                urlencode($comp_json),
-                $icid
-            ),
-            'Remove',
-            '', BUTTON_CLASS_REMOVE
+    // things that only main comps and arrangements have
+    //
+    if (!$is_section) {
+        // creators
+        form_row_start('Creators');
+        foreach ($comp->creators as $prole_id) {
+            $prole = DB_person_role::lookup_id($prole_id);
+            echo sprintf("%s\n", person_role_str($prole));
+            show_button(
+                sprintf(
+                    'edit.php?type=%d&comp="%s"&prole_id=%d&op=remove_creator',
+                    COMPOSITION,
+                    urlencode($comp_json),
+                    $prole_id
+                ),
+                'Remove',
+                '', BUTTON_CLASS_REMOVE
+            );
+        }
+        if (!$comp->creators) echo dash('');
+        echo sprintf('
+            <p><p>
+            <input type=submit class="%s" value="Add creator:" form=add_creator>
+            <input name=prole_code placeholder="role code" form=add_creator>
+            ',
+            BUTTON_CLASS_ADD
         );
-        echo '<p>';
+        form_row_end();
+
+        // inst combos
+        //
+        form_row_start('Instrumentations');
+        foreach ($comp->instrument_combos as $icid) {
+            $ic = DB_instrument_combo::lookup_id($icid);
+            echo instrument_combo_str($ic);
+            show_button(
+                sprintf(
+                    'edit.php?type=%d&comp="%s"&ic_id=%d&op=remove_ic',
+                    COMPOSITION,
+                    urlencode($comp_json),
+                    $icid
+                ),
+                'Remove',
+                '', BUTTON_CLASS_REMOVE
+            );
+            echo '<p>';
+        }
+        if (!$comp->instrument_combos) echo dash('');
+        echo sprintf('
+            <p><p>
+            <input type=submit class="%s" value="Add instrumentation:" form=add_inst>
+            <input name=ic_code placeholder="instrumentation code" form=add_inst>
+            ',
+            BUTTON_CLASS_ADD
+        );
+        form_row_end();
+
+        form_input_text('Composed', 'composed', DB::date_num_to_str($comp->composed));
+        form_input_text('Published', 'published', DB::date_num_to_str($comp->published));
     }
-    echo sprintf('
-        <p><p>
-        <input type=submit class="%s" value="Add instrumentation:" form=add_inst>
-        <input name=ic_code placeholder="instrumentation code" form=add_inst>
-        ',
-        BUTTON_CLASS_ADD
-    );
-    form_row_end();
-    form_input_text('Composed', 'composed', DB::date_num_to_str($comp->composed));
-    form_input_text('Published', 'published', DB::date_num_to_str($comp->published));
-    form_input_text('Dedication', 'dedication', $comp->dedication);
+
+    // things that only main comps can have
+    //
+    if (!$is_section && !$is_arrangement) {
+        form_input_text('Dedication', 'dedication', $comp->dedication);
+    }
+
+    // things that only main comps and sections can have
+    //
+    if (!$is_arrangement) {
+        form_input_text('Time signatures', 'time_signatures', $comp->time_signatures);
+    }
+
+    // things that they all can have
+    //
     form_input_text('Tempo markings', 'tempo_markings', $comp->tempo_markings);
     form_input_text('Metronome markings', 'metronome_markings', $comp->metronome_markings);
     form_input_text('Keys', 'keys', $comp->_keys);
-    form_input_text('Time signatures', 'time_signatures', $comp->time_signatures);
-    form_input_text('Average duration', 'average_duration', $comp->average_duration);
-    form_input_text('# measures', 'nbars', $comp->nbars);
+    form_input_text('Average duration, seconds', 'avg_duration_sec', $comp->avg_duration_sec);
+    form_input_text('# measures', 'n_bars', $comp->n_bars);
 
-    form_submit($id?'Update composition':'Add composition');
+    if ($is_section) {
+        form_submit($id?'Update section':'Add section');
+    } else if ($is_arrangement) {
+        form_submit($id?'Update arrangement':'Add arrangement');
+    } else {
+        form_submit($id?'Update composition':'Add composition');
+    }
     form_end();
+
     page_tail();
 }
 
 function composition_action($id) {
+    //print_r($_GET); exit;
     $comp_json = urldecode(get_str('comp'));
     $comp = json_decode($comp_json);
-    $title = get_str('title');
-    $opus = get_str('opus');
-    $comp_types = get_str('comp_types');
+    //print_r($comp); exit;
+    $title = get_str('title', true);
 
-    if (!$comp->creators) {
-        error_page("Must specify a composer");
+    // get and check the title; make the long title
+    //
+    if ($comp->parent) {
+        if (!$title) {
+            edit_error_page('Title', $title);
+        }
+        if (!$id) {
+            $c2 = DB_composition::lookup(
+                sprintf("parent=%d and title='%s'",
+                    $comp->parent, $title
+                )
+            );
+            if ($c2) {
+                error_page("A section named $title already exists.");
+            }
+        }
+        $long_title = '';
+    } else if ($comp->arrangement_of) {
+        $title = '';
+        $long_title = '';
+    } else {
+        $long_title = $title;
+        if ($opus) $long_title .= ", $opus";
+        if ($comp->creators) {
+            $prole = DB_person_role::lookup_id($comp->creators[0]);
+            $person = DB_person::lookup_id($prole->person);
+            $long_title .= " ($person->last_name, $person->first_name)";
+        }
     }
-    $prole = DB_person_role::lookup_id($comp->creators[0]);
-    $person = DB_person::lookup_id($prole->person);
-    $long_title = $title;
-    if ($opus) $long_title .= ", $opus";
-    $long_title .= " ($person->last_name, $person->first_name)";
 
+    // get other fields
+    //
+    $opus = get_str('opus', true);
+    $comp_types = get_str('comp_types', true);
+    if (!$comp_types) $comp_types = [];
+    $dedication = get_str('dedication', true);
+    $time_signatures = get_str('time_signatures', true);
+    $tempo_markings = get_str('tempo_markings', true);
+    $metronome_markings = get_str('metronome_markings', true);
+    $keys = get_str('keys', true);
+    $avg_duration_sec = get_int('avg_duration_sec', true);
+    $n_bars = get_int('n_bars', true);
+    $composed = get_date('Composed', 'composed');
+    $published = get_date('Published', 'published');
+
+    // do the update or insert
+    //
     $id = get_int('id', true);
     if ($id) {
         $c = DB_composition::lookup_id($id);
         if (!$c) error_page("No composition $id");
         $q = sprintf(
-            "long_title='%s', title='%s', opus_catalogue='%s', creators='%s', instrument_combos='%s', comp_types='%s'",
+            "long_title='%s', title='%s', opus_catalogue='%s', composed=%d, published=%d, dedication='%s', time_signatures='%s', tempo_markings='%s', metronome_markings='%s', _keys='%s', avg_duration_sec=%d, n_bars=%d, creators='%s', instrument_combos='%s', comp_types='%s'",
             DB::escape($long_title),
             DB::escape($title),
             DB::escape($opus),
-            json_encode($comp->creators),
-            json_encode($comp->instrument_combos),
-            json_encode($comp_types)
+            $composed,
+            $published,
+            DB::escape($dedication),
+            DB::escape($time_signatures),
+            DB::escape($tempo_markings),
+            DB::escape($metronome_markings),
+            DB::escape($keys),
+            $avg_duration_sec,
+            $n_bars,
+            $comp->creators,
+            $comp->instrument_combos,
+            json_encode($comp_types, JSON_NUMERIC_CHECK)
         );
+        //echo $q; exit;
         $c->update($q);
     } else {
         $q = sprintf(
-            "(long_title, title, opus_catalogue, creators, instrument_combos, comp_types) values('%s', '%s', '%s', '%s', '%s', '%s')",
+            "(long_title, title, opus_catalogue, composed, published, dedication, time_signatures, tempo_markings, metronome_markings, _keys, avg_duration_sec, n_bars, creators, parent, arrangement_of, instrument_combos, comp_types)
+                values('%s', '%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, '%s', '%s')
+            ",
             DB::escape($long_title),
             DB::escape($title),
             DB::escape($opus),
+            $composed,
+            $published,
+            DB::escape($dedication),
+            DB::escape($time_signatures),
+            DB::escape($tempo_markings),
+            DB::escape($metronome_markings),
+            DB::escape($keys),
+            $avg_duration_sec,
+            $n_bars,
             json_encode($comp->creators),
+            $comp->parent,
+            $comp->arrangement_of,
             json_encode($comp->instrument_combos),
             json_encode($comp_types)
         );
+        //echo $q; exit;
         $id = DB_composition::insert($q);
+
+        // if new section, add to parent
+        //
+        if ($comp->parent) {
+            $parent = DB_composition::lookup_id($comp->parent);
+            if ($parent->children) {
+                $children = json_decode($parent->children);
+            } else {
+                $children = [];
+            }
+            $children[] = $id;
+            $parent->update(
+                sprintf("children = '%s'",
+                    json_encode($children, JSON_NUMERIC_CHECK)
+                )
+            );
+        }
     }
     header(
         sprintf('Location: item.php?type=%d&id=%d', COMPOSITION, $id)
