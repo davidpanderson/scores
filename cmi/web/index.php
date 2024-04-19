@@ -89,7 +89,7 @@ function left(){
             show_button('search.php?type=venue', 'Venues');
             show_button('search.php?type=organization', 'Organizations');
             if (editor()) {
-                show_button('search.php?type=inst_combo', 'Instrument combos');
+                show_button('search.php?type=inst_combo', 'Instrumentations');
             }
         }
     );

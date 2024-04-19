@@ -70,13 +70,13 @@ function do_composition($id) {
     if (!$c) error_page("no composition $id\n");
     if ($c->arrangement_of) {
         $par = DB_composition::lookup_id($c->arrangement_of);
-        $page_title = "Arrangement of $par->long_title";
+        $page_title = "Composition: Arrangement of $par->long_title";
     } else if ($c->parent) {
         $par = DB_composition::lookup_id($c->parent);
-        $page_title = "$c->title from $par->title";
+        $page_title = "Composition: $c->title from $par->title";
     } else {
         $par = null;
-        $page_title = $c->long_title;
+        $page_title = "Composition: $c->long_title";
     }
     page_head($page_title);
     copy_to_clipboard_script();
@@ -97,6 +97,7 @@ function comp_left($arg) {
                 COMPOSITION, $par->id, composition_str($par)
             )
         );
+        row2('Creators', dash(creators_str($c->creators, true)));
         row2('Instrumentation', instrument_combos_str($c->instrument_combos));
         if ($c->ensemble_type) {
             row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
@@ -261,7 +262,7 @@ function comp_left($arg) {
     }
     if (editor()) {
         show_button(
-            sprintf('edit.php?type=%d', SCORE),
+            sprintf('edit.php?type=%d&comp_id=%d', SCORE, $c->id),
             'Add score'
         );
     }
@@ -442,7 +443,7 @@ function do_performance($id) {
 function perf_left($perf) {
     start_table();
     $comp = DB_composition::lookup_id($perf->composition);
-    row2('Composition', $comp->long_title);
+    row2('Composition', composition_str($comp));
     row2('Performers', creators_str($perf->performers, true));
     row2('Recording?', $perf->is_recording?'Yes':'No');
     row2('Synthesized?', $perf->is_synthesized?'Yes':'No');
@@ -482,7 +483,7 @@ function score_left($score) {
     $comp_ids = json_decode($score->compositions);
     foreach ($comp_ids as $id) {
         $comp = DB_composition::lookup_id($id);
-        $comp_str[] = $comp->long_title;
+        $comp_str[] = composition_str($comp);
     }
     row2('Composition', implode('<br>', $comp_str));
     $pub_str = '';
@@ -493,7 +494,7 @@ function score_left($score) {
     row2('Publisher', dash($pub_str));
     $x = '';
     if ($score->languages) {
-        languages_str(json_decode($score->languages));
+        $x = languages_str(json_decode($score->languages));
     }
     row2('Languages', dash($x));
 
