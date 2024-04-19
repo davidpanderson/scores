@@ -13,7 +13,7 @@ define('SHOW_COMP_QUERY', 0);       // show comp search queries
 
 // if arg is blank, return em dash
 //
-function dash($s) {
+function dash($s=null) {
     return $s?$s:'&mdash;';
 }
 
@@ -94,6 +94,8 @@ function creators_str($cts, $show_role) {
     return implode('<br>', $x);
 }
 
+// return e.g. Joe Smith: performer (piano)
+//
 function person_role_str($role) {
     if ($role->person) {
         $person = DB_person::lookup_id($role->person);
@@ -107,6 +109,23 @@ function person_role_str($role) {
         $s .= sprintf(' (%s)', instrument_id_to_name($role->instrument));
     }
     return $s;
+}
+
+// same, but return name and role separately
+//
+function person_role_array($role) {
+    if ($role->person) {
+        $person = DB_person::lookup_id($role->person);
+        $s = "$person->first_name $person->last_name";
+    } else {
+        $ensemble = DB_ensemble::lookup_id($role->ensemble);
+        $s = "$ensemble->name";
+    }
+    $t = role_id_to_name($role->role);
+    if ($role->instrument) {
+        $t .= sprintf(' (%s)', instrument_id_to_name($role->instrument));
+    }
+    return [$s, $t];
 }
 
 function pluralize($x) {

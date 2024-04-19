@@ -119,203 +119,85 @@ function ic_code_msg() {
 
 ///////////////  CONCERT /////////////////
 
+function empty_concert() {
+    $con = new StdClass;
+    $con->id = 0;
+    $con->_when = '';
+    $con->venue = 0;
+    $con->organization = 0;
+    $con->program = [];
+    return $con;
+}
+
 function concert_form($id) {
-    // get concert params, from DB or from URL args
-    //
-    $con = null;
     if ($id) {
         $con = DB_concert::lookup_id($id);
-        if (!$con) {
-            error_page("No concert: $id\n");
-        }
+        if (!$con) error_page("No concert: $id\n");
         $con->program = json_decode($con->program);
-        $con_json = json_encode($con);
     } else {
-        // if arg is absent, or present and id is zero,
-        // we're creating a new concert
-        // else we're editing an existing concert
-        //
-        $con_json = get_str('con', true);
-        if ($con_json) {
-            $con_json = urldecode($con_json);
-            $con = json_decode($con_json);
-        } else {
-            $con = new StdClass;
-            $con->id = 0;
-            $con->_when = '';
-            $con->venue = 0;
-            $con->organizer = 0;
-            $con->program = [];
-            $con_json = json_encode($con);
-        }
+        $con = empty_concert();
     }
 
-    // do edits as needed
-    //
-    $message = '';
-    $error_msg = '';
-    $op = get_str('op', true);
-    switch ($op) {
-    case 'add_comp':
-        $comp_code = get_str('comp_code', true);
-        $comp_id = parse_code($comp_code, 'composition');
-        $comp = DB_composition::lookup_id($comp_id);
-        if (!$comp) {
-            $error_msg = comp_code_msg();
-            break;
-        }
-
-        // see if comp is already in program
-        foreach ($con->program as $perf_id) {
-            $perf = DB_performance::lookup_id($perf_id);
-            if ($perf->composition == $comp_id) {
-                $error_msg = "That composition is already in the program.";
-                break;
-            }
-        }
-        if ($error_msg) break;
-
-        $perf_id = DB_performance::insert(
-            sprintf("(composition, performers, tentative) values (%d, '%s',1)",
-                (int)$comp_id,
-                json_encode([])
-            )
-        );
-        $con->program[] = $perf_id;
-        $con_json = json_encode($con);
-        $message = 'Added composition.';
-        break;
-    case 'remove_comp':
-        $perf_id = get_int('perf_id');
-        $con->program = array_diff($con->program, [$perf_id]);
-        $con_json = json_encode($con);
-        $message = 'Removed composition.';
-        break;
-    case 'add_perf':
-        $prole_code = get_str('prole_code', true);
-        $prole_id = parse_code($prole_code, 'person_role');
-        if (!$prole_id) {
-            $error_msg = person_role_code_msg();
-            break;
-        }
-        $perf_id = get_int('perf_id');
-        foreach ($con->program as $pid) {
-            if ($pid == $perf_id) {
-                $perf = DB_performance::lookup_id($perf_id);
-                $x = json_decode($perf->performers);
-                if (in_array($prole_id, $x)) {
-                    $error_msg = "Duplicate performer.";
-                    break;
-                }
-                $x[] = $prole_id;
-                $perf->update(sprintf("performers='%s'", json_encode($x)));
-                $message = 'Added performer.';
-                break;
-            }
-        }
-        if (!$message && !$error_msg) {
-            $error_msg = 'Performer not found.';
-        }
-        break;
-    case 'remove_perf':
-        $prole_id = get_int('prole_id');
-        $perf_id = get_int('perf_id');
-        foreach ($con->program as $pid) {
-            if ($pid == $perf_id) {
-                $perf = DB_performance::lookup_id($perf_id);
-                $x = json_decode($perf->performers);
-                $x = array_diff($x, [$prole_id]);
-                $perf->update(sprintf("performers='%s'", json_encode($x)));
-                $message = 'Removed performer.';
-                break;
-            }
-        }
-        if (!$message) {
-            $error_msg = 'Performer not found.';
-        }
-    }
-
-    // show page
-    //
     page_head($id?'Edit concert':'Add concert');
 
-    if ($message) echo "$message<p>\n";
-    if ($error_msg) echo "$error_msg<p>\n";
-
-    form_row_start('Program');
-    $n = 1;
-    foreach ($con->program as $perf_id) {
-        $perf = DB_performance::lookup_id($perf_id);
-        $comp = DB_composition::lookup_id($perf->composition);
-        echo sprintf('<b>%d) %s</b>', $n++, composition_str($comp));
-        $roles = json_decode($perf->performers);
-
-        echo "<ul>";
-        foreach ($roles as $role_id) {
-            $role = DB_person_role::lookup_id($role_id);
-            echo sprintf("<li> %s\n", person_role_str($role));
-        }
-        echo "</ul>";
-
-        // form for adding performer to this comp
-        //
-        echo sprintf('
-            <p>
-            <form action=edit.php>
-            <input type=hidden name=type value=%d>
-            <input type=hidden name=con value="%s">
-            <input type=hidden name=op value=add_perf>
-            <input type=hidden name=perf_id value=%d>
-            <input type=submit class="%s" value="Add performer:">
-            <input title="paste a role code here" name=prole_code placeholder="role code">
-            </form>
-            ',
-            CONCERT,
-            urlencode($con_json), $perf_id,
-            BUTTON_CLASS_ADD
-        );
-        echo '<br>';
-
-        // button for removing comp from program
-        //
-        show_button(
-            sprintf(
-                'edit.php?type=%d&id=%d&con=%s&perf_id=%d&op=remove_comp',
-                CONCERT,
-                $id,
-                urlencode($con_json),
-                $perf_id
-            ),
-            'Remove this composition',
-            '', BUTTON_CLASS_REMOVE
-        );
-        echo '<hr>';
-    }
-
-    // form for adding another composition to program
-    //
-    echo sprintf('
-        <form action=edit.php>
-        <input type=hidden name=type value=%d>
-        <input type=hidden name=con value="%s">
-        <input type=hidden name=op value=add_comp>
-        <input type=submit class="%s" value="Add composition">
-        <input name=comp_code placeholder="composition code">
-        </form>
-        ',
-        CONCERT,
-        urlencode($con_json),
-        BUTTON_CLASS_ADD
-    );
-    form_row_end();
-
-    // main form with other items
-
     form_start('edit.php');
-    form_input_hidden('con', urlencode($con_json));
     form_input_hidden('id', $id);
     form_input_hidden('type', CONCERT);
     form_input_hidden('submit', true);
+
+    form_row_start('Program');
+    $n = 0;
+    //echo '<table>';
+    start_table();
+    table_header('Title', 'Performers', 'Remove');
+    foreach ($con->program as $perf_id) {
+        $perf = DB_performance::lookup_id($perf_id);
+        $comp = DB_composition::lookup_id($perf->composition);
+        $roles = json_decode($perf->performers);
+
+        echo '<tr><td valign=top >';
+        echo composition_str($comp);
+        echo '</td><td>';
+
+        //echo '<table>';
+        start_table();
+        table_header('Name', 'Role', 'Remove');
+        foreach ($roles as $role_id) {
+            $prole = DB_person_role::lookup_id($role_id);
+            [$name, $role] = person_role_array($prole);
+            table_row(
+                $name,
+                $role,
+                sprintf('<input type=checkbox name=remove_role_%d_%d>',
+                    $n, $role_id
+                )
+            );
+        }
+        echo "</table>";
+
+        echo 'Add performers ';
+
+        echo sprintf(
+            '<input title="paste role codes here" name=add_roles_%d placeholder="role codes">',
+            $n
+        );
+        if ($n>0) {
+            echo sprintf(
+                '<p>
+                Copy performers from previous composition <input type=checkbox name=copy_perfs_%d>',
+                $n
+            );
+        }
+        echo '<td>';
+        echo sprintf('<input type=checkbox name=remove_perf_%d>', $perf_id);
+        echo '</td></tr>';
+        $n++;
+    }
+    echo '</table>';
+
+    echo 'Add compositions: <input name=add_comps placeholder="composition codes">';
+    form_row_end();
+
     form_select('Venue', 'venue', venue_options(), $con->venue);
     if ($con->_when) {
         form_input_text('Date', 'when', DB::date_num_to_str($con->_when));
@@ -330,8 +212,110 @@ function concert_form($id) {
 }
 
 function concert_action($id) {
-    $con_json = urldecode(get_str('con'));
-    $con = json_decode($con_json);
+    if ($id) {
+        $con = DB_concert::lookup_id($id);
+        if (!$con) error_page("No concert: $id\n");
+        $con->program = json_decode($con->program);
+    } else {
+        $con = empty_concert();
+    }
+
+    // handle changes to performances
+
+    $perfs = [];
+    foreach ($con->program as $perf_id) {
+        $perf = DB_performance::lookup_id($perf_id);
+        $perf->performers = json_decode($perf->performers);
+        $perf->modified = false;
+        $perfs[] = $perf;
+    }
+
+    // for each performance, handle
+    // - add roles from previous perf
+    // - delete roles
+    // - add roles
+    // don't worry about dups; unique when done
+    //
+    for ($i=0; $i<count($con->program); $i++) {
+        $perf = $perfs[$i];
+        if ($i>0) {
+            if (get_str("copy_perfs_$i", true)) {
+                $prev = $perfs[$i-1];
+                $perf->performers = array_merge($perf->performers, $prev->performers);
+                $perf->modified = true;
+            }
+        }
+        foreach ($perf->performers as $pid) {
+            if (get_str(
+                sprintf('remove_role_%d_%d', $i, $pid),
+                true
+            )) {
+                $perf->performers = array_diff($perf->performers, [$pid]);
+                $perf->modified = true;
+            }
+        }
+        $role_codes = get_str("add_roles_$i", true);
+        if ($role_codes) {
+            $role_codes = explode(' ', $role_codes);
+            foreach ($role_codes as $role_code) {
+                $role_id = parse_code($role_code, 'person_role');
+                if (!$role_id) error_page(role_code_msg());
+                $perf->performers[] = $role_id;
+            }
+            $perf->modified = true;
+        }
+    }
+
+    foreach ($perfs as $perf) {
+        if ($perf->modified) {
+            $perf->performers = array_unique($perf->performers);
+            $perf->update(
+                sprintf(
+                    "performers='%s'",
+                    json_encode($perf->performers, JSON_NUMERIC_CHECK)
+                )
+            );
+        }
+    }
+
+    // handle removal of performances
+
+    foreach ($con->program as $perf_id) {
+        $x = "remove_perf_$perf_id";
+        if (get_str($x, true)) {
+            $con->program = array_diff($con->program, [$perf_id]);
+        }
+        // could delete the perf
+    }
+
+    // handle addition of new performances
+
+    $comp_codes = get_str('add_comps', true);
+    if ($comp_codes) {
+        $comp_codes = explode(' ', $comp_codes);
+        foreach ($comp_codes as $comp_code) {
+            $comp_id = parse_code($comp_code, 'composition');
+            $comp = DB_composition::lookup_id($comp_id);
+            if (!$comp) error_page(comp_code_msg());
+
+            // see if comp is already in program
+            foreach ($con->program as $perf_id) {
+                $perf = DB_performance::lookup_id($perf_id);
+                if ($perf->composition == $comp_id) {
+                    error_page('That composition is already in the program.');
+                }
+            }
+
+            $perf_id = DB_performance::insert(
+                sprintf("(composition, performers, tentative) values (%d, '%s',1)",
+                    (int)$comp_id,
+                    json_encode([])
+                )
+            );
+            $con->program[] = $perf_id;
+        }
+    }
+
     $venue = get_int('venue');
     $when = get_str('when', true);
     if ($when) {
@@ -340,12 +324,6 @@ function concert_action($id) {
         $when = 0;
     }
     $organization = get_int('organization');
-
-    // clear tentative from performances
-    foreach ($con->program as $perf_id) {
-        $p = DB_performance::lookup_id($perf_id);
-        $p->update('tentative=0');
-    }
 
     if ($id) {
         $c = DB_concert::lookup_id($id);
@@ -364,6 +342,7 @@ function concert_action($id) {
         );
         $id = DB_concert::insert($q);
     }
+    exit;
     header(
         sprintf('Location: item.php?type=%d&id=%d', CONCERT, $id)
     );
@@ -1198,71 +1177,11 @@ function score_form($id) {
         }
     }
 
-    // actions: add/remove file, add/remove comp
-    //
-    $message = '';
-    $error_msg = '';
-    $op = get_str('op', true);
-    switch ($op) {
-    case 'add_file':
-        $x = new StdClass;
-        $x->name = get_str('name');
-        $x->desc = get_str('desc');
-        $x->pages = get_int('pages');
-        $score->files[] = $x;
-        $message = 'Added file';
-        break;
-    case 'remove_file':
-        $index = get_str('index');
-        array_splice($score->files, $index);
-        $message = 'Removed file';
-        break;
-    case 'add_comp':
-        $comp_code = get_str('comp_code');
-        $comp_id = parse_code($comp_code, 'composition');
-        if (!$comp_id) {
-            $error_msg = comp_code_msg();
-            break;
-        }
-        $score->compositions[] = $comp_id;
-        $message = 'Added composition';
-        break;
-    case 'remove_comp':
-        $comp_id = get_int('comp_id');
-        $score->compositions = array_diff($score->compositions, [$comp_id]);
-        $message = 'Removed composition';
-        break;
-    }
     $score_json = json_encode($score);
 
-    //print_r($score);
     // show page
 
     select2_head($id?'Edit score':'Add score');
-    if ($message) echo "$message<p>\n";
-    if ($error_msg) echo "$error_msg<p>\n";
-
-    echo sprintf('
-        <form action=edit.php id=add_file>
-        <input type=hidden name=type value=%d>
-        <input type=hidden name=score value="%s">
-        <input type=hidden name=op value=add_file>
-        <input type=hidden name=id value=%d>
-        </form>
-        ',
-        SCORE, urlencode($score_json), $id
-    );
-
-    echo sprintf('
-        <form action=edit.php id=add_comp>
-        <input type=hidden name=type value=%d>
-        <input type=hidden name=score value="%s">
-        <input type=hidden name=op value=add_comp>
-        <input type=hidden name=id value=%d>
-        </form>
-        ',
-        SCORE, urlencode($score_json), $id
-    );
 
     form_start('edit.php');
     form_input_hidden('score', urlencode($score_json));
@@ -1271,48 +1190,47 @@ function score_form($id) {
     form_input_hidden('id', $id);
 
     form_row_start('Compositions');
-    $i = 1;
-    foreach ($score->compositions as $cid) {
-        $comp = DB_composition::lookup_id($cid);
-        $url = sprintf(
-            'edit.php?type=%d&op=remove_comp&id=%d&comp_id=%d&score=%s',
-            SCORE, $id, $cid, urlencode($score_json)
-        );
-        echo sprintf(
-            '%d. %s <p>&nbsp;&nbsp;&nbsp;&nbsp;<a href=%s>Delete</a><p>',
-            $i++,
-            composition_str($comp),
-            $url
-        );
+    if ($score->compositions) {
+        echo '<table width="50%"';
+        table_header('Name', 'Role', 'Remove');
+        foreach ($score->compositions as $cid) {
+            $comp = DB_composition::lookup_id($cid);
+            table_row(
+                composition_str($comp),
+                "<input type=checkbox name=remove_comp_$cid>"
+            );
+        }
+    } else {
+        echo dash();
     }
     echo '
-        <input type=submit value="Add composition:" form=add_comp>
-        <input name=comp_code placeholder="Composition code" form=add_comp>
+        <p><p>
+        Add composition:
+        <input name=comp_code placeholder="Composition code(s)">
         <p>
     ';
     form_row_end();
 
     form_row_start('Files');
-    $i = 0;
-    foreach ($score->files as $file) {
-        $url = sprintf(
-            'edit.php?type=%d&op=remove_file&id=%d&index=%d&score=%s',
-            SCORE, $id, $i, urlencode($score_json)
-        );
-        echo sprintf(
-            '%d. %s <p> &nbsp;&nbsp;&nbsp;&nbsp; %s <br> &nbsp;&nbsp;&nbsp;&nbsp; <a href=%s>Delete</a> <p> ',
-            $i++ + 1,
-            $file->desc,
-            $file->name,
-            $url
-        );
+    if ($score->files) {
+        echo '<table width="50%"';
+        table_header('Description', 'Name', 'Remove');
+        foreach ($score->files as $file) {
+            table_row(
+                $file->desc,
+                $file->name,
+                "<input type=checkbox name=remove_file_$i>"
+            );
+        }
+    } else {
+        echo dash();
     }
-    if (!$score->files) echo 'No files yet<p>';
     echo '
-        <input type=submit value="Add file:" form=add_file>
-        <input name=name placeholder="File name" form=add_file>
-        <input name=desc placeholder="Description" form=add_file>
-        <input name=pages placeholder="# pages" form=add_file>
+        <p><p>
+        Add file:
+        <input name=add_file_name placeholder="File name">
+        <input name=add_file_desc placeholder="Description">
+        <input name=add_file_pages placeholder="# pages">
     ';
     form_row_end();
 
@@ -1347,6 +1265,47 @@ function score_action($id) {
     $is_parts = get_int('is_parts', true);
     $is_selections = get_int('is_selections', true);
     $is_vocal = get_int('is_vocal', true);
+
+    foreach ($score->compositions as $comp_id) {
+        $x = "remove_comp_$comp_id";
+        if (get_str($x, true)) {
+            $score->compositions = array_diff($score->compositions, [$comp_id]);
+        }
+    }
+    $comp_codes = get_str('comp_codes', true);
+    if ($comp_codes) {
+        $comp_codes = explode(' ', $comp_codes);
+        foreach ($comp_codes as $comp_code) {
+            $comp_id = parse_code($comp_code, 'composition');
+            if (!$comp_id) {
+                error_page(comp_code_msg());
+            }
+            if (in_array($comp_id, $score->compositions)) {
+                error_page("Duplicate composition");
+            }
+            $score->compositions[] = $comp_id;
+        }
+    }
+
+    $new_files = [];
+    for ($i=0; $i<$score->files; $i++) {
+        $x = "remove_file_$i";
+        if (!get_str($x, true)) {
+            $new_files[] = $score->files[$i];
+        }
+    }
+    $score->files = $new_files;
+    $fdesc = get_str('add_file_desc', true);
+    if ($fdesc) {
+        // todo: check for unique
+        $fname = get_str('add_file_name', true);
+        $fpages = get_int('add_file_pages', true);
+        $x = new StdClass;
+        $x->name = $fname;
+        $x->desc = $fdesc;
+        $x->pages = $fpages;
+        $score->files[] = $x;
+    }
 
     if ($id) {
         $s = DB_score::lookup_id($id);
@@ -1459,30 +1418,6 @@ function perf_form($id) {
     //
 
     page_head($id?'Edit recording':'Add recording');
-
-    if ($message) echo "$message<p>\n";
-    if ($error_msg) echo "$error_msg<p>\n";
-
-    echo sprintf('
-        <form action=edit.php id=add_creator>
-        <input type=hidden name=type value=%d>
-        <input type=hidden name=comp value="%s">
-        <input type=hidden name=op value=add_performer>
-        <input type=hidden name=id value=%d>
-        </form>
-        ',
-        PERFORMANCE, urlencode($perf_json), $id
-    );
-    echo sprintf('
-        <form action=edit.php id=add_inst>
-        <input type=hidden name=type value=%d>
-        <input type=hidden name=comp value="%s">
-        <input type=hidden name=op value=add_file>
-        <input type=hidden name=id value=%d>
-        </form>
-        ',
-        PERFORMANCE, urlencode($perf_json), $id
-    );
 
     // main form
     form_start('edit.php');
