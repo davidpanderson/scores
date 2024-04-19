@@ -296,7 +296,7 @@ function comp_left($arg) {
     }
     if (editor()) {
         show_button(
-            sprintf('edit.php?type=%d', PERFORMANCE),
+            sprintf('edit.php?type=%d&composition=%d', PERFORMANCE, $c->id),
             'Add recording'
         );
     }

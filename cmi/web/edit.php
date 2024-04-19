@@ -307,7 +307,7 @@ function concert_action($id) {
             }
 
             $perf_id = DB_performance::insert(
-                sprintf("(composition, performers, tentative) values (%d, '%s',1)",
+                sprintf("(composition, is_recording, performers) values (%d, 0, '%s')",
                     (int)$comp_id,
                     json_encode([])
                 )
@@ -416,6 +416,20 @@ function location_action($id) {
 
 ///////////////  PERSON  /////////////////
 
+function empty_person() {
+    $p = new StdClass;
+    $p->first_name = '';
+    $p->last_name = '';
+    $p->born = 0;
+    $p->birth_place = 0;
+    $p->died = 0;
+    $p->death_place = 0;
+    $p->locations = [];
+    $p->sex = 0;
+    $p->ethnicity = [];
+    return $p;
+}
+
 function person_form($id) {
     if ($id) {
         $p = DB_person::lookup_id($id);
@@ -424,16 +438,7 @@ function person_form($id) {
         $p->ethnicity = $p->ethnicity?json_decode($p->ethnicity):[];
         select2_head("Edit person");
     } else {
-        $p = new StdClass;
-        $p->first_name = '';
-        $p->last_name = '';
-        $p->born = 0;
-        $p->birth_place = 0;
-        $p->died = 0;
-        $p->death_place = 0;
-        $p->locations = [];
-        $p->sex = 0;
-        $p->ethnicity = [];
+        $p = empty_person();
         select2_head("Add person");
     }
     form_start('edit.php');
@@ -455,7 +460,7 @@ function person_form($id) {
     select2_multi('Locations', 'locations', location_options(), $p->locations);
     form_select('Sex', 'sex', sex_options(), $p->sex);
     select2_multi('Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
-    form_submit('Update');
+    form_submit($id?'Update':'Add');
     form_end();
     page_tail();
 }
@@ -739,32 +744,20 @@ function composition_form($id) {
             }
         }
     } else {
-        $comp_json = get_str('comp', true);
-        if ($comp_json) {
-            $comp_json = urldecode($comp_json);
-            $comp = json_decode($comp_json);
-        } else {
-            $comp = empty_composition();
-            $parent = get_int('parent', true);
-            if ($parent) {
-                $comp->parent = $parent;
-            }
-            $arrangement_of = get_int('arrangement_of', true);
-            if ($arrangement_of) {
-                $comp->arrangement_of = $arrangement_of;
-            }
-        }
-        if ($comp->parent) {
+        $comp = empty_composition();
+        $parent = get_int('parent', true);
+        if ($parent) {
+            $comp->parent = $parent;
             $parent_comp = DB_composition::lookup_id($comp->parent);
             $is_section = true;
         }
-        if ($comp->arrangement_of) {
+        $arrangement_of = get_int('arrangement_of', true);
+        if ($arrangement_of) {
+            $comp->arrangement_of = $arrangement_of;
             $parent_comp = DB_composition::lookup_id($comp->arrangement_of);
             $is_arrangement = true;
         }
     }
-
-    $comp_json = json_encode($comp);
 
     // show page
     //
@@ -779,7 +772,6 @@ function composition_form($id) {
     select2_head($id?"Edit $x":"Add $x");
     
     form_start('edit.php', 'get');
-    form_input_hidden('comp', urlencode($comp_json));
     form_input_hidden('type', COMPOSITION);
     form_input_hidden('submit', true);
     form_input_hidden('id', $id);
@@ -882,9 +874,16 @@ function composition_form($id) {
 
 function composition_action($id) {
     //print_r($_GET); exit;
-    $comp_json = urldecode(get_str('comp'));
-    $comp = json_decode($comp_json);
     //print_r($comp); exit;
+
+    if ($id) {
+        $comp = DB_composition::lookup_id($id);
+        $comp->creators = json_decode($comp->creators);
+        $comp->instrument_combos = json_decode($comp->instrument_combos);
+    } else {
+        $comp = empty_composition();
+    }
+
     $title = get_str('title', true);
     $opus = get_str('opus', true);
 
@@ -1164,27 +1163,18 @@ function score_form($id) {
         $score->files = json_decode($score->files);
         $score->languages = json_decode($score->languages);
     } else {
-        $score_json = get_str('score', true);
-        if ($score_json) {
-            $score_json = urldecode($score_json);
-            $score = json_decode($score_json);
-        } else {
-            $score = empty_score();
-            $comp_id = get_int('comp_id', true);
-            if ($comp_id) {
-                $score->compositions = [$comp_id];
-            }
+        $score = empty_score();
+        $comp_id = get_int('comp_id', true);
+        if ($comp_id) {
+            $score->compositions = [$comp_id];
         }
     }
-
-    $score_json = json_encode($score);
 
     // show page
 
     select2_head($id?'Edit score':'Add score');
 
     form_start('edit.php');
-    form_input_hidden('score', urlencode($score_json));
     form_input_hidden('type', SCORE);
     form_input_hidden('submit', true);
     form_input_hidden('id', $id);
@@ -1252,8 +1242,14 @@ function score_form($id) {
 }
 
 function score_action($id) {
-    $score_json = urldecode(get_str('score'));
-    $score = json_decode($score_json);
+    if ($id) {
+        $score = DB_score::lookup_id($id);
+        if (!$score) error_page("No score $id");
+        $score->compositions = json_decode($score->compositions);
+        $score->files = json_decode($score->files);
+    } else {
+        $score = empty_score();
+    }
 
     $publisher = get_int('publisher', true);
     $license = get_int('license', true);
@@ -1308,8 +1304,6 @@ function score_action($id) {
     }
 
     if ($id) {
-        $s = DB_score::lookup_id($id);
-        if (!$s) error_page("No score $id");
         $q = sprintf(
             "compositions='%s', files='%s', publisher=%d, license=%d, languages='%s', publish_date=%d, edition_number='%s', image_type='%s', is_parts=%d, is_selections=%d, is_vocal=%d",
             json_encode($score->compositions, JSON_NUMERIC_CHECK),
@@ -1324,7 +1318,7 @@ function score_action($id) {
             $is_selections,
             $is_vocal
         );
-        $s->update($q);
+        $score->update($q);
     } else {
         $q = sprintf(
             "(compositions, files, publisher, license, languages, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal) values ('%s', '%s', %d, %d, '%s', %d, '%s', '%s', %d, %d, %d)",
@@ -1363,93 +1357,148 @@ function empty_perf() {
     return $x;
 }
 
-// performance (e.g. recording)
-// lists: performers, files
+// Note: Performance can represent either
+// - a live performance (part of a concert)
+// - a recording
+// This interface is used only for the latter
+// (from the Add Recording button on composition page)
 //
 function perf_form($id) {
     if ($id) {
         $perf = DB_performance::lookup_id($id);
+        $perf->performers = json_decode($perf->performers);
+        $perf->files = json_decode($perf->files);
     } else {
-        $perf_json = get_str('perf', true);
-        if ($perf_json) {
-            $perf_json = urldecode($perf_json);
-            $perf = json_decode($perf_json);
-        } else {
-            $perf = empty_perf();
-        }
+        $perf = empty_perf();
+        $perf->composition = get_int('composition');
+        $perf->is_recording = 1;
     }
-
-    // do edits
-    //
-    $message = '';
-    $error_msg = '';
-    $op = get_str('op', true);
-    switch ($op) {
-    case 'add_performer':
-        $prole_code = get_str('prole_code', true);
-        $prole_id = parse_code($prole_code, 'person_role');
-        if (!$prole_id) {
-            $error_msg = person_role_code_msg();
-            break;
-        }
-        if (in_array($prole_id, $perf->performers)) {
-            $error_msg = 'Duplicate performer';
-        } else {
-            $perf->performers[] = $prole_id;
-            $message = 'Added performer';
-        }
-        break;
-    case 'remove_performer':
-        $prole_id = get_int('prole_id');
-        $perf->performers= array_diff($perf->performers, [$prole_id]);
-        $message = 'Removed performer';
-        break;
-    case 'add_files':
-        break;
-    case 'remove_files':
-        break;
-    default:
-        error_page("Bad op $op");
-    }
-
-    $perf_json = json_encode($perf);
-
-    // show page
-    //
 
     page_head($id?'Edit recording':'Add recording');
 
-    // main form
     form_start('edit.php');
-    form_input_hidden('perf', urlencode($perf_json));
     form_input_hidden('type', PERFORMANCE);
     form_input_hidden('submit', true);
     form_input_hidden('id', $id);
 
+    form_row_start('Performers');
+    if ($perf->performers) {
+        start_table();
+        table_header('Name', 'Role', 'Remove');
+        foreach ($perf->performers as $pr_id) {
+            $prole = DB_person_role::lookup_id($pr_id);
+            [$name, $role] = person_role_array($prole);
+            table_row(
+                $name, $role,
+                sprintf('<input type=checkbox name=remove_role_%d', $pr_id)
+            );
+        }
+        end_table();
+    } else {
+        echo dash();
+    }
+    echo '<p>Add performers: <input name=add_perfs placeholder="Role codes">';
+    form_row_end();
+
+    form_row_start('Files');
+    if ($perf->files) {
+        start_table();
+        table_header('Description', 'Filename', 'Remove');
+        $i = 0;
+        foreach ($perf->files as $f) {
+            table_row(
+                $f->desc, $f->name,
+                sprintf('<input type=checkbox name=remove_file_%d', $i)
+            );
+            $i++;
+        }
+        end_table();
+    } else {
+        echo dash();
+    }
+    echo '<p>Add file:
+        <input name=add_file_desc placeholder="Description">
+        <input name=add_file_name placeholder="Name">
+    ';
+    form_row_end();
+
     form_input_text('Instrumentation', 'instrumentation', $perf->instrumentation);
+    form_checkboxes('Synthesized', [['is_synthesized', '', $perf->is_synthesized]]);
+    form_input_text('Section', 'section', $perf->section);
     form_submit($id?'Update recording':'Add recording');
     page_tail();
 }
 
 function perf_action($id) {
-    $perf_json = urldecode(get_str('perf'));
-    $perf = json_decode($perf_json);
-
-    $id = get_int('id', true);
     if ($id) {
-        $p = DB_performance::lookup_id($id);
-        if (!$p) error_page("No performance $id");
+        $perf = DB_performance::lookup_id($id);
+        $perf->performers = json_decode($perf->performers);
+        $perf->files = json_decode($perf->files);
+    } else {
+        $perf = empty_perf();
+    }
+
+    // handle list add/remove
+
+    $new_perfs = [];
+    foreach ($perf->performers as $pr_id) {
+        $x = "remove_role_$pr_id";
+        if (get_str($x, true)) continue;
+        $new_perfs[] = $pr_id;
+    }
+    $perf->performers = $new_perfs;
+
+    $add_perfs = get_str('add_perfs', true);
+    if ($add_perfs) {
+        $add_perfs = explode(' ', $add_perfs);
+        foreach ($add_perfs as $prole_code) {
+            $prole_id = parse_code($prole_code, 'person_role');
+            if (!$prole_id) error_page(person_role_code_msg());
+            $perf->performers[] = $prole_id;
+        }
+    }
+
+    $new_files = $perf->files;
+    $i = 0;
+    foreach ($perf->files as $f) {
+        $x = "remove_file_$i";
+        if (get_str($x, true)) continue;
+        $new_files[] = $f;
+    }
+    $perf->files = $new_files;
+
+    $desc = get_str('add_file_desc', true);
+    if ($desc) {
+        $f = new StdClass;
+        $f->desc = $desc;
+        $f->name = get_str('add_file_name', true);
+        $perf->files[] = $f;
+    }
+
+    if ($id) {
         $q = sprintf(
-            "",
+            "performers='%s', files='%s', is_synthesized=%d, section='%s', instrumentation='%s'",
+            json_encode($perf->performers, JSON_NUMERIC_CHECK),
+            json_encode($perf->files, JSON_NUMERIC_CHECK),
+            get_str('is_synthesized', true)?1:0,
+            DB::escape(get_str('section')),
+            DB::escape(get_str('instrumentation'))
         );
-        $p->update($q);
+        $perf->update($q);
     } else {
         $q = sprintf(
-            "() values ()",
+            "(composition, performers, is_recording, files, is_synthesized, section, intrumentation) values (%d, '%s', %d, '%s', %d, '%s', '%s')",
+            $comp_id,
+            json_encode($perf->performers, JSON_NUMERIC_CHECK),
+            get_str('is_recording', true)?1:0,
+            json_encode($perf->files, JSON_NUMERIC_CHECK),
+            get_str('is_synthesized', true)?1:0,
+            DB::escape(get_str('section')),
+            DB::escape(get_str('instrumentation'))
         );
         $id = DB_performance::insert($q);
     }
-
+    exit;
     header(
         sprintf('Location: item.php?type=%d&id=%d', PERFORMANCE, $id)
     );
