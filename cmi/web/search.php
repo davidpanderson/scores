@@ -111,9 +111,9 @@ function do_person($params) {
                 $p->id,
                 $p->first_name, $p->last_name
             ),
-            sex_id_to_name($p->sex),
-            DB::date_num_to_str($p->born),
-            locations_str($p->locations)
+            dash(sex_id_to_name($p->sex)),
+            dash(DB::date_num_to_str($p->born)),
+            dash(locations_str($p->locations))
         );
     }
     end_table();
@@ -210,6 +210,9 @@ function comp_encode($params) {
     return $x;
 }
 
+// return list of inst combos that contain the given instruments
+// (and possibly others)
+//
 function get_combos($insts, $others_ok) {
     $spec_ids = [];
     $spec_min = [];
@@ -504,7 +507,7 @@ function do_organization() {
                 ORGANIZATION, $org->id, $org->name
             ),
             organization_type_str($org->type),
-            location_id_to_name($org->location)
+            $org->location
         );
     }
     end_table();

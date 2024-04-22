@@ -43,6 +43,142 @@ function get_date($field_name, $get_name) {
     return 0;
 }
 
+function key_syntax($s) {
+    return "
+<p>
+'$s' is not a valid key.
+Please go back and fix it.
+<p>
+Keys are notated as 
+<pre>
+&lt;note> &lt;mode>
+</pre>
+or
+<pre>
+&lt;note> &lt;accidental> &lt;mode>
+</pre>
+where
+<ul>
+<li> &lt;note> is A, B, C, D, E, F or G
+<li> &lt;accidental>  is 'sharp', or 'flat'
+<li> &lt;mode> is
+    'major', 'minor', 'Phrygian', 'Lydian', 'Mixolydian', or 'Locrian'.
+</ul>
+Examples:
+<p>
+<pre>
+C sharp major
+D minor
+E flat Lydian
+</pre>
+<p>
+If a composition has more than one key,
+list them in order, separated by commas.
+";
+}
+
+function metro_syntax($s) {
+    return "
+<p>
+'$s' is not a valid metronome marking.
+Please go back and fix it.
+<p>
+Metronome markings are notated as
+&lt;unit> = &lt;value>
+where &lt;unit> is
+'eighth', 'quarter', 'half',
+'dotted eighth', 'dotted quarter', or 'dotted half'
+and &lt;value> is an integer.
+Examples:
+<pre>
+quarter = 120
+dotted eighth = 84
+</pre>
+<p>
+If a composition has more than one metronome marking,
+list them in order, separated by commas.
+";
+}
+
+function time_sig_syntax($s) {
+    return "
+<p>
+'$s' is not a valid time signature.
+Please go back and fix it.
+<p>
+Time signatures are notated as
+&lt;count>/&lt;value>
+where &lt;count> and &lt;value> are integers.
+Examples:
+<pre>
+4/4
+7/16
+</pre>
+<p>
+If a composition has more than one time signature,
+list them in order, separated by commas.
+";
+}
+
+function is_note($s) {
+    return in_array($s, ['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+}
+
+function is_mode($s) {
+    return in_array($s, ['major', 'minor', 'Phrygian', 'Lydian', 'Mixolydian', 'Locrian']);
+}
+
+function is_accidental($s) {
+    return in_array($s, ['sharp', 'flat']);
+}
+
+// accept strings of the form
+// C sharp minor, G flat Lydian
+//
+function valid_keys($s) {
+    if (!$s) return true;
+    $t = explode(',', $s);
+    foreach ($t as $k) {
+        $a = explode(' ', trim($k));
+        switch (count($a)) {
+        case 2:
+            if (!is_note($a[0])) return false;
+            if (!is_mode($a[1])) return false;
+            break;
+        case 3:
+            if (!is_note($a[0])) return false;
+            if (!is_accidental($a[1])) return false;
+            if (!is_mode($a[2])) return false;
+            break;
+        default: return false;
+        }
+    }
+    return true;
+}
+
+function valid_sigs($s) {
+    if (!$s) return true;
+    $t = explode('/', $s);
+    if (count($t) != 2) return false;
+    if (!is_int($t[0])) return false;
+    if (!is_int($t[1])) return false;
+    return true;
+}
+
+function is_duration($s) {
+    return (in_array($s, ['quarter', 'eighth', 'half note', 'dotted quarter', 'dotted eighth', 'dotted half note']));
+}
+
+function valid_metros($s) {
+    if (!$s) return true;
+    $t = explode('=', $s);
+    if (count($t) != 2) return false;
+    print_r($t);
+    if (!is_duration(trim($t[0]))) return false;
+    if (!is_numeric(trim($t[1]))) return false;
+    return true;
+}
+
 // start a form row with the given title
 //
 function form_row_start($title) {
@@ -378,15 +514,18 @@ function location_form($id) {
 }
 
 function location_action($id) {
+    $name = get_str('name');
+    $loc_type = get_int('loc_type');
+    if (!$name) error_page('Missing name');
+    if (!$loc_type) error_page('Missing type');
     if ($id) {
         $loc = DB_location::lookup_id($id);
         if (!$loc) {
             error_page("No location: $id\n");
         }
-        $name = get_str('name');
         $q = sprintf("name='%s', type=%d, parent=%d",
             DB::escape($name),
-            get_int('loc_type'),
+            $loc_type,
             get_int('parent')
         );
         $ret = $loc->update($q);
@@ -397,10 +536,9 @@ function location_action($id) {
             error_page('Update failed');
         }
     } else {
-        $name = get_str('name');
         $q = sprintf("(name, type, parent) values ('%s', %d, %d)",
             DB::escape($name),
-            get_int('loc_type'),
+            $loc_type,
             get_int('parent')
         );
         $ret = DB_location::insert($q);
@@ -459,7 +597,7 @@ function person_form($id) {
     form_select('Death place', 'death_place', location_options(), $p->death_place);
     select2_multi('Locations', 'locations', location_options(), $p->locations);
     form_select('Sex', 'sex', sex_options(), $p->sex);
-    select2_multi('Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
+    select2_multi('Race/Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
     form_submit($id?'Update':'Add');
     form_end();
     page_tail();
@@ -468,15 +606,16 @@ function person_form($id) {
 function person_action($id) {
     $first_name = get_str('first_name');    
     $last_name = get_str('last_name');
+    if (!$first_name && !$last_name) {
+        error_page('Missing name');
+    }
     $born = DB::date_num_parse(get_str('born'));
     $birth_place = get_int('birth_place');
     $died = DB::date_num_parse(get_str('died'));
     $death_place = get_int('death_place');
-    $locations = get_str('locations', true);
-    if (!$locations) $locations = [];
+    $locations = get_int_array('locations');
     $sex = get_int('sex');
-    $ethnicity = get_str('ethnicity', true);
-    if (!$ethnicity) $ethnicity = [];
+    $ethnicity = get_int_array('ethnicity');
     if ($id) {
         $p = DB_person::lookup_id($id);
         if (!$p) error_page("No person $id");
@@ -791,7 +930,7 @@ function composition_form($id) {
         // creators
         form_row_start('Creators');
         if ($comp->creators) {
-            echo '<table width="50%"';
+            start_table('', 'width:50%');
             table_header('Name', 'Role', 'Remove');
             foreach ($comp->creators as $prole_id) {
                 $prole = DB_person_role::lookup_id($prole_id);
@@ -802,7 +941,7 @@ function composition_form($id) {
                     "<input type=checkbox name=remove_creator_$prole_id>"
                 );
             }
-            echo '</table>';
+            end_table();
         } else {
             echo dash('');
         }
@@ -817,7 +956,7 @@ function composition_form($id) {
         //
         form_row_start('Instrumentations');
         if ($comp->instrument_combos) {
-            echo '<table width="50%"';
+            start_table('', 'width:50%');
             table_header('Name', 'Remove');
             foreach ($comp->instrument_combos as $icid) {
                 $ic = DB_instrument_combo::lookup_id($icid);
@@ -826,7 +965,7 @@ function composition_form($id) {
                     "<input type=checkbox name=remove_ic_$icid>"
                 );
             }
-            echo '</table>';
+            end_table();
         }
         if (!$comp->instrument_combos) echo dash('');
         echo '
@@ -857,8 +996,8 @@ function composition_form($id) {
     form_input_text('Tempo markings', 'tempo_markings', $comp->tempo_markings);
     form_input_text('Metronome markings', 'metronome_markings', $comp->metronome_markings);
     form_input_text('Keys', 'keys', $comp->_keys);
-    form_input_text('Average duration, seconds', 'avg_duration_sec', $comp->avg_duration_sec);
-    form_input_text('# measures', 'n_bars', $comp->n_bars);
+    form_input_text('Average duration, seconds', 'avg_duration_sec', blank($comp->avg_duration_sec));
+    form_input_text('# measures', 'n_bars', blank($comp->n_bars));
 
     if ($is_section) {
         form_submit($id?'Update section':'Add section');
@@ -878,8 +1017,8 @@ function composition_action($id) {
 
     if ($id) {
         $comp = DB_composition::lookup_id($id);
-        $comp->creators = json_decode($comp->creators);
-        $comp->instrument_combos = json_decode($comp->instrument_combos);
+        $comp->creators = json_decode2($comp->creators);
+        $comp->instrument_combos = json_decode2($comp->instrument_combos);
     } else {
         $comp = empty_composition();
     }
@@ -921,13 +1060,21 @@ function composition_action($id) {
 
     // get other fields
     //
-    $comp_types = get_str('comp_types', true);
-    if (!$comp_types) $comp_types = [];
+    $comp_types = get_int_array('comp_types');
     $dedication = get_str('dedication', true);
     $time_signatures = get_str('time_signatures', true);
+    if (!valid_sigs($time_signatures)) {
+        error_page(time_sig_syntax($time_signatures));
+    }
     $tempo_markings = get_str('tempo_markings', true);
     $metronome_markings = get_str('metronome_markings', true);
+    if (!valid_metros($metronome_markings)) {
+        error_page(metro_syntax($metronome_markings));
+    }
     $keys = get_str('keys', true);
+    if (!valid_keys($keys)) {
+        error_page(key_syntax($keys));
+    }
     $avg_duration_sec = get_int('avg_duration_sec', true);
     $n_bars = get_int('n_bars', true);
     $composed = get_date('Composed', 'composed');
@@ -1161,7 +1308,7 @@ function score_form($id) {
         $score = DB_score::lookup_id($id);
         $score->compositions = json_decode($score->compositions);
         $score->files = json_decode($score->files);
-        $score->languages = json_decode($score->languages);
+        $score->languages = json_decode2($score->languages);
     } else {
         $score = empty_score();
         $comp_id = get_int('comp_id', true);
@@ -1181,8 +1328,8 @@ function score_form($id) {
 
     form_row_start('Compositions');
     if ($score->compositions) {
-        echo '<table width="50%"';
-        table_header('Name', 'Role', 'Remove');
+        start_table('', 'width:50%');
+        table_header('Name', 'Remove');
         foreach ($score->compositions as $cid) {
             $comp = DB_composition::lookup_id($cid);
             table_row(
@@ -1190,13 +1337,14 @@ function score_form($id) {
                 "<input type=checkbox name=remove_comp_$cid>"
             );
         }
+        end_table();
     } else {
         echo dash();
     }
     echo '
         <p><p>
         Add composition:
-        <input name=comp_code placeholder="Composition code(s)">
+        <input name=comp_codes placeholder="Composition code(s)">
         <p>
     ';
     form_row_end();
@@ -1205,12 +1353,14 @@ function score_form($id) {
     if ($score->files) {
         echo '<table width="50%"';
         table_header('Description', 'Name', 'Remove');
+        $i = 0;
         foreach ($score->files as $file) {
             table_row(
                 $file->desc,
                 $file->name,
                 "<input type=checkbox name=remove_file_$i>"
             );
+            $i++;
         }
     } else {
         echo dash();
@@ -1227,7 +1377,7 @@ function score_form($id) {
     form_select('Publisher', 'publisher', organization_options(), $score->publisher);
     form_select('License', 'license', license_options(), $score->license);
     select2_multi('Languages', 'languages', language_options(), $score->languages);
-    form_input_text('Publish date', 'publish_date', $score->publish_date);
+    form_input_text('Publish date', 'publish_date', DB::date_num_to_str($score->publish_date), 'text', 'placeholder="YYYY-MM-DD"');
     form_input_text('Edition number', 'edition_number', $score->edition_number);
     form_select('Image type', 'image_type', image_type_options(), $score->image_type);
     $x = [
@@ -1253,8 +1403,7 @@ function score_action($id) {
 
     $publisher = get_int('publisher', true);
     $license = get_int('license', true);
-    $languages = get_str('languages', true);
-    if (!$languages) $languages=[];
+    $languages = get_int_array('languages');
     $publish_date = get_int('publish_date', true);
     $edition_number = get_str('edition_number', true);
     $image_type = get_str('image_type', true);
@@ -1284,7 +1433,7 @@ function score_action($id) {
     }
 
     $new_files = [];
-    for ($i=0; $i<$score->files; $i++) {
+    for ($i=0; $i<count($score->files); $i++) {
         $x = "remove_file_$i";
         if (!get_str($x, true)) {
             $new_files[] = $score->files[$i];

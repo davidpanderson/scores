@@ -13,11 +13,12 @@ function person_left($p) {
     row2('First name', $p->first_name);
     row2('Last name', $p->last_name);
     row2('Born', DB::date_num_to_str($p->born));
-    row2('Birth place', location_id_to_name($p->birth_place));
+    row2('Birth place', dash(location_id_to_name($p->birth_place)));
     row2('Died', DB::date_num_to_str($p->died));
-    row2('Death place', location_id_to_name($p->death_place));
+    row2('Death place', dash(location_id_to_name($p->death_place)));
     row2('Locations', locations_str($p->locations));
     row2('Sex', sex_id_to_name($p->sex));
+    row2('Race/Ethnicity', ethnicity_str(json_decode2($p->ethnicity)));
     if (editor()) {
         row2('',
             button_text(
@@ -27,8 +28,8 @@ function person_left($p) {
         );
     }
     $prs = DB_person_role::enum("person=$p->id");
+    $x = [];
     if ($prs) {
-        $x = [];
         foreach ($prs as $pr) {
             $s = sprintf('%s %s as %s',
                 $p->first_name, $p->last_name,
@@ -43,6 +44,7 @@ function person_left($p) {
             $x[] = $s;
         }
     }
+    if (!$x) $x[] = dash();
     if (editor()) {
         $x[] = '<hr>';
         $x[] = button_text(
@@ -504,7 +506,7 @@ function score_left($score) {
         $lic_str = $lic->name;
     }
     row2('License', dash($lic_str));
-    row2('Published', DB::date_num_to_str($score->publish_date));
+    row2('Published', dash(DB::date_num_to_str($score->publish_date)));
     row2('Edition', dash($score->edition_number));
     row2('Parts?', $score->is_parts?'Yes':'No');
     row2('Selections?', $score->is_selections?'Yes':'No');
@@ -514,7 +516,7 @@ function score_left($score) {
     echo '<h3>Files</h3>';
     $files = json_decode($score->files);
     start_table();
-    table_header('Description', 'Names', 'Pages');
+    table_header('Description', 'Name', 'Pages');
     foreach ($files as $file) {
         table_row(
             $file->desc,

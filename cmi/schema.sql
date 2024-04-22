@@ -21,8 +21,8 @@ create table location (
     adjective               varchar(255),
     name_native             varchar(255),
     adjective_native        varchar(255),
-    type                    integer,
-    parent                  integer,
+    type                    integer         not null default 0,
+    parent                  integer         not null default 0,
     ancestors               json,
     primary key(id),
     unique(name, type, parent)
@@ -58,13 +58,13 @@ create table person (
     first_name              varchar(90)     not null,
     last_name               varchar(90)     not null,
     alternate_names         text,
-    born                    integer,
-    birth_place             integer,
-    died                    integer,
+    born                    integer         not null default 0,
+    birth_place             integer         not null default 0,
+    died                    integer         not null default 0,
     death_place             text,
     locations               JSON,
     periods                 JSON,
-    sex                     integer,
+    sex                     integer         not null default 0,
     ethnicity               JSON,
     primary key(id)
 );
@@ -105,10 +105,10 @@ create table ensemble (
     id                      integer         not null auto_increment,
     name                    varchar(190)    not null,
     alternate_names         text,
-    started                 integer,
-    ended                   integer,
-    type                    integer,
-    location                integer,
+    started                 integer         not null default 0,
+    ended                   integer         not null default 0,
+    type                    integer         not null default 0,
+    location                integer         not null default 0,
     members                 json,
         # person_roles
     period                  integer         not null default 0,
@@ -126,9 +126,9 @@ create table organization_type (
 create table organization (
     id                      integer         not null auto_increment,
     name                    varchar(255)    not null,
-    type                    integer,
-    started                 integer,
-    ended                   integer,
+    type                    integer         not null default 0,
+    started                 integer         not null default 0,
+    ended                   integer         not null default 0,
     location                text,           -- ideally should be an ID
     url                     varchar(255),
     primary key(id),
@@ -172,10 +172,15 @@ create table role (
 # and an instrument if role is performer
 create table person_role (
     id                      integer         not null auto_increment,
-    person                  integer,
-    ensemble                integer,
-    instrument              integer,
-    role                    integer,
+    person                  integer         not null default 0,
+    ensemble                integer         not null default 0,
+    instrument              integer         not null default 0,
+    role                    integer         not null default 0,
+    nratings1               integer         not null default 0,
+    rating_sum1             integer         not null default 0,
+    nratings2               integer         not null default 0,
+    rating_sum2             integer         not null default 0,
+    nreviews                integer         not null default 0,
     primary key(id)
 );
 alter table person_role add index (person);
@@ -201,9 +206,9 @@ create table composition (
         # arrangement: null
     alternative_title       text,
     opus_catalogue          text,
-    composed                integer,
-    published               integer,
-    performed               integer,
+    composed                integer         not null default 0,
+    published               integer         not null default 0,
+    performed               integer         not null default 0,
     dedication              text,
     tempo_markings          text,
     metronome_markings      text,   -- quarter=120
@@ -217,11 +222,16 @@ create table composition (
     arrangement_of          integer         not null default 0,
     language                integer,
     instrument_combos       json,
-    ensemble_type           integer,
-    period                  integer,
-    avg_duration_sec        integer,
-    n_movements             integer,
-    n_bars                  integer,
+    ensemble_type           integer         not null default 0,
+    period                  integer         not null default 0,
+    avg_duration_sec        integer         not null default 0,
+    n_movements             integer         not null default 0,
+    n_bars                  integer         not null default 0,
+    nratings1               integer         not null default 0,
+    rating_sum1             integer         not null default 0,
+    nratings2               integer         not null default 0,
+    rating_sum2             integer         not null default 0,
+    nreviews                integer         not null default 0,
     primary key(id)
 );
 alter table composition add index comp_lt(long_title);
@@ -244,15 +254,21 @@ create table score (
         -- desc (e.g. 'Cellos and Basses')
         -- name
         -- pages
-    publisher               integer,        -- organization
-    license                 integer,
+    publisher               integer         not null default 0,
+        -- organization
+    license                 integer         not null default 0,
     languages               json,           -- language of editorial notes
-    publish_date            integer,
+    publish_date            integer         not null default 0,
     edition_number          text,
     image_type              text,           -- e.g. typeset, normal scan
-    is_parts                tinyint,
-    is_selections           tinyint,
-    is_vocal                tinyint,
+    is_parts                tinyint         not null default 0,
+    is_selections           tinyint         not null default 0,
+    is_vocal                tinyint         not null default 0,
+    nratings1               integer         not null default 0,
+    rating_sum1             integer         not null default 0,
+    nratings2               integer         not null default 0,
+    rating_sum2             integer         not null default 0,
+    nreviews                integer         not null default 0,
     primary key(id)
 );
 alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
@@ -260,11 +276,11 @@ alter table score add index scomp( (cast(compositions->'$' as unsigned array)) )
 create table venue (
     id                      integer         not null auto_increment,
     name                    varchar(255),
-    location                integer,
+    location                integer         not null default 0,
     address                 text,
-    capacity                integer,
-    started                 integer,
-    ended                   integer,
+    capacity                integer         not null default 0,
+    started                 integer         not null default 0,
+    ended                   integer         not null default 0,
     primary key(id)
 );
 
@@ -274,12 +290,10 @@ create table venue (
 
 create table performance (
     id                      integer         not null auto_increment,
-    composition             integer,
+    composition             integer         not null default 0,
     performers              json,
         -- person_roles
-    tentative               tinyint,
-        -- part of a concert being edited; can delete if old
-    is_recording            tinyint,
+    is_recording            tinyint         not null default 0,
 
     -- the following relevant if recording
     files                   json,
@@ -287,39 +301,44 @@ create table performance (
         -- desc (e.g. mvt title)
         -- name (depends on release type; e.g. IMSLP filenames)
         -- (could have type, encoding params, size and duration too)
-    is_synthesized          tinyint,
+    is_synthesized          tinyint         not null default 0,
     section                 text,
         -- 'Complete' or 'Selections' or name of section/mvt
     instrumentation         text,
         -- null if native instrumentation
+    nratings1               integer         not null default 0,
+    rating_sum1             integer         not null default 0,
+    nratings2               integer         not null default 0,
+    rating_sum2             integer         not null default 0,
+    nreviews                integer         not null default 0,
     primary key(id)
 );
 alter table performance add index perf_comp(composition);
 
 create table concert (
     id                      integer         not null auto_increment,
-    _when                   integer,
-    venue                   integer,
-    audience_size           integer,
-    organization            integer,
+    _when                   integer         not null default 0,
+    venue                   integer         not null default 0,
+    audience_size           integer         not null default 0,
+    organization            integer         not null default 0,
         -- sponsor or organizer
     program                 json,
         -- performances (in order)
     primary key(id)
 );
 
--- a way that you can hear recordings:
--- a CD, IMSLP file set, YouTube video
+-- a collection of performances
+-- a CD or something analogous
 
 create table _release (
     id                      integer         not null auto_increment,
     title                   text,           -- e.g. CD title
     performances            json,
-    release_date            integer,
+    release_date            integer         not null default 0,
     catalog_num             text,
     url                     text,
-    license                 integer,
-    publisher               integer,
+    license                 integer         not null default 0,
+    publisher               integer         not null default 0,
         # organization
     primary key(id)
 );
@@ -328,32 +347,37 @@ create table _release (
 -- composition
 -- score
 -- performance
--- person-role
+-- person_role
 
 create table rating (
     id                      integer         not null auto_increment,
-    created                 integer,
-    user                    integer,
-    target                  integer,
-    type                    integer,        -- see cmi_db.inc
+    created                 integer         not null default 0,
+    user                    integer         not null default 0,
+    target                  integer         not null default 0,
+        -- ID of item being rated
+    type                    integer         not null default 0,
+        -- type of item being rated; see values in cmi_db.inc
     attr1                   integer,
         -- how much you like the composition or performance
         -- for scores, quality of edition
+        -- null if no rating
     attr2                   integer,
         -- for compositions, difficulty
         -- for recorded performance, sound quality
         -- for scores, quality of scan
+        -- null if no rating
     review                  text,
     primary key(id)
 );
 alter table rating add unique(user, target, type);
 
-create table rating_useful (
+create table review_useful (
     id                      integer         not null auto_increment,
-    created                 integer,
-    user                    integer,
-    rating                  integer,
-    useful                  tinyint,        -- 1 = useful, 0 = not useful
+    created                 integer         not null default 0,
+    user                    integer         not null default 0,
+    rating                  integer         not null default 0,
+    useful                  tinyint         not null default 0,
+        -- 1 = useful, 2 = not useful, 3 = report
     primary key(id)
 );
-alter table rating_useful add unique(user, rating);
+alter table review_useful add unique(user, rating);

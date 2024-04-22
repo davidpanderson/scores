@@ -1,6 +1,12 @@
 <?php
 
 // forms and handlers for rating/review/useful
+//
+// things that can be rated:
+// composition
+// score
+// performance
+// person_role
 
 require_once('../inc/util.inc');
 require_once('cmi_db.inc');

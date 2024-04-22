@@ -98,9 +98,9 @@ class DB_rating extends Table {
     public static $table_name = 'rating';
     public static $class_name = 'DB_rating';
 }
-class DB_rating_useful extends Table {
-    public static $table_name = 'rating_useful';
-    public static $class_name = 'DB_rating_useful';
+class DB_review_useful extends Table {
+    public static $table_name = 'review_useful';
+    public static $class_name = 'DB_review_useful';
 }
 
 // table codes
@@ -121,4 +121,5 @@ define ('PARTS', 1);
 define ('SELECTIONS', 2);
 define ('VOCAL', 4);
 define ('SKETCHES', 5);
+
 ?>

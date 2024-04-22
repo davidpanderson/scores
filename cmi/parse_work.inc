@@ -1126,15 +1126,17 @@ function parse_movement_line($s) {
     return $x;
 }
 
-// parse 'quarter|80' into a string, or null
-//
 $metro_units = [
     'quarter' => 'quarter',
     'eighth' => 'eighth',
-    'quard' => 'dotted quarter',
     'half' => 'half note',
+    'quard' => 'dotted quarter',
+    'eighthd' => 'dotted eighth',
     'halfd' => 'dotted half note'
 ];
+
+// parse 'quarter|80' into a string, or null
+//
 function parse_metro($x) {
     global $metro_units;
     if (count($x) != 2) return null;

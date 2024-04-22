@@ -11,16 +11,32 @@ require_once('ser.inc');
 
 define('SHOW_COMP_QUERY', 0);       // show comp search queries
 
+function get_int_array($name) {
+    return array_map('intval', get_array($name));
+}
+
 // if arg is blank, return em dash
 //
 function dash($s=null) {
     return $s?$s:'&mdash;';
 }
 
+// if arg is falsey, return '', else arg
+//
+function blank($s) {
+    return $s?$s:'';
+}
+
+
 // is logged-in user an editor?
 //
 function editor() {
     return true;
+}
+
+// json decode, but return [] if null
+function json_decode2($s) {
+    return $s?json_decode($s):[];
 }
 
 function select2_head($title) {
@@ -185,6 +201,16 @@ function ethnicity_options() {
         $x[] = [$s->id, $s->name];
     }
     return $x;
+}
+
+function ethnicity_str($eths) {
+    if (empty($eths)) return dash();
+    $ethnicities = get_ethnicities();
+    $x = [];
+    foreach ($eths as $eth) {
+        $x[] = $ethnicities[$eth]->name;
+    }
+    return implode(', ', $x);
 }
 
 function country_options() {
