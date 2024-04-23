@@ -40,6 +40,8 @@ function do_role() {
     DB_role::insert("(name) values ('lyricist')");
     DB_role::insert("(name) values ('conductor')");
     DB_role::insert("(name) values ('librettist')");
+    DB_role::insert("(name) values ('editor')");
+    DB_role::insert("(name) values ('translator')");
 }
 
 function do_org_type() {

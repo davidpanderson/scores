@@ -240,7 +240,7 @@ function comp_left($arg) {
     );
     if ($scores || $arrs) {
         start_table();
-        table_header('Details', 'Type', 'Publisher', 'Date', 'File');
+        table_header('Details', 'Section', 'Type', 'Publisher', 'Date', 'File');
         foreach ($scores as $score) {
             score_row($score);
         }
@@ -250,11 +250,13 @@ function comp_left($arg) {
             );
             foreach ($scores as $score) {
                 if ($arr->ics) {
-                    $s = "<nobr>Arrangement for $arr->ics</nobr>";
+                    $s = "Arrangement for $arr->ics";
                 } else {
                     $s = "Arrangement";
                 }
-                $s .= "<br><nobr>by $arr->arranger</nobr></br>";
+                if ($arr->arranger) {
+                    $s .= "<br><nobr>by $arr->arranger</nobr></br>";
+                }
                 score_row($score, $s);
             }
         }
@@ -330,6 +332,7 @@ function score_row($score, $prefix='') {
     }
     table_row(
         sprintf('<a href=item.php?type=%d&id=%d>view</a>', SCORE, $score->id),
+        $score->section?$score->section:'Complete',
         dash($prefix.implode(',', $type)),
         dash($pub_str),
         dash($pub_year),
@@ -493,6 +496,7 @@ function score_left($score) {
         $pub = DB_organization::lookup_id($score->publisher);
         $pub_str = $pub->name;
     }
+    row2('Creators', dash(creators_str($score->creators, true)));
     row2('Publisher', dash($pub_str));
     $x = '';
     if ($score->languages) {

@@ -1349,9 +1349,33 @@ function score_form($id) {
     ';
     form_row_end();
 
+    form_row_start('Creators');
+    if ($score->creators) {
+        start_table('', 'width:50%');
+        table_header('Name', 'Role', 'Remove');
+        foreach ($score->creators as $prole_id) {
+            $prole = DB_person_role::lookup_id($prole_id);
+            $person = DB_person::lookup_id($prole->person);
+            table_row(
+                "$person->first_name $person->last_name",
+                role_id_to_name($prole->role),
+                "<input type=checkbox name=remove_creator_$prole_id>"
+            );
+        }
+        end_table();
+    } else {
+        echo dash('');
+    }
+    echo '
+        <p><p>
+        Add creators:
+        <input name=prole_codes placeholder="role code(s)" >
+    ';
+    form_row_end();
+
     form_row_start('Files');
     if ($score->files) {
-        echo '<table width="50%"';
+        start_table('', 'width:50%');
         table_header('Description', 'Name', 'Remove');
         $i = 0;
         foreach ($score->files as $file) {
@@ -1362,6 +1386,7 @@ function score_form($id) {
             );
             $i++;
         }
+        end_table();
     } else {
         echo dash();
     }
@@ -1429,6 +1454,29 @@ function score_action($id) {
                 error_page("Duplicate composition");
             }
             $score->compositions[] = $comp_id;
+        }
+    }
+
+    foreach ($score->creators as $prole_id) {
+        $x = "remove_creator_$prole_id";
+        if (get_str($x, true)) {
+            $score->creators = array_diff($score->creators, [$prole_id]);
+        }
+    }
+
+    $prole_codes = get_str('prole_codes', true);
+    if ($prole_codes) {
+        $prole_codes = explode(' ', $prole_codes);
+        foreach ($prole_codes as $prole_code) {
+            $prole_id = parse_code($prole_code, 'person_role');
+            if (!$prole_id) {
+                error_page(person_role_code_msg());
+            }
+        }
+        if (in_array($prole_id, $comp->creators)) {
+            error_page('Duplicate creator');
+        } else {
+            $score->creators[] = $prole_id;
         }
     }
 
@@ -1515,7 +1563,7 @@ function empty_perf() {
 function perf_form($id) {
     if ($id) {
         $perf = DB_performance::lookup_id($id);
-        $perf->performers = json_decode($perf->performers);
+        $perf->performers = json_decode2($perf->performers);
         $perf->files = json_decode($perf->files);
     } else {
         $perf = empty_perf();

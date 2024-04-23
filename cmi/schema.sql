@@ -211,7 +211,7 @@ create table composition (
     performed               integer         not null default 0,
     dedication              text,
     tempo_markings          text,
-    metronome_markings      text,   -- quarter=120
+    metronome_markings      text,           -- e.g. quarter=120
     _keys                   text,
         # 'key' is a reserved word in SQL
     time_signatures         text,
@@ -249,11 +249,14 @@ alter table composition add index comp_parent(parent);
 create table score (
     id                      integer         not null auto_increment,
     compositions            json,           -- may be collection of comps
+    creators                json,           -- editor, translator
     files                   json,
         -- a list of objects, each with
         -- desc (e.g. 'Cellos and Basses')
         -- name
         -- pages
+    section                 text,
+        -- if not whole composition, the name of the section
     publisher               integer         not null default 0,
         -- organization
     license                 integer         not null default 0,
@@ -262,8 +265,11 @@ create table score (
     edition_number          text,
     image_type              text,           -- e.g. typeset, normal scan
     is_parts                tinyint         not null default 0,
+        -- separate file per part
     is_selections           tinyint         not null default 0,
+        -- not the whole composition
     is_vocal                tinyint         not null default 0,
+        -- only the vocal parts
     nratings1               integer         not null default 0,
     rating_sum1             integer         not null default 0,
     nratings2               integer         not null default 0,
@@ -272,6 +278,7 @@ create table score (
     primary key(id)
 );
 alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
+alter table score add index score_crea( (cast(creators->'$' as unsigned array)) );
 
 create table venue (
     id                      integer         not null auto_increment,

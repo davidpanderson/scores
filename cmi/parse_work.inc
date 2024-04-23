@@ -1365,4 +1365,99 @@ function parse_opus($s) {
     }
     return trim($s);
 }
+
+//////////////////// EDITOR AND TRANSLATOR ////////////////
+
+// {{LinkEd|Adolf|Ruthardt}} (1849–1934)
+// {{LinkEd|William|Scharfenberg|1819|ca.1895}}
+// {{LinkEd|Engelbert|Röntgen}} (1829{{EN}}1897)
+// {{LinkEd|Ludwig|Finscher}} (b.1930)
+//
+// return person_role ID or 0
+//
+function get_editor($s) {
+    [$template_name, $args, $pos] = parse_template_call($s, 0);
+    switch (strtolower($template_name)) {
+    case 'linked':
+        if (count($args)<2) return 0;
+        $born = 0;
+        $died = 0;
+        if (count($args)>2) $born = make_int($args[2]);
+        if (count($args)>3) $died = make_int($args[3]);
+        $id = get_person($args[0], $args[1], $born, $died);
+        return get_person_role($id, 'editor');
+    default:
+        return 0;
+    }
+}
+
+// 'ca.1895' or '1895'
+// return 1895 as int
+//
+function make_int($s) {
+    $s = str_replace('ca.', '', $s);
+    return intval($s);
+}
+
+// (1849-1934)
+// (1829{{EN}}1897)
+// (b.1930)
+// return [birth, death]
+//
+function parse_bd_years($s) {
+    $s = strtolower($s);
+    $s = str_replace('(', '', $s);
+    $s = str_replace(')', '', $s);
+    $n = strpos($s, 'b.');
+    if ($n) return [make_int(substr($s, $n+2)), 0];
+    $s = str_replace('{{EN}}', '-', $s);
+    $x = explode('-', $s);
+    if (count($x)==2) return [make_int($x[0]), make_int($x[1])];
+    return [0,0];
+}
+
+// {{LinkEd|Garth|Kennedy}} <br> {{LinkEd|Geoff|Pawlicki}}
+// return list of person_role IDs
+function get_editors($s) {
+    $x = explode('<br>', $s);
+    $ids = [];
+    foreach ($x as $y) {
+        $id = get_editor(trim($y));
+        if ($id) $ids[] = $id;
+    }
+    return $ids;
+}
+
+// parse e.g. {{LinkTr|Theodore|Baker|1851|1934}}, English text
+// or LinkTran
+// return a person_role ID
+//
+function get_translator($s) {
+    [$template_name, $args, $pos] = parse_template_call($s, 0);
+    switch (strtolower($template_name)) {
+    case 'linktr':
+    case 'linktran':
+        $born = 0;
+        $died = 0;
+        if (count($args)>2) $born = make_int($args[2]);
+        if (count($args)>3) $died = make_int($args[3]);
+        $id = get_person($args[0], $args[1], $born, $died);
+        return get_person_role($id, 'translator');
+    default:
+        return 0;
+    }
+}
+
+// parse more than one of the above, separated by <br>
+// return list of person_role IDs
+//
+function get_translators($s) {
+    $x = explode('<br>', $s);
+    $ids = [];
+    foreach ($x as $y) {
+        $id = get_translator(trim($y));
+        if ($id) $ids[] = $id;
+    }
+    return $ids;
+}
 ?>

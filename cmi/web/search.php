@@ -383,6 +383,7 @@ function do_composition($params) {
             make_int_list($arr_inst_combos)
         );
     }
+    //$query .= 'order by comp1.long_title ';
     $query .= sprintf(' limit %d,%d', $params->offset, PAGE_SIZE+1);
 
     if (SHOW_COMP_QUERY) {

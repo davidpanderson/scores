@@ -29,8 +29,8 @@ require_once("cmi_util.inc");
 require_once("populate_util.inc");
 
 define('DEBUG_ARRANGEMENTS', 0);
-define('DEBUG_WIKITEXT', 0);
-define('DEBUG_PARSED_WORK', 0);
+define('DEBUG_WIKITEXT', 1);
+define('DEBUG_PARSED_WORK', 1);
 
 $test = false;
 DB::$exit_on_db_error = true;
@@ -468,7 +468,7 @@ function make_audio_file_sets($wid, $audios) {
 //
 // To avoid duplicates,
 // $other_arrs is a list of arrangements we've already made for this comp.
-// Each is a pair [comp_id, struct]
+// Each is a pair [comp_id, struct] where the struct is
 //      person_role_ids: clause for arrangers
 //      inst_combos: clause for inst combos
 //      title: string (e.g. sections)
@@ -602,63 +602,62 @@ function handle_files($main_comp, $c) {
                 echo "unrecognized string in file list: $item\n";
             }
         } else {
-            switch (strtolower($hier[0])) {
-            case '':
-                $flags = 0;
-                if (strtolower($hier[1])=='selections') {
+            echo "score object:\n"; print_r($hier); print_r($item);
+
+            $flags = 0;
+            $section = '';
+
+            // in the arrangement case we make a separate composition record;
+            // handle this separately.
+            //
+            if (strtolower($hier[0]) == 'arrangements and transcriptions') {
+                $arr_id = make_arrangement($main_comp, $item, $hier, $other_arrs);
+                switch (strtolower($hier[1])) {
+                case 'selections':
                     $flags = SELECTIONS;
+                    break;
+                default:
+                    $section = $hier[1];
                 }
-                make_score($item, $main_comp_id, $flags);
-                break;
+                make_score($item, $arr_id, $flags, $section);
+                continue;
+            }
+
+            switch (strtolower($hier[0])) {
             case 'sketches and drafts':
-                make_score($item, $main_comp_id, SKETCHES);
+                $flags |= SKETCHES;
                 break;
             case 'parts':
-                switch (strtolower($hier[1])) {
-                case 'complete':
-                    make_score($item, $main_comp_id, PARTS);
-                    break;
-                case 'selections':
-                    make_score($item, $main_comp_id, PARTS|SELECTIONS);
-                    break;
-                case '':
-                    make_score($item, $main_comp_id, PARTS);
-                    break;
-                }
+                $flags |= PARTS;
                 break;
             case 'vocal scores':
-                switch (strtolower($hier[1])) {
-                case 'complete':
-                    make_score($item, $main_comp_id, VOCAL);
-                    break;
-                case 'selections':
-                    make_score($item, $main_comp_id, VOCAL|SELECTIONS);
-                    break;
-                case '':
-                    make_score($item, $main_comp_id, VOCAL);
-                    break;
-                }
+                $flags |= VOCAL;
                 break;
-            case 'arrangements and transcriptions':
-                $id = make_arrangement($main_comp, $item, $hier, $other_arrs);
-                $flags = 0;
-                switch (strtolower($hier[1])) {
-                case 'selections':
-                    $flags = SELECTIONS;
-                    break;
-                }
-                make_score($item, $id, $flags);
+            case '':
+                break;
             default:
                 echo sprintf("unrecognized hier[0]: %s\n", $hier[0]);
                 break;
             }
+            switch (strtolower($hier[1])) {
+            case 'selections':
+                $flags |= SELECTIONS;
+                break;
+            case '':
+                break;
+            default:
+                $section = $hier[1];
+            }
+
+            make_score($item, $main_comp_id, $flags, $section);
         }
     }
 }
 
 // make a score record
 
-function make_score($item, $comp_id, $flags) {
+function make_score($item, $comp_id, $flags, $section) {
+    echo "make_score()\n";
     if (!$comp_id) throw new Exception('foo');
     $nfiles = min(count($item->file_names), count($item->file_descs));
     if ($nfiles == 0) return;
@@ -706,10 +705,21 @@ function make_score($item, $comp_id, $flags) {
             $edition_numer = $pub->edition_number;
         }
     }
+    $creators = [];
+    if (!empty($item->editor)) {
+        $pr_ids = get_editors($item->editor);
+        $creators = array_merge($creators, $pr_ids);
+    }
+    if (!empty($item->translator)) {
+        $pr_ids = get_translators($item->translator);
+        $creators = array_merge($creators, $pr_ids);
+    }
     $id = DB_score::insert(
-        sprintf("(compositions, files, publisher, license, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal) values ('%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, %d)",
-            DB::escape(json_encode([$comp_id]), JSON_NUMERIC_CHECK),
-            DB::escape(json_encode($files), JSON_NUMERIC_CHECK),
+        sprintf("(compositions, creators, files, section, publisher, license, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal) values ('%s', '%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, %d)",
+            json_encode([$comp_id], JSON_NUMERIC_CHECK),
+            json_encode($creators, JSON_NUMERIC_CHECK),
+            DB::escape(json_encode($files, JSON_NUMERIC_CHECK)),
+            DB::escape($section),
             $publisher,
             $license,
             DB::date_num($publish_year),
@@ -777,7 +787,7 @@ function make_performance(
         sprintf(
             "(composition, is_recording, files, is_synthesized, section, instrumentation) values (%d, 1, '%s', %d, '%s', '%s')",
             $comp->id,
-            DB::escape(json_encode($files), JSON_NUMERIC_CHECK),
+            DB::escape(json_encode($files, JSON_NUMERIC_CHECK)),
             $is_synthesized?1:0,
             DB::escape($section),
             DB::escape($instrumentation)
@@ -1081,6 +1091,7 @@ function main($start_line, $end_line) {
         foreach ($y as $title => $body) {
             //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
             //if ($title != 'Symphony_No.20_in_D_major,_K.133_(Mozart,_Wolfgang_Amadeus)') continue;
+            //if ($title != 'Fantasia_in_C_minor,_Op.80_(Beethoven,_Ludwig_van)') continue;
             echo "==================\ntitle: $title\n";
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";
@@ -1098,6 +1109,7 @@ function main($start_line, $end_line) {
                 continue;
             }
             make_work($comp);
+            //break;
         }
         DB::commit_transaction();
     }

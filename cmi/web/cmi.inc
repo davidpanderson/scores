@@ -93,7 +93,7 @@ function comp_types_str($cts) {
 }
 
 function creators_str($cts, $show_role) {
-    if (!$cts) return dash(null);
+    if (!$cts) return '';
     $cts = json_decode($cts);
     $x = [];
     foreach ($cts as $id) {
@@ -400,7 +400,7 @@ function copy_to_clipboard(x) {
 }
 
 function copy_button($text) {
-    return sprintf("<button onclick=\"copy_to_clipboard('%s')\">Copy</button>",
+    return sprintf("<button onclick=\"copy_to_clipboard('%s')\" title=\"Copy code to clipboard\">Code</button>",
         $text
     );
 }
