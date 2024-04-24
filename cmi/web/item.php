@@ -38,10 +38,13 @@ function person_left($p) {
             if ($pr->instrument) {
                 $s .= sprintf(' (%s)', instrument_id_to_name($pr->instrument));
             }
+            $s .= sprintf('<a href=item.php?type=%d&id=%d>View</a>',
+                PERSON_ROLE, $pr->id
+            );
             if (editor()) {
                 $s .= ' '.copy_button(item_code($pr->id, 'person_role'));
             }
-            $x[] = $s;
+            $x[] = "$s<p>";
         }
     }
     if (!$x) $x[] = dash();
@@ -275,10 +278,11 @@ function comp_left($arg) {
     $perfs = DB_performance::enum("composition=$c->id");
     if ($perfs) {
         start_table();
-        table_header('Details', 'Type', 'Section', 'Instruments', 'File');
+        table_header('Details', 'Type', 'Section', 'Performers', 'Instrumentation', 'File');
         foreach ($perfs as $perf) {
             if (!$perf->is_recording) continue;
             $files = json_decode($perf->files);
+            $f = [];
             foreach ($files as $file) {
                 $f[] = sprintf('%s <a href=%s>file</a>',
                     $file->desc, $file->name
@@ -290,6 +294,7 @@ function comp_left($arg) {
                 ),
                 $perf->is_synthesized?'Synthesized':'',
                 dash($perf->section),
+                creators_str($perf->performers, true),
                 $perf->instrumentation,
                 implode('<br>', $f)
             );
@@ -538,6 +543,71 @@ function score_left($score) {
     }
 }
 
+function do_person_role($id) {
+    $pr = DB_person_role::lookup_id($id);
+    $person = DB_person::lookup_id($pr->person);
+    $role = role_id_to_name($pr->role);
+    $inst = '';
+    if ($pr->instrument) {
+        $inst = DB_instrument::lookup_id($pr->instrument);
+        $inst = " ($inst->name)";
+    }
+    page_head("$person->first_name $person->last_name as $role $inst");
+    switch ($role) {
+    case 'Performer':
+        echo '<h3>Performances</h3>';
+        start_table();
+        table_header('Composition');
+        $q = sprintf("json_contains(performers, '%d', '$')", $id);
+        $perfs = DB_performance::enum($q);
+        foreach ($perfs as $perf) {
+            $comp = DB_composition::lookup_id($perf->composition);
+            table_row(
+                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                    COMPOSITION, $comp->id, composition_str($comp)
+                )
+            );
+        }
+        end_table();
+        break;
+    case 'Arranger':
+    case 'Composer':
+    case 'Librettist':
+        echo '<h3>Compositions</h3>';
+        start_table();
+        table_header('Composition');
+        $q = sprintf("json_contains(creators, '%d', '$')", $id);
+        $comps = DB_composition::enum($q);
+        foreach ($comps as $comp) {
+            table_row(
+                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                    COMPOSITION, $comp->id, composition_str($comp)
+                )
+            );
+        }
+        end_table();
+        break;
+    case 'Editor':
+    case 'Translator':
+        echo '<h3>Scores</h3>';
+        start_table();
+        table_header('Composition');
+        $q = sprintf("json_contains(creators, '%d', '$')", $id);
+        $scores = DB_score::enum($q);
+        foreach ($scores as $score) {
+            $comp = DB_composition::lookup_id($score->compositions[0]);
+            table_row(
+                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                    COMPOSITION, $comp->id, composition_str($comp)
+                )
+            );
+        }
+        end_table();
+        break;
+    }
+    page_tail();
+}
+
 function main($type, $id) {
     switch ($type) {
     case PERSON:
@@ -563,6 +633,9 @@ function main($type, $id) {
         break;
     case SCORE:
         do_score($id);
+        break;
+    case PERSON_ROLE:
+        do_person_role($id);
         break;
     default: error_page("No type $type");
     }

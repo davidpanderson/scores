@@ -201,7 +201,8 @@ function person_right($p) {
     $prs = DB_person_role::enum("person=$p->id");
     foreach ($prs as $pr) {
         $role = DB_role::lookup_id($pr->role);
-        echo "<b>As $role->name</b>";
+        $pers_as_role = "$p->first_name $p->last_name as $role->name";
+        echo "<b>$pers_as_role</b>";
         start_table();
         if ($user) {
             [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
@@ -212,8 +213,8 @@ function person_right($p) {
         end_table();
         show_reviews(PERSON_ROLE, $pr->id, $user, $review);
         echo sprintf(
-            '<p><b>People who liked %s %s as %s also liked:</b><p>',
-            $p->first_name, $p->last_name, $role->name
+            '<p><b>People who liked %s also liked:</b><p>',
+            $pers_as_role
         );
         show_recommended_prs($p, $role);
         echo '<hr>';

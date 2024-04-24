@@ -55,12 +55,16 @@ function hier_label($str) {
 
 ///////////////// PERSON_ROLE /////////////////
 
-function get_person_role($person_id, $role) {
+function get_person_role($person_id, $role, $inst_id=0) {
     $role_id = role_name_to_id($role);
-    $r = DB_person_role::lookup("person=$person_id and role=$role_id");
+    $q = "person=$person_id and role=$role_id";
+    if ($inst_id) {
+        $q .= " and instrument=$inst_id";
+    }
+    $r = DB_person_role::lookup($q);
     if ($r) return $r->id;
     return DB_person_role::insert(
-        "(person, role) values ($person_id, $role_id)"
+        "(person, role, instrument) values ($person_id, $role_id, $inst_id)"
     );
 }
 
@@ -783,10 +787,31 @@ function make_performance(
         $f->name = $file_names[$i];
         $files[] = $f;
     }
+    $p = empty($item->performers)?'':$item->performers;
+    $pc = empty($item->performer_categories)?'':$item->performer_categories;
+    [$ensemble, $performers] = parse_performers($p, $pc);
+    if ($ensemble) {
+        $ens_id = get_ensemble_new($ensemble[0], $ensemble[1]);
+    } else {
+        $ens_id = 0;
+    }
+    $perf_role_ids = [];
+    foreach ($performers as $perf) {
+        $inst = DB_instrument::lookup(
+            sprintf("name='%s'", DB::escape($perf[2]))
+        );
+        $inst_id = $inst?$inst->id:0;
+        $person = get_person($perf[0], $perf[1]);
+        $pr_id = get_person_role($person, 'performer', $inst_id);
+        $perf_role_ids[] = $pr_id;
+    }
+
     DB_performance::insert(
         sprintf(
-            "(composition, is_recording, files, is_synthesized, section, instrumentation) values (%d, 1, '%s', %d, '%s', '%s')",
+            "(composition, performers, ensemble, is_recording, files, is_synthesized, section, instrumentation) values (%d, '%s', %d, 1, '%s', %d, '%s', '%s')",
             $comp->id,
+            DB::escape(json_encode($perf_role_ids, JSON_NUMERIC_CHECK)),
+            $ens_id,
             DB::escape(json_encode($files, JSON_NUMERIC_CHECK)),
             $is_synthesized?1:0,
             DB::escape($section),

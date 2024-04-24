@@ -173,18 +173,17 @@ create table role (
 create table person_role (
     id                      integer         not null auto_increment,
     person                  integer         not null default 0,
-    ensemble                integer         not null default 0,
-    instrument              integer         not null default 0,
     role                    integer         not null default 0,
+    instrument              integer         not null default 0,
+        -- if role is performer
     nratings1               integer         not null default 0,
     rating_sum1             integer         not null default 0,
     nratings2               integer         not null default 0,
     rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
+    unique(person, role, instrument),
     primary key(id)
 );
-alter table person_role add index (person);
-alter table person_role add index (ensemble);
 
 create table license (
     id                      integer         not null auto_increment,
@@ -217,6 +216,7 @@ create table composition (
     time_signatures         text,
     comp_types              json,
     creators                json,
+        -- person_role IDs
     parent                  integer         not null default 0,
     children                json,
     arrangement_of          integer         not null default 0,
@@ -300,6 +300,7 @@ create table performance (
     composition             integer         not null default 0,
     performers              json,
         -- person_roles
+    ensemble                integer         not null default 0,
     is_recording            tinyint         not null default 0,
 
     -- the following relevant if recording

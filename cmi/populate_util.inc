@@ -389,6 +389,33 @@ function get_ensemble($name, $type) {
     return $id;
 }
 
+function get_ensemble_new($name, $type) {
+    if (!$name) return 0;
+    $e = DB_ensemble::lookup(
+        sprintf("name='%s'", DB::escape($name))
+    );
+    if ($e) return (int)$e->id;
+
+    $t = DB_ensemble_type::lookup(
+        sprintf("name='%s'", DB::escape($type))
+    );
+    if ($t) {
+        $tid = $t->id;
+    } else {
+        $tid = DB_ensemble_type::insert(
+            sprintf("(name) values ('%s')", DB::escape($type))
+        );
+    }
+
+    $id = DB_ensemble::insert(
+        sprintf(
+            "(name, type) values ('%s', %d)",
+            $name, $tid
+        )
+    );
+    return $id;
+}
+
 function get_arrangement_target($instruments) {
     global $test;
     if (!$instruments) return 0;

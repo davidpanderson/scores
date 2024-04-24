@@ -1309,6 +1309,7 @@ function score_form($id) {
         $score->compositions = json_decode($score->compositions);
         $score->files = json_decode($score->files);
         $score->languages = json_decode2($score->languages);
+        $score->creators = json_decode2($score->creators);
     } else {
         $score = empty_score();
         $comp_id = get_int('comp_id', true);
