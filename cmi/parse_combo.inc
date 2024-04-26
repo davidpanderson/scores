@@ -127,9 +127,10 @@ function make_ic($pp, $i=0) {
 }
 
 // $x is like
-// Piano 4 hands
-// 2 Clarinets
-// Chromatic Harmonica or Flute
+// piano 4 hands
+// 2 clarinets
+// chromatic harmonica or flute
+// (always lower case)
 //
 // return [count, code] or [[count, code], [count, code]]
 //
@@ -158,14 +159,32 @@ function parse_arr_part($x) {
     if ($code) {
         return [$count, $code];
     } else {
-        //echo "not found: $x\n";
+        echo "instrument not found: $x\n";
         return null;
     }
 }
 
+// various instrument name aliases
+$inst_name_rep = [
+    'bass voice'=>'voice',
+    'children chorus'=>'childrens chorus',
+    'full orchestra'=>'orchestra',
+    'mezzo-soprano'=>'mezzosoprano',
+    'piano left-hand'=>'piano left hand',
+    'piano 6 hand'=>'piano 6 hands',
+    'simplified piano'=>'piano',
+    'theatre orchestra'=>'theater orchestra',
+    "violas d'amore"=>'viola damore'
+];
+
 // map instrument name to code
 //
 function inst_name_to_code($name) {
+    global $inst_name_rep;
+    $name = str_replace(' solo', '', $name);
+    if (array_key_exists($name, $inst_name_rep)) {
+        $name = $inst_name_rep[$name];
+    }
     static $arr = [];
     if (!$arr) {
         $insts = DB_instrument::enum();

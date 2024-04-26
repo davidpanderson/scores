@@ -61,18 +61,65 @@ function main() {
     foreach ($insts as $code=>$name) {
         $id = DB_instrument::insert(
             sprintf("(imslp_code, name) values('%s', '%s')",
-                DB::escape($code),
-                DB::escape($name)
+                DB::escape($code), DB::escape($name)
             )
         );
-        $rec = DB_instrument::lookup_id($id);
-        $inst_by_code[$code] = $rec;
     }
+}
 
-    echo "writing inst_by_code.ser\n";
+// things that appear in arrangements, e.g.
+// =====For String Orchestra (Smith)=====
+//
+$others = [
+    'accordion orchestra',
+    'alto recorder',
+    'bandurria',
+    'brass band',
+    'brass septet',
+    'chamber orchestra',
+    'chromatic harmonica',
+    'concert band',
+    'contrabass flute',
+    'guitar ensemble',
+    'guitar orchestra',
+    'mandola',
+    'military band',
+    'reed organ',
+    'salon orchestra',
+    'shō',
+    'singer',
+    'small orchestra',
+    'soprano recorder',
+    'string orchestra',
+    'string quartet',
+    'string quintet',
+    'string trio',
+    'theater orchestra',
+    'treble instrument',
+    'treble recorder',
+    'wind band',
+    'wind octet',
+    'wind quintet',
+    'woodwind'
+];
+
+function add_others() {
+    global $others;
+    $i = 0;
+    foreach ($others as $name) {
+        $code = sprintf('x%d', $i++);
+        DB_instrument::insert(
+            sprintf("(imslp_code, name) values('%s', '%s')",
+                DB::escape($code), DB::escape($name)
+            )
+        );
+    }
 }
 
 main();
+add_others();
+
+echo "writing inst_by_code.ser\n";
 write_ser_instrument();
 
 ?>

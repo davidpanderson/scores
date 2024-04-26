@@ -421,16 +421,15 @@ function copy_button($text) {
 function composition_str($c) {
     if ($c->arrangement_of) {
         $c2 = DB_composition::lookup_id($c->arrangement_of);
-        if ($c->instrument_combos) {
-            return sprintf('Arrangement of %s for %s',
-                $c2->long_title,
-                instrument_combos_str($c->instrument_combos)
-            );
-        } else {
-            return sprintf('Arrangement of %s',
-                $c2->long_title
-            );
+        $s = 'Arrangement of ';
+        if ($c->title && $c->title != 'Complete') {
+            $s .= "$c->title from ";
         }
+        $s .= $c2->long_title;
+        if ($c->instrument_combos) {
+            $s .= ' for '.instrument_combos_str($c->instrument_combos);
+        }
+        return $s;
     } else if ($c->parent) {
         $c2 = DB_composition::lookup_id($c->parent);
         return sprintf('Section (%s) of %s', $c->title, $c2->long_title);

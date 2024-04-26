@@ -29,9 +29,9 @@ require_once("cmi_util.inc");
 require_once("populate_util.inc");
 
 define('DEBUG_ARRANGEMENTS', 0);
-define('DEBUG_WIKITEXT', 0);
+define('DEBUG_WIKITEXT', 1);
     // log the original MW text
-define('DEBUG_PARSED_WORK', 0);
+define('DEBUG_PARSED_WORK', 1);
     // log the parsed version of it
 define('DEBUG_SCORES', 0);
     // log stuff related to scores
@@ -1139,6 +1139,7 @@ function main($start_line, $end_line) {
             //if ($title != 'Symphony_No.20_in_D_major,_K.133_(Mozart,_Wolfgang_Amadeus)') continue;
             //if ($title != 'Fantasia_in_C_minor,_Op.80_(Beethoven,_Ludwig_van)') continue;
             //if ($title != 'Etudes,_Op.60_(Carcassi,_Matteo)') continue;
+            echo "================ $title ==========\n";
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";
                 echo "$body\n";
