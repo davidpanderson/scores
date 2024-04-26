@@ -215,6 +215,7 @@ function parse_template_call($str, $start_pos) {
 
 // parse an "item", which is either
 // - a template call, in which case return [object, new_pos]
+//      where object has name and args
 // - other text, in which case return [string, new_pos]
 // - the end of the string is reached: return [false, 0]
 //

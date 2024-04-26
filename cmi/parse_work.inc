@@ -366,23 +366,22 @@ function audio_args_to_object($args) {
 function parse_files($str) {
     $pos = 0;
     $files = [];
-    $nfiles = 0;
-    $nstr = 0;
+    $str_accum = '';
     while (true) {
         [$item, $new_pos] = parse_item($str, $pos);
         if ($item === false) break;
         if ($item === null) break;
-        $pos = $new_pos;
         if (is_string($item)) {
-            $x = explode("\n", $item);
-            foreach ($x as $line) {
-                if ($line) {
-                    $files[] = $line;
-                    $nstr++;
-                }
-            }
+            $str_accum .= $item;
         } else {
             if ($item->name == '#fte:') {
+                if ($str_accum) {
+                    $x = explode("\n", $str_accum);
+                    foreach ($x as $line) {
+                        if ($line) $files[] = $line;
+                    }
+                    $str_accum = '';
+                }
                 $x = array_shift($item->args);
                 if ($x == 'imslpfile') {
                     $files[] = file_args_to_object($item->args);
@@ -390,36 +389,46 @@ function parse_files($str) {
                     echo "unrecognized #fte: in file list: $x\n";
                 }
             } else {
-                echo "unrecognized template in file list: $item->name\n";
+                $str_accum .= ' '.substr2($str, $pos, $new_pos).' ';
             }
-            $nfiles++;
+        }
+        $pos = $new_pos;
+    }
+    if ($str_accum) {
+        $x = explode("\n", $str_accum);
+        foreach ($x as $line) {
+            if ($line) $files[] = $line;
         }
     }
     return $files;
 }
 
 // parse the *****AUDIO***** arg of a work page
+// return a list of:
+// - strings
+//      like ===foobar=== or ===foo{{K|A}}===
+// - objects
+//       each describes a recording (file names, descs etc.)
 //
 function parse_audio($str) {
     $pos = 0;
     $files = [];
-    $nfiles = 0;
-    $nstr = 0;
+    $str_accum = '';
     while (true) {
         [$item, $new_pos] = parse_item($str, $pos);
         if ($item === false) break;
         if ($item === null) break;
-        $pos = $new_pos;
         if (is_string($item)) {
-            $x = explode("\n", $item);
-            foreach ($x as $line) {
-                if ($line) {
-                    $files[] = $line;
-                    $nstr++;
-                }
-            }
+            $str_accum .= $item;
         } else {
             if ($item->name == '#fte:') {
+                if ($str_accum) {
+                    $x = explode("\n", $str_accum);
+                    foreach ($x as $line) {
+                        if ($line) $files[] = $line;
+                    }
+                    $str_accum = '';
+                }
                 $x = array_shift($item->args);
                 if ($x == 'imslpaudio') {
                     $files[] = audio_args_to_object($item->args);
@@ -427,9 +436,15 @@ function parse_audio($str) {
                     echo "unrecognized #fte: in audio list: $x\n";
                 }
             } else {
-                echo "unrecognized template in audio list: $item->name\n";
+                $str_accum .= ' '.substr2($str, $pos, $new_pos).' ';
             }
-            $nfiles++;
+        }
+        $pos = $new_pos;
+    }
+    if ($str_accum) {
+        $x = explode("\n", $str_accum);
+        foreach ($x as $line) {
+            if ($line) $files[] = $line;
         }
     }
     return $files;
@@ -936,6 +951,31 @@ function parse_key_aux($x) {
         );
     }
     return '';
+}
+
+// given a string like 'Study in {{K|C}}'
+// expand the {{K and return 'Study in C major'
+//
+function expand_key($s) {
+    $pos = 0;
+    $out = '';
+    while (true) {
+        [$x, $pos] = parse_item($s, $pos);
+        if ($x === false) break;
+        if (is_string($x)) {
+            $out .= $x;
+        } else {
+            switch (strtolower($x->name)) {
+            case 'k':
+            case 'key':
+                $out .= ' ';
+                $out .= parse_key_aux($x->args[0]);
+                $out .= ' ';
+                break;
+            }
+        }
+    }
+    return trim($out);
 }
 
 // parse a movement line like

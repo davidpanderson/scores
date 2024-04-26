@@ -29,10 +29,16 @@ require_once("cmi_util.inc");
 require_once("populate_util.inc");
 
 define('DEBUG_ARRANGEMENTS', 0);
-define('DEBUG_WIKITEXT', 1);
-define('DEBUG_PARSED_WORK', 1);
+define('DEBUG_WIKITEXT', 0);
+    // log the original MW text
+define('DEBUG_PARSED_WORK', 0);
+    // log the parsed version of it
+define('DEBUG_SCORES', 0);
+    // log stuff related to scores
+define('DEBUG_PERFS', 0);
+    // log stuff related to recordings
 
-$test = false;
+//$test = false;
 DB::$exit_on_db_error = true;
 
 // given a string of the form ===FOO, return [3, 'FOO']
@@ -70,6 +76,7 @@ function get_person_role($person_id, $role, $inst_id=0) {
 
 ///////////////// SCORE FILES /////////////////
 
+// deprecated
 function make_score_file($f, $i, $file_set_id) {
     global $test;
     if (!array_key_exists($i, $f->file_names)) {
@@ -129,6 +136,7 @@ function make_score_file($f, $i, $file_set_id) {
     }
 }
 
+// deprecated
 function make_score_file_set($wid, $f, $hier) {
     global $test;
     $copyright_id = 0;
@@ -269,6 +277,7 @@ function make_score_file_set($wid, $f, $hier) {
 // $wid is a work ID
 // $files is a list of strings and file objects
 //
+// deprecated
 function make_score_file_sets($wid, $files) {
     $hier = ['','',''];
     foreach ($files as $item) {
@@ -298,6 +307,7 @@ function make_score_file_sets($wid, $files) {
 
 ///////////////// AUDIO FILES /////////////////
 
+// deprecated
 function make_audio_file($f, $i, $file_set_id) {
     global $test;
     if (!array_key_exists($i, $f->file_names)) return;
@@ -333,6 +343,7 @@ function make_audio_file($f, $i, $file_set_id) {
     }
 }
 
+// deprecated
 function make_audio_set($wid, $f, $hier) {
     global $test;
     $copyright_id = 0;
@@ -437,6 +448,7 @@ function make_audio_set($wid, $f, $hier) {
 // $wid is a work ID
 // $audios is a list of strings and audio objects
 //
+// deprecated
 function make_audio_file_sets($wid, $audios) {
     $hier = ['','',''];
     foreach ($audios as $item) {
@@ -621,7 +633,7 @@ function handle_files($main_comp, $c) {
                     $flags = SELECTIONS;
                     break;
                 default:
-                    $section = $hier[1];
+                    $section = expand_key($hier[1]);
                 }
                 make_score($item, $arr_id, $flags, $section);
                 continue;
@@ -650,7 +662,7 @@ function handle_files($main_comp, $c) {
             case '':
                 break;
             default:
-                $section = $hier[1];
+                $section = expand_key($hier[1]);
             }
 
             make_score($item, $main_comp_id, $flags, $section);
@@ -670,7 +682,7 @@ function make_score($item, $comp_id, $flags, $section) {
     $files = [];
     for ($i=0; $i<$nfiles; $i++) {
         $f = new StdClass;
-        $f->desc = $file_descs[$i];
+        $f->desc = expand_key($file_descs[$i]);
         $f->name = $file_names[$i];
         if (!empty($item->page_counts[$i])) {
             $f->pages = $item->page_counts[$i];
@@ -764,7 +776,7 @@ function handle_audios($comp, $c) {
             }
         } else {
             $is_synthesized = (strtolower($hier[0]) == 'synthesized/midi');
-            $section = $hier[1];
+            $section = expand_key($hier[1]);
             $instrumentation = $hier[2];
             make_performance(
                 $item, $comp, $is_synthesized, $section, $instrumentation
@@ -783,7 +795,7 @@ function make_performance(
     $files = [];
     for ($i=0; $i<$nfiles; $i++) {
         $f = new StdClass;
-        $f->desc = $file_descs[$i];
+        $f->desc = expand_key($file_descs[$i]);
         $f->name = $file_names[$i];
         $files[] = $f;
     }
@@ -806,16 +818,22 @@ function make_performance(
         $perf_role_ids[] = $pr_id;
     }
 
+    $license = 0;
+    if (!empty($item->copyright)) {
+        $license = get_license_id($item->copyright);
+    }
+
     DB_performance::insert(
         sprintf(
-            "(composition, performers, ensemble, is_recording, files, is_synthesized, section, instrumentation) values (%d, '%s', %d, 1, '%s', %d, '%s', '%s')",
+            "(composition, performers, ensemble, is_recording, files, is_synthesized, section, instrumentation, license) values (%d, '%s', %d, 1, '%s', %d, '%s', '%s', %d)",
             $comp->id,
             DB::escape(json_encode($perf_role_ids, JSON_NUMERIC_CHECK)),
             $ens_id,
             DB::escape(json_encode($files, JSON_NUMERIC_CHECK)),
             $is_synthesized?1:0,
             DB::escape($section),
-            DB::escape($instrumentation)
+            DB::escape($instrumentation),
+            $license
         )
     );
 }
@@ -1006,18 +1024,21 @@ function make_work($c) {
         }
     }
 
-    echo "======== $long_title ===========\n";
-
     // process c->files; make arrangements, scores, sub-compositions
     //
     if (!empty($c->files)) {
-        print_r($c->files);
+        if (DEBUG_SCORES) {
+            echo "------------ handling scores -------------\n";
+            print_r($c->files);
+        }
         handle_files($comp, $c);
     }
 
-    echo "============== audio ===========\n";
     if (!empty($c->audios)) {
-        print_r($c->audios);
+        if (DEBUG_PERFS) {
+            echo "------------ handling recordings -------------\n";
+            print_r($c->audios);
+        }
         handle_audios($comp, $c);
     }
 }
@@ -1117,7 +1138,7 @@ function main($start_line, $end_line) {
             //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
             //if ($title != 'Symphony_No.20_in_D_major,_K.133_(Mozart,_Wolfgang_Amadeus)') continue;
             //if ($title != 'Fantasia_in_C_minor,_Op.80_(Beethoven,_Ludwig_van)') continue;
-            echo "==================\ntitle: $title\n";
+            //if ($title != 'Etudes,_Op.60_(Carcassi,_Matteo)') continue;
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";
                 echo "$body\n";

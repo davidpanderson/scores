@@ -279,6 +279,7 @@ create table score (
 );
 alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
 alter table score add index score_crea( (cast(creators->'$' as unsigned array)) );
+alter table score add index score_pub(publisher);
 
 create table venue (
     id                      integer         not null auto_increment,
@@ -313,7 +314,10 @@ create table performance (
     section                 text,
         -- 'Complete' or 'Selections' or name of section/mvt
     instrumentation         text,
-        -- null if native instrumentation
+        -- empty if native instrumentation
+    license                 integer         not null default 0,
+    publisher               integer         not null default 0,
+        -- organization ID
     nratings1               integer         not null default 0,
     rating_sum1             integer         not null default 0,
     nratings2               integer         not null default 0,

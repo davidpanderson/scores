@@ -99,32 +99,42 @@ function creators_str($cts, $show_role) {
     foreach ($cts as $id) {
         $prole = DB_person_role::lookup_id($id);
         $p = DB_person::lookup_id($prole->person);
-        $x[] = sprintf(
-            "<a href=item.php?type=%d&id=%d>%s %s</a>%s",
+        $s = sprintf(
+            "<a href=item.php?type=%d&id=%d>%s</a>",
             PERSON,
             $p->id,
-            $p->first_name, $p->last_name,
-            $show_role?' ('.role_id_to_name($prole->role).')':''
+            person_id_to_name($prole->person)
         );
+        if ($show_role) {
+            $s .= sprintf(' (%s)', role_str($prole));
+        }
+        $x[] = $s;
     }
     return implode('<br>', $x);
 }
 
-// return e.g. Joe Smith: performer (piano)
+// return 'first last'
 //
-function person_role_str($role) {
-    if ($role->person) {
-        $person = DB_person::lookup_id($role->person);
-        $s = "$person->first_name $person->last_name";
-    } else {
-        $ensemble = DB_ensemble::lookup_id($role->ensemble);
-        $s = "$ensemble->name";
+function person_id_to_name($id) {
+    $person = DB_person::lookup_id($id);
+    return "$person->first_name $person->last_name";
+}
+
+// if performer, return instrument name if present, else 'performer'
+// else return role name
+//
+function role_str($prole) {
+    if ($prole->instrument) {
+        return instrument_id_to_name($prole->instrument);
     }
-    $s .= ': '.role_id_to_name($role->role);
-    if ($role->instrument) {
-        $s .= sprintf(' (%s)', instrument_id_to_name($role->instrument));
-    }
-    return $s;
+    return role_id_to_name($prole->role);
+}
+
+// return e.g. Joe Smith (piano) or Joe Smith (lyricist)
+//
+function person_role_str($prole, $show_role) {
+    if (!$show_role) return $s;
+    return "$s ($r)";
 }
 
 // same, but return name and role separately
@@ -411,13 +421,35 @@ function copy_button($text) {
 function composition_str($c) {
     if ($c->arrangement_of) {
         $c2 = DB_composition::lookup_id($c->arrangement_of);
-        return "Arrangement of $c2->long_title";
+        if ($c->instrument_combos) {
+            return sprintf('Arrangement of %s for %s',
+                $c2->long_title,
+                instrument_combos_str($c->instrument_combos)
+            );
+        } else {
+            return sprintf('Arrangement of %s',
+                $c2->long_title
+            );
+        }
     } else if ($c->parent) {
         $c2 = DB_composition::lookup_id($c->parent);
         return sprintf('Section (%s) of %s', $c->title, $c2->long_title);
     } else {
         return $c->long_title;
     }
+}
+
+// the name of a score's section and composition
+//
+function score_str($score) {
+    $score->compositions = json_decode($score->compositions);
+    $comp = DB_composition::lookup_id($score->compositions[0]);
+    $s = '';
+    if ($score->section) {
+        $s = "$score->section from ";
+    }
+    $s .= composition_str($comp);
+    return $s;
 }
 
 // convert a program (list of performance IDs) to text

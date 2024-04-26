@@ -38,11 +38,11 @@ function person_left($p) {
             if ($pr->instrument) {
                 $s .= sprintf(' (%s)', instrument_id_to_name($pr->instrument));
             }
-            $s .= sprintf('<a href=item.php?type=%d&id=%d>View</a>',
+            $s .= sprintf(' &middot; <a href=item.php?type=%d&id=%d>View works</a>',
                 PERSON_ROLE, $pr->id
             );
             if (editor()) {
-                $s .= ' '.copy_button(item_code($pr->id, 'person_role'));
+                $s .= ' &middot; '.copy_button(item_code($pr->id, 'person_role'));
             }
             $x[] = "$s<p>";
         }
@@ -278,13 +278,13 @@ function comp_left($arg) {
     $perfs = DB_performance::enum("composition=$c->id");
     if ($perfs) {
         start_table();
-        table_header('Details', 'Type', 'Section', 'Performers', 'Instrumentation', 'File');
+        table_header('Details', 'Type', 'Section', 'Performers', 'Arranged for', 'File');
         foreach ($perfs as $perf) {
             if (!$perf->is_recording) continue;
             $files = json_decode($perf->files);
             $f = [];
             foreach ($files as $file) {
-                $f[] = sprintf('%s <a href=%s>file</a>',
+                $f[] = sprintf('%s &middot; <a href=%s>file</a>',
                     $file->desc, $file->name
                 );
             }
@@ -427,8 +427,10 @@ function do_organization($id) {
     page_head("Organization");
     start_table();
     row2('Name', $org->name);
-    row2('Type', organization_type_str($org->type));
-    row2('Location', location_id_to_name($org->location));
+    $type_str = organization_type_str($org->type);
+    row2('Type', $type_str);
+    //row2('Location', location_id_to_name($org->location));
+    row2('Location', $org->location);
     row2('URL', sprintf('<a href=%s>%s</a>', $org->url, $org->url));
     if (editor()) {
         row2('',
@@ -439,6 +441,24 @@ function do_organization($id) {
         );
     }
     end_table();
+    if ($type_str == 'Music publisher') {
+        $scores = DB_score::enum("publisher=$id");
+        if ($scores) {
+            echo '<h3>Scores</h3>';
+            start_table();
+            table_header('Composition');
+            foreach ($scores as $score) {
+                table_row(
+                    sprintf(
+                        '<a href=item.php?type=%d&id=%d>%s</a>',
+                        SCORE, $score->id,
+                        score_str($score)
+                    )
+                );
+            }
+            end_table();
+        }
+    }
     page_tail();
 }
 
@@ -459,6 +479,12 @@ function perf_left($perf) {
     row2('Synthesized?', $perf->is_synthesized?'Yes':'No');
     row2('Section', dash($perf->section));
     row2('Instrumentation', dash($perf->instrumentation));
+    $lic_str = '';
+    if ($perf->license) {
+        $lic = DB_license::lookup_id($perf->license);
+        $lic_str = $lic->name;
+    }
+    row2('License', dash($lic_str));
     end_table();
 
     echo '<h3>Files</h3>';
@@ -493,7 +519,10 @@ function score_left($score) {
     $comp_ids = json_decode($score->compositions);
     foreach ($comp_ids as $id) {
         $comp = DB_composition::lookup_id($id);
-        $comp_str[] = composition_str($comp);
+        $comp_str[] = sprintf(
+            '<a href=item.php?type=%d&id=%d>%s</a>',
+            COMPOSITION, $id, composition_str($comp)
+        );
     }
     row2('Composition', implode('<br>', $comp_str));
     $pub_str = '';
@@ -552,9 +581,9 @@ function do_person_role($id) {
         $inst = DB_instrument::lookup_id($pr->instrument);
         $inst = " ($inst->name)";
     }
-    page_head("$person->first_name $person->last_name as $role $inst");
+    page_head("Works by $person->first_name $person->last_name as $role $inst");
     switch ($role) {
-    case 'Performer':
+    case 'performer':
         echo '<h3>Performances</h3>';
         start_table();
         table_header('Composition');
@@ -570,10 +599,10 @@ function do_person_role($id) {
         }
         end_table();
         break;
-    case 'Arranger':
-    case 'Composer':
-    case 'Librettist':
-        echo '<h3>Compositions</h3>';
+    case 'arranger':
+    case 'composer':
+    case 'librettist':
+    case 'lyricist':
         start_table();
         table_header('Composition');
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
@@ -587,8 +616,8 @@ function do_person_role($id) {
         }
         end_table();
         break;
-    case 'Editor':
-    case 'Translator':
+    case 'editor':
+    case 'translator':
         echo '<h3>Scores</h3>';
         start_table();
         table_header('Composition');

@@ -346,7 +346,7 @@ function role_id_to_name($id) {
     if (!$roles) {
         $roles = unserialize(file_get_contents('data/role_by_id.ser'));
     }
-    return ucfirst($roles[$id]->name);
+    return $roles[$id]->name;
 }
 
 /////////////// organization_type /////////////////
