@@ -52,11 +52,11 @@ function rating_buttons($is_diff, $sel, $action, $id) {
 }
 
 function rating_bar($frac) {
-    if ($frac === null) return dash('');
-    $width = 240;   // 11*24
+    if ($frac == NO_RATING) return dash('');
+    $width = 240;   // 10*24
     $n = (int)$width*$frac;
     return sprintf('
-        <table>
+        <table width=264>
             <tr>
                 <td width=%d align=center bgcolor=palegreen>%.1f</td>
                 <td width=%d bgcolor=lightgray></td>
@@ -72,34 +72,34 @@ function avg_rating($type, $target) {
     $rs = DB_rating::enum(
         sprintf('type=%d and target=%d', $type, $target)
     );
-    if (!$rs) return null;
+    if (!$rs) return [NO_RATING, NO_RATING];
     $qsum = 0;
     $qn = 0;
     $dsum = 0;
     $dn = 0;
     foreach ($rs as $r) {
-        if ($r->attr1 !== null) {
+        if ($r->attr1 != NO_RATING) {
             $qsum += $r->attr1;
             $qn++;
         }
-        if ($r->attr2 !== null) {
+        if ($r->attr2 != NO_RATING) {
             $dsum += $r->attr2;
             $dn++;
         }
     }
     return [
-        $qn?.1*$qsum/$qn:null,
-        $dn?.1*$dsum/$dn:null
+        $qn?.1*$qsum/$qn:NO_RATING,
+        $dn?.1*$dsum/$dn:NO_RATING
     ];
 }
 
-function show_review($rev) {
-    show_text_more($rev, 80);
+function more_review($rev) {
+    return show_text_more_aux($rev, 80);
 }
 
 function get_users_ratings($user, $type, $target) {
-    $rq = null;
-    $rd = null;
+    $rq = NO_RATING;
+    $rd = NO_RATING;
     $review = null;
     $r = DB_rating::lookup(
         sprintf('user=%d and type=%d and target=%d',
@@ -107,8 +107,8 @@ function get_users_ratings($user, $type, $target) {
         )
     );
     if ($r) {
-        if ($r->attr1 !== null) $rq = (int)$r->attr1;
-        if ($r->attr2 !== null) $rd = (int)$r->attr2;
+        if ($r->attr1 != NO_RATING) $rq = (int)$r->attr1;
+        if ($r->attr2 != NO_RATING) $rd = (int)$r->attr2;
         $review = $r->review;
     }
     return [$rq, $rd, $review];
@@ -120,13 +120,12 @@ function show_reviews($type, $target, $user, $review) {
     if ($user) {
         $url = "rate.php?action=rev_form&type=$type&target=$target";
         if ($review) {
-            row2_init(
+            row2(
                 sprintf('Your review<br>%s',
                     button_text($url, 'edit', 'Edit your review', ' btn-success btn-xs')
-                )
+                ),
+                more_review($review)
             );
-            show_review($review);
-            echo '</td></tr>';
         } else {
             row2('', button_text($url, 'Write a review'));
         }
@@ -137,8 +136,13 @@ function show_reviews($type, $target, $user, $review) {
     foreach ($revs as $rev) {
         if ($user && $user->id == $rev->user) continue;
         $u = BOINCUser::lookup_id($rev->user);
-        echo "<href=cmi_user.php?id=$rev->user>$user->name</a>";
-        show_review($rev->review);
+        row2(
+            sprintf('Review by <a href=user.php?id=%d>%s</a><br><small>%s</small>',
+                $rev->user, $u->name,
+                date_str($rev->created)
+            ),
+            more_review($rev->review)
+        );
     }
     end_table();
 }
@@ -146,7 +150,7 @@ function show_reviews($type, $target, $user, $review) {
 // right panel for composition: rating and review stuff
 //
 function comp_right($arg) {
-    $user = get_logged_in_user(true);
+    $user = get_logged_in_user(false);
     [$c, $par] = $arg;
     if ($user) {
         [$rq, $rd, $review] = get_users_ratings($user, COMPOSITION, $c->id);
@@ -168,7 +172,11 @@ function comp_right($arg) {
     }
     row2('Average rating', rating_bar($davg));
     end_table();
-    show_reviews(COMPOSITION, $c->id, $user, $review);
+    if ($user) {
+        show_reviews(COMPOSITION, $c->id, $user, $review);
+    } else {
+        show_reviews(COMPOSITION, $c->id, null, null);
+    }
     echo '
         <p>
         <b>People who liked this also liked:</b>
@@ -197,7 +205,7 @@ function show_recommended_comp($c) {
 // right panel for person
 //
 function person_right($p) {
-    $user = get_logged_in_user(true);
+    $user = get_logged_in_user(false);
     $prs = DB_person_role::enum("person=$p->id");
     foreach ($prs as $pr) {
         $role = DB_role::lookup_id($pr->role);
@@ -211,7 +219,11 @@ function person_right($p) {
         [$qavg, $davg] = avg_rating(PERSON_ROLE, $pr->id);
         row2('Average rating', rating_bar($qavg));
         end_table();
-        show_reviews(PERSON_ROLE, $pr->id, $user, $review);
+        if ($user) {
+            show_reviews(PERSON_ROLE, $pr->id, $user, $review);
+        } else {
+            show_reviews(PERSON_ROLE, $pr->id, null, null);
+        }
         echo sprintf(
             '<p><b>People who liked %s also liked:</b><p>',
             $pers_as_role
@@ -239,7 +251,7 @@ function show_recommended_prs($p, $role) {
 }
 
 function perf_right($perf) {
-    $user = get_logged_in_user(true);
+    $user = get_logged_in_user(false);
     if ($user) {
         [$rq, $rd, $review] = get_users_ratings($user, PERFORMANCE, $perf->id);
     }
@@ -262,7 +274,11 @@ function perf_right($perf) {
         row2('Average rating', rating_bar($davg));
         end_table();
     }
-    show_reviews(PERFORMANCE, $perf->id, $user, $review);
+    if ($user) {
+        show_reviews(PERFORMANCE, $perf->id, $user, $review);
+    } else {
+        show_reviews(PERFORMANCE, $perf->id, null, null);
+    }
     echo '
         <p>
         <b>People who liked this recording also liked recordings of:</b>
@@ -284,7 +300,7 @@ function show_recommended_perfs($perf) {
 }
 
 function score_right($score) {
-    $user = get_logged_in_user(true);
+    $user = get_logged_in_user(false);
     if ($user) {
         [$rq, $rd, $review] = get_users_ratings($user, SCORE, $score->id);
     }
@@ -305,7 +321,11 @@ function score_right($score) {
     }
     row2('Average rating', rating_bar($davg));
     end_table();
-    show_reviews(SCORE, $score->id, $user, $review);
+    if ($user) {
+        show_reviews(SCORE, $score->id, $user, $review);
+    } else {
+        show_reviews(SCORE, $score->id, null, null);
+    }
 }
 
 ?>

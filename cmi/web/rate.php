@@ -19,11 +19,14 @@ function review_form($type, $target) {
             $user->id, $type, $target
         )
     );
+    $review = '';
     if ($r) {
         $review = $r->review;
+    }
+    if ($review) {
         page_head('Edit review');
     } else {
-        page_head('Review');
+        page_head('Write review');
     }
     switch($type) {
     case COMPOSITION:
@@ -43,7 +46,7 @@ function review_form($type, $target) {
         $role = role_id_to_name($pr->role);
         $person = DB_person::lookup_id($pr->person);
         echo "
-            Please write a brief review of $person->first_name $person->last_name as a $role,
+            Please write a brief review of $person->first_name $person->last_name as $role,
             perhaps including:
             <ul>
             <li> Why you do or don't like their work.
@@ -51,6 +54,13 @@ function review_form($type, $target) {
             <li> Your experiences hearing or playing their work.
             </ul>
         ";
+        break;
+    case PERFORMANCE:
+        $perf = DB_performance::lookup_id($target);
+        echo "to be completed";
+        break;
+    case SCORE:
+        echo "to be completed";
         break;
     default: error_page('bad type');
     }
@@ -89,12 +99,43 @@ function review_action($type, $target) {
         );
     } else {
         header(
-            sprintf('Location: item.php?type=%d&id=%d', $type, $id)
+            sprintf('Location: item.php?type=%d&id=%d', $type, $target)
         );
     }
 }
 
-function do_rate($type, $id, $attr='attr1') {
+// update the item's rating stats
+//
+function update_ratings($type, $id, $attr, $old, $new) {
+    $nratings = "nratings$attr";
+    $rating_sum = "rating_sum$attr";
+    if ($old == NO_RATING) {
+        $q = "$nratings=$nratings+1, $rating_sum=$rating_sum+$new";
+    } else if ($new == NO_RATING) {
+        $q = "$nratings=$nratings-1, $rating_sum=$rating_sum-$old";
+    } else {
+        $diff = $new - $old;
+        $q = "$rating_sum=$rating_sum+$diff";
+    }
+    switch ($type) {
+    case COMPOSITION:
+        $item = new DB_composition;
+        break;
+    case SCORE:
+        $item = new DB_score;
+        break;
+    case PERFORMANCE:
+        $item = new DB_performance;
+        break;
+    case PERSON_ROLE:
+        $item = new DB_person_role;
+        break;
+    }
+    $item->id = $id;
+    $item->update($q);
+}
+
+function do_rate($type, $id, $attr) {
     $user = get_logged_in_user();
     $val = get_int('val');
     $r = DB_rating::lookup(
@@ -103,12 +144,15 @@ function do_rate($type, $id, $attr='attr1') {
         )
     );
     if ($r) {
+        $field = "attr$attr";
+        update_ratings($type, $id, $attr, $r->$field, $val);
         $r->update(
-            sprintf('%s=%d, created=%d', $attr, $val, time())
+            sprintf('attr%d=%d, created=%d', $attr, $val, time())
         );
     } else {
+        update_ratings($type, $id, $attr, NO_RATING, $val);
         DB_rating::insert(
-            sprintf('(created, user, type, target, %s) values (%d, %d, %d, %d, %d)',
+            sprintf('(created, user, type, target, attr%d) values (%d, %d, %d, %d, %d)',
                 $attr, time(), $user->id, $type, $id, $val
             )
         );
@@ -130,25 +174,25 @@ $type = get_int('type', true);
 $target = get_int('target');
 switch($action) {
 case 'rate_comp_1':
-    do_rate(COMPOSITION, $target, 'attr1');
+    do_rate(COMPOSITION, $target, 1);
     break;
 case 'rate_comp_2':
-    do_rate(COMPOSITION, $target, 'attr2');
+    do_rate(COMPOSITION, $target, 2);
     break;
 case 'rate_perf_1':
-    do_rate(PERFORMANCE, $target, 'attr1');
+    do_rate(PERFORMANCE, $target, 1);
     break;
 case 'rate_perf_2':
-    do_rate(PERFORMANCE, $target, 'attr2');
+    do_rate(PERFORMANCE, $target, 2);
     break;
 case 'rate_score_1':
-    do_rate(SCORE, $target, 'attr1');
+    do_rate(SCORE, $target, 1);
     break;
 case 'rate_score_2':
-    do_rate(SCORE, $target, 'attr2');
+    do_rate(SCORE, $target, 2);
     break;
 case 'rate_pr':
-    do_rate(PERSON_ROLE, $target);
+    do_rate(PERSON_ROLE, $target, 1);
     break;
 case 'rev_form':
     review_form($type, $target);

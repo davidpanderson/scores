@@ -176,6 +176,21 @@ function test_opus() {
     }
 }
 
+////////////////////// performer /////////////////////
+
+function test_performer() {
+    $ts = [
+        ['','London Symphony Orchestra=orchestra;Krips, Josef=conductor'],
+        ['Orchestre symphonique du Gürzenich de Cologne, Günter Wand (dir.)', 'Gürzenich-Orchester Köln=orchestra'],
+        ['Utah Symphony; Maurice Abravanel (conductor)', 'Manookian, Jeff=piano'],
+    ];
+    foreach ($ts as [$t, $u]) {
+        echo "----------------\ninput: $t\noutput: ";
+        print_r(parse_performers($t, $u));
+        echo "\n";
+    }
+}
+
 ////////////////////// publisher /////////////////////
 
 function test_publisher() {
@@ -248,5 +263,6 @@ function test_template() {
 //test_title();
 //test_opus();
 //test_publisher();
-test_template();
+//test_template();
+test_performer();
 ?>

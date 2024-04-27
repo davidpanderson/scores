@@ -122,4 +122,5 @@ define ('SELECTIONS', 2);
 define ('VOCAL', 4);
 define ('SKETCHES', 5);
 
+define ('NO_RATING', -1);
 ?>

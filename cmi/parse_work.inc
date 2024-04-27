@@ -726,6 +726,11 @@ function parse_perf_comma($str) {
 // if str is of form "Joe Smith (piano)" return [first, last, instr]
 //
 function parse_perf_paren($str) {
+    // if 'foobar; joe smith (conductor)' strip the foobar;
+    $n = strpos($str, ';');
+    if ($n !== false) {
+         $str = trim(substr($str, $n+1));
+    }
     if (strpos($str, '[[') !== false) return null;
     $n = strpos($str, '(');
     if (!$n) return null;

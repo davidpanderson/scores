@@ -94,7 +94,8 @@ create table composition_type (
     primary key(id)
 );
 
-# orchestra, string quartet, ...
+-- orchestra, string quartet, opera company, etc.
+-- This overlaps Instrument (below); should they be merged?
 create table ensemble_type (
     id                      integer         not null auto_increment,
     name                    varchar(190)    not null,
@@ -135,6 +136,16 @@ create table organization (
     unique(name)
 );
 
+-- can represent
+-- an instrument, e.g. piano
+-- an instrument played a particular way, e.g. piano 4 hands
+-- an underspecific instrument, e.g. woodwind
+-- an under-specified group of instruments, e.g. orchestra
+-- a common well-specified group of instruments, e.g. string quartet
+--      This can also be described by an Instrument_combo (below)
+--      but sometimes it's simpler to use this.
+-- a singer at some level of specification, e.g. voice or mezzosoprano
+-- a performance role like narrator
 
 create table instrument (
     id                      integer         not null auto_increment,
@@ -178,8 +189,6 @@ create table person_role (
         -- if role is performer
     nratings1               integer         not null default 0,
     rating_sum1             integer         not null default 0,
-    nratings2               integer         not null default 0,
-    rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
     unique(person, role, instrument),
     primary key(id)
@@ -367,20 +376,26 @@ create table rating (
     user                    integer         not null default 0,
     target                  integer         not null default 0,
         -- ID of item being rated
+        -- composition, performance, score, or person_role
     type                    integer         not null default 0,
         -- type of item being rated; see values in cmi_db.inc
-    attr1                   integer,
-        -- how much you like the composition or performance
+    attr1                   integer         not null default -1,
+        -- how much user likes the composition or performance
         -- for scores, quality of edition
-        -- null if no rating
-    attr2                   integer,
+        -- -1 if no rating
+    attr2                   integer         not null default -1,
         -- for compositions, difficulty
         -- for recorded performance, sound quality
         -- for scores, quality of scan
-        -- null if no rating
+        -- -1 if no rating
     review                  text,
+    nuseful                 integer         not null default 0,
+        -- number of 'useful' responses
+    nuseful_pos             integer         not null default 0,
+        -- of these, how many said it was useful
     primary key(id)
 );
+alter table rating add index rat_item(type, target);
 alter table rating add unique(user, target, type);
 
 create table review_useful (
@@ -392,4 +407,4 @@ create table review_useful (
         -- 1 = useful, 2 = not useful, 3 = report
     primary key(id)
 );
-alter table review_useful add unique(user, rating);
+alter table review_useful add unique(rating, user);

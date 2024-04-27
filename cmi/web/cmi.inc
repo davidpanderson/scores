@@ -110,7 +110,7 @@ function creators_str($cts, $show_role) {
         }
         $x[] = $s;
     }
-    return implode('<br>', $x);
+    return implode(' and ', $x);
 }
 
 // return 'first last'
@@ -133,6 +133,7 @@ function role_str($prole) {
 // return e.g. Joe Smith (piano) or Joe Smith (lyricist)
 //
 function person_role_str($prole, $show_role) {
+    [$s, $r] = person_role_array($prole);
     if (!$show_role) return $s;
     return "$s ($r)";
 }
@@ -140,13 +141,8 @@ function person_role_str($prole, $show_role) {
 // same, but return name and role separately
 //
 function person_role_array($role) {
-    if ($role->person) {
-        $person = DB_person::lookup_id($role->person);
-        $s = "$person->first_name $person->last_name";
-    } else {
-        $ensemble = DB_ensemble::lookup_id($role->ensemble);
-        $s = "$ensemble->name";
-    }
+    $person = DB_person::lookup_id($role->person);
+    $s = "$person->first_name $person->last_name";
     $t = role_id_to_name($role->role);
     if ($role->instrument) {
         $t .= sprintf(' (%s)', instrument_id_to_name($role->instrument));
@@ -288,6 +284,9 @@ function location_type_options() {
 }
 
 function location_name($loc) {
+    if ($loc->type == location_type_name_to_id('country')) {
+        return $loc->name;
+    }
     if ($loc->parent) {
         return sprintf('%s (%s in %s)',
             $loc->name, location_type_id_to_name($loc->type),
@@ -451,6 +450,16 @@ function score_str($score) {
     return $s;
 }
 
+// score attributes
+//
+function score_attrs_str($score) {
+    $x = [];
+    if ($score->is_parts) $x[] = 'parts';
+    if ($score->is_selections) $x[] = 'selections';
+    if ($score->is_vocal) $x[] = 'vocal score';
+    return implode(', ', $x);
+}
+
 // convert a program (list of performance IDs) to text
 //
 function program_str($prog) {
@@ -458,20 +467,35 @@ function program_str($prog) {
     $x = [];
     foreach ($prog as $pid) {
         $perf = DB_performance::lookup_id($pid);
-        $x[] = performance_str($n++, $perf);
+        $x[] = perf_str($n++, $perf);
     }
     return implode('<p>', $x);
 }
 
-function performance_str($n, $perf) {
+// for program_str() (concerts)
+//
+function program_perf_str($n, $perf) {
     $comp = DB_composition::lookup_id($perf->composition);
     $s = sprintf('<h4>%d) %s</h4>', $n, composition_str($comp));
     $roles = json_decode($perf->performers);
     foreach ($roles as $role_id) {
         $role = DB_person_role::lookup_id($role_id);
-        $s .= sprintf("<li> %s\n", person_role_str($role));
+        $s .= sprintf("<li> %s\n", person_role_str($role, true));
     }
     return $s;
+}
+
+function ensemble_str($id, $link) {
+    if (!$id) return '';
+    $ens = DB_ensemble::lookup_id($id);
+    $type = ensemble_type_id_to_name($ens->type);
+    if ($link) {
+        return sprintf('<a href=item.php?type=%d&id=%d>%s</a> (%s)',
+            ENSEMBLE, $id, $ens->name, $type
+        );
+    } else {
+        return "$ens->name ($type)";
+    }
 }
 
 function organization_id_to_name($id) {
@@ -488,4 +512,11 @@ function image_type_options() {
         [3, 'Typeset']
     ];
 }
+
+function form_input_text2($label, $name, $value, $placeholder) {
+    form_input_text($label, $name, $value, 'text',
+        sprintf('placeholder="%s"', $placeholder)
+    );
+}
+
 ?>

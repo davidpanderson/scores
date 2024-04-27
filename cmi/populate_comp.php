@@ -809,13 +809,20 @@ function make_performance(
     }
     $perf_role_ids = [];
     foreach ($performers as $perf) {
-        $inst = DB_instrument::lookup(
-            sprintf("name='%s'", DB::escape($perf[2]))
-        );
-        $inst_id = $inst?$inst->id:0;
-        $person = get_person($perf[0], $perf[1]);
-        $pr_id = get_person_role($person, 'performer', $inst_id);
-        $perf_role_ids[] = $pr_id;
+        $x = strtolower($perf[2]);
+        if ($x == 'conductor' || $x == 'dir.') {
+            $person = get_person($perf[0], $perf[1]);
+            $pr_id = get_person_role($person, 'conductor');
+            $perf_role_ids[] = $pr_id;
+        } else {
+            $inst = DB_instrument::lookup(
+                sprintf("name='%s'", DB::escape($perf[2]))
+            );
+            $inst_id = $inst?$inst->id:0;
+            $person = get_person($perf[0], $perf[1]);
+            $pr_id = get_person_role($person, 'performer', $inst_id);
+            $perf_role_ids[] = $pr_id;
+        }
     }
 
     $license = 0;

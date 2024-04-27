@@ -362,5 +362,14 @@ function organization_type_name_to_id($name) {
     die("Unknown org type $name\n");
 }
 
+/////////////// ensemble_type /////////////////
+
+function ensemble_type_id_to_name($id) {
+    static $types = null;
+    if (!$types) {
+        $types = unserialize(file_get_contents('data/ensemble_type_by_id.ser'));
+    }
+    return $types[$id]->name;
+}
 
 ?>

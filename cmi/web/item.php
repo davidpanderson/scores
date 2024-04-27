@@ -125,30 +125,30 @@ function comp_left($arg) {
         if ($c->alternative_title) {
             row2('Alternative title', $c->alternative_title);
         }
+        row2('Creators', dash(creators_str($c->creators, true)));
         row2('Opus', $c->opus_catalogue);
+        row2('Instrumentation', dash(instrument_combos_str($c->instrument_combos)));
+        row2('Number of movements', dash($c->n_movements));
+        row2('Keys', dash($c->_keys));
         row2('Composed', dash(DB::date_num_to_str($c->composed)));
         row2('First published', dash(DB::date_num_to_str($c->published)));
         //row2('First performed', DB::date_num_to_str($c->performed));
         row2('Dedication', dash($c->dedication));
         row2('Tempo markings', dash($c->tempo_markings));
         row2('Metronome markings', dash($c->metronome_markings));
-        row2('Keys', dash($c->_keys));
         row2('Time signatures', dash($c->time_signatures));
         row2('Average duration (sec)', dash($c->avg_duration_sec));
         row2('Number of measures', dash($c->n_bars));
         row2('Composition types', dash(comp_types_str($c->comp_types)));
-        row2('Creators', dash(creators_str($c->creators, true)));
         if ($c->language) {
             row2('Language', languages_str([$c->language]));
         }
-        row2('Instrumentation', dash(instrument_combos_str($c->instrument_combos)));
         if ($c->ensemble_type) {
             row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
         }
         if ($c->period) {
             row2('Period', period_name($c->period));
         }
-        row2('Number of movements', dash($c->n_movements));
     }
     if (editor()) {
         row2('Code', copy_button(item_code($c->id, 'composition')));
@@ -278,7 +278,7 @@ function comp_left($arg) {
     $perfs = DB_performance::enum("composition=$c->id");
     if ($perfs) {
         start_table();
-        table_header('Details', 'Type', 'Section', 'Performers', 'Arranged for', 'File');
+        table_header('Details', 'Type', 'Section', 'Ensemble', 'Performers', 'Arranged for', 'File');
         foreach ($perfs as $perf) {
             if (!$perf->is_recording) continue;
             $files = json_decode($perf->files);
@@ -294,6 +294,7 @@ function comp_left($arg) {
                 ),
                 $perf->is_synthesized?'Synthesized':'',
                 dash($perf->section),
+                dash(ensemble_str($perf->ensemble, true)),
                 creators_str($perf->performers, true),
                 $perf->instrumentation,
                 implode('<br>', $f)
@@ -473,7 +474,14 @@ function do_performance($id) {
 function perf_left($perf) {
     start_table();
     $comp = DB_composition::lookup_id($perf->composition);
-    row2('Composition', composition_str($comp));
+    row2('Composition',
+        sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+            COMPOSITION, $comp->id, composition_str($comp)
+        )
+    );
+    if ($perf->ensemble) {
+        row2('Ensemble', ensemble_str($perf->ensemble, true));
+    }
     row2('Performers', creators_str($perf->performers, true));
     row2('Recording?', $perf->is_recording?'Yes':'No');
     row2('Synthesized?', $perf->is_synthesized?'Yes':'No');
@@ -493,7 +501,8 @@ function perf_left($perf) {
     table_header('Description', 'Name');
     foreach ($files as $file) {
         table_row(
-            sprintf('<nobr>%s</nobr>', $file->desc, $file->name)
+            sprintf('<nobr>%s</nobr>', $file->desc),
+            $file->name
         );
     }
     end_table();
@@ -599,6 +608,24 @@ function do_person_role($id) {
         }
         end_table();
         break;
+    case 'conductor':
+        echo '<h3>Performances</h3>';
+        start_table();
+        table_header('Composition', 'Ensemble');
+        $q = sprintf("json_contains(performers, '%d', '$')", $id);
+        $perfs = DB_performance::enum($q);
+        foreach ($perfs as $perf) {
+            $comp = DB_composition::lookup_id($perf->composition);
+            table_row(
+                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+                    COMPOSITION, $comp->id, composition_str($comp)
+                ),
+                ensemble_str($perf->ensemble, true)
+            );
+        }
+        end_table();
+        break;
+    case 'conductor':
     case 'arranger':
     case 'composer':
     case 'librettist':
@@ -620,19 +647,37 @@ function do_person_role($id) {
     case 'translator':
         echo '<h3>Scores</h3>';
         start_table();
-        table_header('Composition');
+        table_header('Composition', 'Attributes');
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
         $scores = DB_score::enum($q);
         foreach ($scores as $score) {
+            $score->compositions = json_decode($score->compositions);
             $comp = DB_composition::lookup_id($score->compositions[0]);
             table_row(
                 sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    COMPOSITION, $comp->id, composition_str($comp)
-                )
+                    SCORE, $score->id, composition_str($comp)
+                ),
+                score_attrs_str($score)
             );
         }
         end_table();
         break;
+    }
+    page_tail();
+}
+
+function do_ensemble($id) {
+    $ens = DB_ensemble::lookup_id($id);
+    page_head("Recordings by $ens->name");
+    $perfs = DB_performance::enum("ensemble=$id");
+    start_table();
+    table_header('Composition', 'Performers');
+    foreach ($perfs as $perf) {
+        $comp = DB_composition::lookup_id($perf->composition);
+        table_row(
+            composition_str($comp),
+            creators_str($perf->performers, true)
+        );
     }
     page_tail();
 }
@@ -665,6 +710,9 @@ function main($type, $id) {
         break;
     case PERSON_ROLE:
         do_person_role($id);
+        break;
+    case ENSEMBLE:
+        do_ensemble($id);
         break;
     default: error_page("No type $type");
     }

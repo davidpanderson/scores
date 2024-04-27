@@ -11,4 +11,5 @@ require_once('write_ser.inc');
 write_ser_period();
 write_ser_license();
 write_ser_instrument_combo();
+write_ser_ensemble_type();
 ?>

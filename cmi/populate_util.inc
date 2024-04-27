@@ -346,6 +346,9 @@ function get_location_id($name) {
 //
 function get_publisher($pub, $type_name) {
     if (!$pub->name) return 0;
+    $c = substr2($pub->name, 0, 1);
+    if (!ctype_alpha($c)) return 0;
+    if (ctype_lower($c)) return 0;
     $p = DB_organization::lookup(
         sprintf("name='%s'", DB::escape($pub->name))
     );
@@ -439,6 +442,7 @@ function get_arrangement_target($instruments) {
     return $id;
 }
 
+// deprecated
 function get_performer_role($first, $last, $role) {
     global $test;
     $person_id = get_person($first, $last);

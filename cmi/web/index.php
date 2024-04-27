@@ -88,6 +88,7 @@ function left(){
             show_button('search.php?type=concert', 'Concerts');
             show_button('search.php?type=venue', 'Venues');
             show_button('search.php?type=organization', 'Organizations');
+            show_button('search.php?type=ensemble', 'Ensembles');
             if (editor()) {
                 show_button('search.php?type=inst_combo', 'Instrumentations');
             }

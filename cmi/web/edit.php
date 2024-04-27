@@ -338,9 +338,9 @@ function concert_form($id) {
     if ($con->_when) {
         form_input_text('Date', 'when', DB::date_num_to_str($con->_when));
     } else {
-        form_input_text('Date', 'when', '', 'text', 'placeholder="YYYY-MM-DD"');
+        form_input_text2('Date', 'when', '', 'YYYY-MM-DD');
     }
-    form_select('Sponsor', 'organization', organization_options(), $con->organization);
+    form_select('Sponsoring organization', 'organization', organization_options(), $con->organization);
     form_submit($id?'Update concert':'Add concert');
     form_end();
 
@@ -456,8 +456,9 @@ function concert_action($id) {
     $when = get_str('when', true);
     if ($when) {
         $when = DB::date_num_parse($when);
-    } else {
-        $when = 0;
+    }
+    if (!$when) {
+        error_page('You must specify a date.');
     }
     $organization = get_int('organization');
 
@@ -478,7 +479,6 @@ function concert_action($id) {
         );
         $id = DB_concert::insert($q);
     }
-    exit;
     header(
         sprintf('Location: item.php?type=%d&id=%d', CONCERT, $id)
     );
@@ -988,14 +988,26 @@ function composition_form($id) {
     // things only main comps and sections can have
     //
     if (!$is_arrangement) {
-        form_input_text('Time signatures', 'time_signatures', $comp->time_signatures);
+        form_input_text2(
+            'Time signatures', 'time_signatures', $comp->time_signatures,
+            "example: '3/8, 5/8'"
+        );
     }
 
     // things they all can have
     //
-    form_input_text('Tempo markings', 'tempo_markings', $comp->tempo_markings);
-    form_input_text('Metronome markings', 'metronome_markings', $comp->metronome_markings);
-    form_input_text('Keys', 'keys', $comp->_keys);
+    form_input_text2(
+        'Tempo markings', 'tempo_markings', $comp->tempo_markings,
+        "example: 'Allegro'"
+    );
+    form_input_text2(
+        'Metronome markings', 'metronome_markings', $comp->metronome_markings,
+        "example: 'quarter=60, dotted eighth=96'"
+    );
+    form_input_text2(
+        'Keys', 'keys', $comp->_keys,
+        "example: 'C major, F sharp minor'"
+    );
     form_input_text('Average duration, seconds', 'avg_duration_sec', blank($comp->avg_duration_sec));
     form_input_text('# measures', 'n_bars', blank($comp->n_bars));
 
@@ -1403,7 +1415,10 @@ function score_form($id) {
     form_select('Publisher', 'publisher', organization_options(), $score->publisher);
     form_select('License', 'license', license_options(), $score->license);
     select2_multi('Languages', 'languages', language_options(), $score->languages);
-    form_input_text('Publish date', 'publish_date', DB::date_num_to_str($score->publish_date), 'text', 'placeholder="YYYY-MM-DD"');
+    form_input_text2(
+        'Publish date', 'publish_date',
+        DB::date_num_to_str($score->publish_date), 'YYYY-MM-DD'
+    );
     form_input_text('Edition number', 'edition_number', $score->edition_number);
     form_select('Image type', 'image_type', image_type_options(), $score->image_type);
     $x = [

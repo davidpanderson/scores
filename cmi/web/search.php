@@ -90,12 +90,13 @@ function do_person($params) {
     $y = implode(' and ', $x);
     $pers = DB_person::enum(
         $y,
-        sprintf('order by last_name limit %d,%d', $params->offset, PAGE_SIZE+1)
+        sprintf('order by last_name,first_name limit %d,%d', $params->offset, PAGE_SIZE+1)
     );
     if ($params->offset) {
-        $params->offset = max($params->offset-PAGE_SIZE, 0);
+        $params2 = clone $params;
+        $params2->offset = max($params->offset-PAGE_SIZE, 0);
         echo sprintf('<a href=search.php?type=person%s>Previous %d</a>',
-            person_encode($params), PAGE_SIZE 
+            person_encode($params2), PAGE_SIZE 
         );
     }
     start_table();
@@ -499,7 +500,7 @@ function do_venue() {
 
 function do_organization() {
     page_head('Organizations');
-    $orgs = DB_organization::enum();
+    $orgs = DB_organization::enum('', 'order by name');
     start_table();
     table_header('Name', 'Type', 'Location');
     foreach ($orgs as $org) {
@@ -525,12 +526,16 @@ function do_ensemble() {
     start_table();
     table_header('Name', 'Type', 'Location');
     foreach($enss as $ens) {
+        $loc = null;
+        if ($ens->location) {
+            $loc = DB_location::lookup_id($ens->location);
+        }
         table_row(
             sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
                 ENSEMBLE, $ens->id, $ens->name
             ),
-            ensemble_type_str($ens->type),
-            location_str($ens->location)
+            ensemble_type_id_to_name($ens->type),
+            $loc?location_name($loc):dash()
         );
     }
     end_table();
