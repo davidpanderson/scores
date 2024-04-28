@@ -65,37 +65,61 @@ function left(){
     panel(
         'About',
         function() {
-            echo '
+            echo "
                 <p>
                 Classical Music Index (CMI)
-                is a searchable and editable
-                database of classical music information:
-                compositions, people, ensembles, recordings, and concerts.
+                is a database of classical music information.
+                <ul>
+                <li> CMI can express
+                    <a href=db_info.php>complex and detailed information</a>:
+                    movements, arrangements, instrumentations,
+                    creator roles, and so on.
+                <li> CMI is 'normalized': data such as people's names
+                    appears only once, eliminating inconsistency.
+                <li> CMI allows complex queries:
+                    for example, you can find string quartets
+                    by female French composers.
+                <li> CMI is
+                    <a href=edit_info.php>editable</a>:
+                    composers can add entries about their compositions,
+                    and about themselves.
+                    Volunteer editors can fix or add details.
+                <li> CMI is designed to encourage
+                    <a href=https://continuum-hypothesis.com/music_discover.php>music discovery</a>.
+                    You can rate things (compositions, performances, people),
+                    and you can find music you'll like
+                    based on other people's ratings.
+                </ul>
                 <p>
-                The goals of CMI, and its database schema,
-                are described <a href=https://continuum-hypothesis.com/music_discover.php>here</a>.
-                <p>
-                CMI is currently based on data from
-                <a href=https://imslp.org>IMSLP</a>.
-                <p>
-                The code behind CMI is
+                The code behind CMI is open source and is
                 <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
-                <p><p>
+                <p>
+                CMI includes data from <a href=https://imslp.org>IMSLP</a>.
+            ";
+            echo '<hr>
+                CMI has:
+                <p>
             ';
-            show_button('search.php?type=composition', 'Compositions');
-            show_button('search.php?type=person', 'People');
-            show_button('search.php?type=location', 'Locations');
-            show_button('search.php?type=concert', 'Concerts');
-            show_button('search.php?type=venue', 'Venues');
-            show_button('search.php?type=organization', 'Organizations');
-            show_button('search.php?type=ensemble', 'Ensembles');
+            show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings');
+            show_type('People', 'person', 'Composers, performers, arrangers, etc.');
+            show_type('Concerts', 'concert', 'Live performances, past and future');
+            show_type('Venues', 'venue', 'Concert locations');
+            show_type('Ensembles', 'ensemble', 'Orchestras, choirs, chamber groups, etc.');
+            show_type('Organizations', 'organization', 'Music and record publishers');
             if (editor()) {
-                show_button('search.php?type=inst_combo', 'Instrumentations');
+                show_type('Locations', 'location', 'Cities, provinces, countries, continents');
+                show_type('Instrumentations', 'inst_combo', 'Combinations of instruments');
             }
         }
     );
 }
 
+function show_type($title, $name, $desc) {
+    echo "<p><b><a href=search.php?type=$name>$title</a></b>:
+        $desc
+    ";
+}
+        
 function right() {
     panel(tra('News'),
         function() {

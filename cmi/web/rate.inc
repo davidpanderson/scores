@@ -266,7 +266,7 @@ function perf_right($perf) {
     row2('Average rating', rating_bar($qavg));
     end_table();
     if ($perf->is_recording) {
-        echo '<b>Recording quality</b>';
+        echo '<b>Audio quality</b>';
         start_table();
         if ($user) {
             row2('Your rating', rating_buttons(true, $rd, 'rate_perf_2', $perf->id));

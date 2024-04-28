@@ -8,7 +8,7 @@
 //      {{templatename | name=val | name=val}}
 // and the arguments can contain template calls.
 
-$mw_verbose = false;
+define('MW_VERBOSE', false);
 
 require_once("cmi_util.inc");
 
@@ -34,9 +34,7 @@ function str_head($str, $pos) {
 //      template_end_pos: offset of top-level }} or -1
 //
 function scan_arg($str, $start_pos) {
-    global $mw_verbose;
-
-    if ($mw_verbose) {
+    if (MW_VERBOSE) {
         echo sprintf("scan_arg(): %s\n", str_head($str, $start_pos));
     }
     $len = strlen($str);
@@ -151,11 +149,18 @@ function is_mw_function($str, $pos) {
 //      - an array of argument names and values.
 //      - the offset of the position past the }}
 // The values may contain template calls.
+// Return null if parse error
 //
 function parse_template_call($str, $start_pos) {
-    global $mw_verbose;
-
-    if ($mw_verbose) {
+    $n = strlen($str);
+    if ($start_pos + 5 >= strlen($str)) {
+        echo sprintf(
+            "parse_template_call(): too short '%s'\n",
+            substr($str, $start_pos)
+        );
+        return null;
+    }
+    if (MW_VERBOSE) {
         echo sprintf("parse_template_call(): %s\n", str_head($str, $start_pos));
     }
     $i = $start_pos + 2;

@@ -27,6 +27,13 @@ function blank($s) {
     return $s?$s:'';
 }
 
+function spaces($n) {
+    $s = '';
+    for ($i=0; $i<$n; $i++) {
+        $s .= '&nbsp;';
+    }
+    return $s;
+}
 
 // is logged-in user an editor?
 //
@@ -145,7 +152,7 @@ function person_role_array($role) {
     $s = "$person->first_name $person->last_name";
     $t = role_id_to_name($role->role);
     if ($role->instrument) {
-        $t .= sprintf(' (%s)', instrument_id_to_name($role->instrument));
+        $t = instrument_id_to_name($role->instrument);
     }
     return [$s, $t];
 }
@@ -359,22 +366,26 @@ function organization_type_str($id) {
 
 function item_code($id, $type) {
     switch ($type) {
-    case 'composition': return "com$id";
-    case 'person_role': return "prl$id";
-    case 'inst_combo': return "ico$id";
-    case 'comp_type': return "cpt$id";
+    case 'composition': return "com_$id";
+    case 'person_role': return "prl_$id";
+    case 'inst_combo': return "ico_$id";
+    case 'comp_type': return "cpt_$id";
+    case 'organization': return "org_$id";
+    case 'ensemble': return "ens_$id";
     }
     return 'bad type';
 }
 
 function parse_code($code, $type) {
     $t = substr($code, 0, 3);
-    $n = substr($code, 3);
+    $n = substr($code, 4);
     switch ($type) {
     case 'composition': if ($t != 'com') return 0; break;
     case 'person_role': if ($t != 'prl') return 0; break;
     case 'inst_combo': if ($t != 'ico') return 0; break;
     case 'comp_type': if ($t != 'ctp') return 0; break;
+    case 'organization': if ($t != 'org') return 0; break;
+    case 'ensemble': if ($t != 'ens') return 0; break;
     }
     if (!is_numeric($n)) return 0;
     return (int)$n;
@@ -409,7 +420,7 @@ function copy_to_clipboard(x) {
 }
 
 function copy_button($text) {
-    return sprintf("<button onclick=\"copy_to_clipboard('%s')\" title=\"Copy code to clipboard\">Code</button>",
+    return sprintf("<button onclick=\"copy_to_clipboard('%s')\" title=\"Copy code to clipboard\">Copy</button>",
         $text
     );
 }
@@ -417,7 +428,7 @@ function copy_button($text) {
 // return a string describing the composition,
 // which could be an arrangement or a sub-composition
 //
-function composition_str($c) {
+function composition_str($c, $link=true) {
     if ($c->arrangement_of) {
         $c2 = DB_composition::lookup_id($c->arrangement_of);
         $s = 'Arrangement of ';
@@ -428,26 +439,38 @@ function composition_str($c) {
         if ($c->instrument_combos) {
             $s .= ' for '.instrument_combos_str($c->instrument_combos);
         }
-        return $s;
     } else if ($c->parent) {
         $c2 = DB_composition::lookup_id($c->parent);
-        return sprintf('Section (%s) of %s', $c->title, $c2->long_title);
+        $s = sprintf('Section (%s) of %s', $c->title, $c2->long_title);
     } else {
-        return $c->long_title;
+        $s = $c->long_title;
+    }
+    if ($link) {
+        return sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+            COMPOSITION, $c->id, $s
+        );
+    } else {
+        return $s;
     }
 }
 
 // the name of a score's section and composition
 //
-function score_str($score) {
+function score_str($score, $link=true) {
     $score->compositions = json_decode($score->compositions);
     $comp = DB_composition::lookup_id($score->compositions[0]);
     $s = '';
     if ($score->section) {
         $s = "$score->section from ";
     }
-    $s .= composition_str($comp);
-    return $s;
+    $s .= composition_str($comp, false);
+    if ($link) {
+        return sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+            SCORE, $score->id, $s
+        );
+    } else {
+        return $s;
+    }
 }
 
 // score attributes
@@ -467,7 +490,7 @@ function program_str($prog) {
     $x = [];
     foreach ($prog as $pid) {
         $perf = DB_performance::lookup_id($pid);
-        $x[] = perf_str($n++, $perf);
+        $x[] = program_perf_str($n++, $perf);
     }
     return implode('<p>', $x);
 }
@@ -476,11 +499,14 @@ function program_str($prog) {
 //
 function program_perf_str($n, $perf) {
     $comp = DB_composition::lookup_id($perf->composition);
-    $s = sprintf('<h4>%d) %s</h4>', $n, composition_str($comp));
+    $s = sprintf('%d) %s', $n, composition_str($comp));
     $roles = json_decode($perf->performers);
     foreach ($roles as $role_id) {
         $role = DB_person_role::lookup_id($role_id);
-        $s .= sprintf("<li> %s\n", person_role_str($role, true));
+        $s .= sprintf("<br>%s%s\n",
+            spaces(6),
+            person_role_str($role, true)
+        );
     }
     return $s;
 }

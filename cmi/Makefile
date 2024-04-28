@@ -29,4 +29,4 @@ data/make_ser_done: data/comp_done
 	make_ser.php && touch data/make_ser_done
 
 clean:
-	rm -f data/*_done
+	rm -f data/*_done data/*.ser

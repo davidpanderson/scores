@@ -183,6 +183,7 @@ function test_performer() {
         ['','London Symphony Orchestra=orchestra;Krips, Josef=conductor'],
         ['Orchestre symphonique du Gürzenich de Cologne, Günter Wand (dir.)', 'Gürzenich-Orchester Köln=orchestra'],
         ['Utah Symphony; Maurice Abravanel (conductor)', 'Manookian, Jeff=piano'],
+        ['Ezequiel Diz, Guillermo Copello, Mariano Asato, Lucas Querini, Julia Martínez, Salvador Trapani, Sebastian de la Vallina', ''],
     ];
     foreach ($ts as [$t, $u]) {
         echo "----------------\ninput: $t\noutput: ";

@@ -29,9 +29,9 @@ require_once("cmi_util.inc");
 require_once("populate_util.inc");
 
 define('DEBUG_ARRANGEMENTS', 0);
-define('DEBUG_WIKITEXT', 1);
+define('DEBUG_WIKITEXT', 0);
     // log the original MW text
-define('DEBUG_PARSED_WORK', 1);
+define('DEBUG_PARSED_WORK', 0);
     // log the parsed version of it
 define('DEBUG_SCORES', 0);
     // log stuff related to scores
@@ -607,7 +607,7 @@ function handle_files($main_comp, $c) {
                     $hier[1] = '';
                     $hier[2] = '';
                 } else if ($level == 4) {
-                    $hier[1] = $name;
+                    $hier[1] = expand_key($name);
                     $hier[2] = '';
                 } else if ($level == 5) {
                     $hier[2] = $name;
@@ -618,8 +618,6 @@ function handle_files($main_comp, $c) {
                 echo "unrecognized string in file list: $item\n";
             }
         } else {
-            echo "score object:\n"; print_r($hier); print_r($item);
-
             $flags = 0;
             $section = '';
 
@@ -633,7 +631,7 @@ function handle_files($main_comp, $c) {
                     $flags = SELECTIONS;
                     break;
                 default:
-                    $section = expand_key($hier[1]);
+                    $section = $hier[1];
                 }
                 make_score($item, $arr_id, $flags, $section);
                 continue;
@@ -662,7 +660,7 @@ function handle_files($main_comp, $c) {
             case '':
                 break;
             default:
-                $section = expand_key($hier[1]);
+                $section = $hier[1];
             }
 
             make_score($item, $main_comp_id, $flags, $section);
@@ -853,9 +851,14 @@ function make_movements($c, $comp_id) {
     $ids = [];
     $i = 0;
     foreach ($mvts->sections as $section) {
+        if ($section->title) {
+            $title = $section->title;
+        } else {
+            $title = sprintf('No. %d', $i+1);
+        }
         $ids[] = DB_composition::insert(
             sprintf("(long_title, title, alternative_title, parent, _keys, n_bars, metronome_markings) values ('', '%s', '%s', %d, '%s', %d, '%s')",
-                DB::escape($section->title),
+                DB::escape($title),
                 DB::escape($section->alt_title),
                 $comp_id,
                 DB::escape($section->keys),
@@ -1143,9 +1146,7 @@ function main($start_line, $end_line) {
         DB::begin_transaction();
         foreach ($y as $title => $body) {
             //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
-            //if ($title != 'Symphony_No.20_in_D_major,_K.133_(Mozart,_Wolfgang_Amadeus)') continue;
-            //if ($title != 'Fantasia_in_C_minor,_Op.80_(Beethoven,_Ludwig_van)') continue;
-            //if ($title != 'Etudes,_Op.60_(Carcassi,_Matteo)') continue;
+            //if ($title != 'Piano_Quartet_No.1,_Op.25_(Brahms,_Johannes)') continue;
             echo "================ $title ==========\n";
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";
@@ -1178,6 +1179,6 @@ DB::$show_queries = true;
 
 // there are 3079 lines
 
-main(0, 10);
+main(0, 4000);
 
 ?>

@@ -301,8 +301,9 @@ create table venue (
     primary key(id)
 );
 
--- a past or present performance, possibly recorded
--- may consists of several parts (e.g. movements)
+-- a past or present performance
+-- possibly recorded, in which case describes files
+-- may consist of several parts (e.g. 1 file per movements)
 -- You can rate a performance but not its parts.
 
 create table performance (

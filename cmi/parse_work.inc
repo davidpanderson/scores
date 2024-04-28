@@ -970,6 +970,11 @@ function expand_key($s) {
         if (is_string($x)) {
             $out .= $x;
         } else {
+            if (empty($x->name)) {
+                echo "expand_key($s): bad item\n";
+                print_r($x);
+                return $s;
+            }
             switch (strtolower($x->name)) {
             case 'k':
             case 'key':
@@ -1421,7 +1426,9 @@ function parse_opus($s) {
 // return person_role ID or 0
 //
 function get_editor($s) {
-    [$template_name, $args, $pos] = parse_template_call($s, 0);
+    $n = strpos($s, '{{');
+    if ($n === false) return 0;
+    [$template_name, $args, $pos] = parse_template_call($s, $n);
     switch (strtolower($template_name)) {
     case 'linked':
         if (count($args)<2) return 0;
@@ -1467,6 +1474,7 @@ function get_editors($s) {
     $x = explode('<br>', $s);
     $ids = [];
     foreach ($x as $y) {
+        if (!$y) continue;
         $id = get_editor(trim($y));
         if ($id) $ids[] = $id;
     }
@@ -1484,8 +1492,10 @@ function get_translator($s) {
     case 'linktran':
         $born = 0;
         $died = 0;
-        if (count($args)>2) $born = make_int($args[2]);
-        if (count($args)>3) $died = make_int($args[3]);
+        $n = count($args);
+        if ($n<2) return 0;
+        if ($n>2) $born = make_int($args[2]);
+        if ($n>3) $died = make_int($args[3]);
         $id = get_person($args[0], $args[1], $born, $died);
         return get_person_role($id, 'translator');
     default:

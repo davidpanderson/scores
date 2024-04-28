@@ -97,22 +97,14 @@ function comp_left($arg) {
     $is_section = $c->parent;
 
     if ($is_arrangement) {
-        row2('Arrangement of',
-            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                COMPOSITION, $par->id, composition_str($par)
-            )
-        );
+        row2('Arrangement of', composition_str($par));
         row2('Creators', dash(creators_str($c->creators, true)));
         row2('Instrumentation', instrument_combos_str($c->instrument_combos));
         if ($c->ensemble_type) {
             row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
         }
     } else if ($is_section) {
-        row2('Section of',
-            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                COMPOSITION, $par->id, composition_str($par)
-            )
-        );
+        row2('Section of', composition_str($par));
         row2('Title', $c->title);
         row2('Tempo markings', dash($c->tempo_markings));
         row2('Metronome markings', dash($c->metronome_markings));
@@ -426,6 +418,7 @@ function do_concert($id) {
 function do_organization($id) {
     $org = DB_organization::lookup_id($id);
     page_head("Organization");
+    copy_to_clipboard_script();
     start_table();
     row2('Name', $org->name);
     $type_str = organization_type_str($org->type);
@@ -434,6 +427,7 @@ function do_organization($id) {
     row2('Location', $org->location);
     row2('URL', sprintf('<a href=%s>%s</a>', $org->url, $org->url));
     if (editor()) {
+        row2('Code', copy_button(item_code($id, 'organization')));
         row2('',
             button_text(
                 sprintf('edit.php?type=%d&id=%d', ORGANIZATION, $id),
@@ -450,11 +444,7 @@ function do_organization($id) {
             table_header('Composition');
             foreach ($scores as $score) {
                 table_row(
-                    sprintf(
-                        '<a href=item.php?type=%d&id=%d>%s</a>',
-                        SCORE, $score->id,
-                        score_str($score)
-                    )
+                    score_str($score, true)
                 );
             }
             end_table();
@@ -474,11 +464,7 @@ function do_performance($id) {
 function perf_left($perf) {
     start_table();
     $comp = DB_composition::lookup_id($perf->composition);
-    row2('Composition',
-        sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-            COMPOSITION, $comp->id, composition_str($comp)
-        )
-    );
+    row2('Composition', composition_str($comp));
     if ($perf->ensemble) {
         row2('Ensemble', ensemble_str($perf->ensemble, true));
     }
@@ -528,10 +514,7 @@ function score_left($score) {
     $comp_ids = json_decode($score->compositions);
     foreach ($comp_ids as $id) {
         $comp = DB_composition::lookup_id($id);
-        $comp_str[] = sprintf(
-            '<a href=item.php?type=%d&id=%d>%s</a>',
-            COMPOSITION, $id, composition_str($comp)
-        );
+        $comp_str[] = composition_str($comp);
     }
     row2('Composition', implode('<br>', $comp_str));
     $pub_str = '';
@@ -600,11 +583,7 @@ function do_person_role($id) {
         $perfs = DB_performance::enum($q);
         foreach ($perfs as $perf) {
             $comp = DB_composition::lookup_id($perf->composition);
-            table_row(
-                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    COMPOSITION, $comp->id, composition_str($comp)
-                )
-            );
+            table_row(composition_str($comp));
         }
         end_table();
         break;
@@ -617,9 +596,7 @@ function do_person_role($id) {
         foreach ($perfs as $perf) {
             $comp = DB_composition::lookup_id($perf->composition);
             table_row(
-                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    COMPOSITION, $comp->id, composition_str($comp)
-                ),
+                composition_str($comp),
                 ensemble_str($perf->ensemble, true)
             );
         }
@@ -635,11 +612,7 @@ function do_person_role($id) {
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
         $comps = DB_composition::enum($q);
         foreach ($comps as $comp) {
-            table_row(
-                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    COMPOSITION, $comp->id, composition_str($comp)
-                )
-            );
+            table_row(composition_str($comp));
         }
         end_table();
         break;
@@ -651,12 +624,8 @@ function do_person_role($id) {
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
         $scores = DB_score::enum($q);
         foreach ($scores as $score) {
-            $score->compositions = json_decode($score->compositions);
-            $comp = DB_composition::lookup_id($score->compositions[0]);
             table_row(
-                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    SCORE, $score->id, composition_str($comp)
-                ),
+                score_str($score),
                 score_attrs_str($score)
             );
         }

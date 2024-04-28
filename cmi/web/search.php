@@ -62,7 +62,7 @@ function person_get() {
     return $params;
 }
 
-function person_encode($params) {
+function person_params_url($params) {
     $x = '';
     if ($params->offset) $x .= "&offset=$params->offset";
     if ($params->sex) $x .= "&sex=$params->sex";
@@ -96,7 +96,7 @@ function do_person($params) {
         $params2 = clone $params;
         $params2->offset = max($params->offset-PAGE_SIZE, 0);
         echo sprintf('<a href=search.php?type=person%s>Previous %d</a>',
-            person_encode($params2), PAGE_SIZE 
+            person_params_url($params2), PAGE_SIZE 
         );
     }
     start_table();
@@ -121,7 +121,7 @@ function do_person($params) {
     if (count($pers) > PAGE_SIZE) {
         $params->offset += PAGE_SIZE;
         echo sprintf('<a href=search.php?type=person%s>Next %d</a>',
-            person_encode($params), PAGE_SIZE
+            person_params_url($params), PAGE_SIZE
         );
     }
     page_tail();
@@ -522,9 +522,10 @@ function do_organization() {
 
 function do_ensemble() {
     page_head('Ensembles');
+    copy_to_clipboard_script();
     $enss = DB_ensemble::enum();
     start_table();
-    table_header('Name', 'Type', 'Location');
+    table_header('Name', 'Type', 'Location', 'Code');
     foreach($enss as $ens) {
         $loc = null;
         if ($ens->location) {
@@ -535,7 +536,8 @@ function do_ensemble() {
                 ENSEMBLE, $ens->id, $ens->name
             ),
             ensemble_type_id_to_name($ens->type),
-            $loc?location_name($loc):dash()
+            $loc?location_name($loc):dash(),
+            copy_button(item_code($ens->id, 'ensemble'))
         );
     }
     end_table();

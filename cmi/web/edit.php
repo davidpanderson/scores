@@ -206,8 +206,8 @@ function comp_code_msg() {
         <li> In a different browser tab,
             locate the composition.
         <li> Click on the Copy button;
-            this copies the role code to the clipboard.
-        <li> Paste the code (e.g. <code>com1234</code>) into the form.
+            this copies the composition code to the clipboard.
+        <li> Paste the code (e.g. <code>com_1234</code>) into the form.
         </ul>
         <p>
         Please go back and correct this problem.
@@ -223,11 +223,12 @@ function person_role_code_msg() {
         To get a role code:
         <ul>
         <li> In a different browser tab,
-            locate the performer (person or ensemble).
+            locate the performer (or create them).
         <li> Find the appropriate role, e.g. 'performer (piano)'.
+            Create the role if needed.
         <li> Click on the Copy button next to the role;
             this copies the role code to the clipboard.
-        <li> Paste the role code (e.g. <code>rol1234</code>) into the form.
+        <li> Paste the role code (e.g. <code>rol_1234</code>) into the form.
         </ul>
         <p>
         Please go back and correct this problem.
@@ -246,7 +247,26 @@ function ic_code_msg() {
             locate the instrumentation you want (or create it).
         <li> Click on the Copy button next to the instrumentation;
             this copies the code to the clipboard.
-        <li> Paste the instrumentation code (e.g. <code>ins1234</code>) into the form.
+        <li> Paste the instrumentation code (e.g. <code>ins_1234</code>) into the form.
+        </ul>
+        <p>
+        Please go back and correct this problem.
+    ";
+}
+
+function ens_code_msg() {
+    return "
+        <p class=\"text-danger h4\">
+        Invalid or missing ensemble code.
+        </p>
+        <p>
+        To get an ensemble code:
+        <ul>
+        <li> In a different browser tab,
+            locate the ensemble you want (or create it).
+        <li> Click on the Copy button next to the ensemble;
+            this copies the code to the clipboard.
+        <li> Paste the ensemble code (e.g. <code>ens_1234</code>) into the form.
         </ul>
         <p>
         Please go back and correct this problem.
@@ -544,6 +564,7 @@ function location_action($id) {
         $ret = DB_location::insert($q);
         if ($ret) {
             page_head("Location $name added");
+            echo "Return to <a href=search.php?type=location>location list</a>.";
             page_tail();
         } else {
             error_page('Insert failed');
@@ -1561,6 +1582,7 @@ function empty_perf() {
     $x = new StdClass;
     $x->composition = 0;
     $x->performers = [];
+    $x->ensemble = 0;
     $x->tentative = 0;
     $x->is_recording = 1;
     $x->files = [];
@@ -1573,7 +1595,7 @@ function empty_perf() {
 // Note: Performance can represent either
 // - a live performance (part of a concert)
 // - a recording
-// This interface is used only for the latter
+// This interface is used for the latter
 // (from the Add Recording button on composition page)
 //
 function perf_form($id) {
@@ -1586,13 +1608,16 @@ function perf_form($id) {
         $perf->composition = get_int('composition');
         $perf->is_recording = 1;
     }
+    $comp = DB_composition::lookup_id($perf->composition);
+    $title = composition_str($comp, false);
 
-    page_head($id?'Edit recording':'Add recording');
+    page_head($id?"Edit recording of $title":"Add recording of $title");
 
     form_start('edit.php');
     form_input_hidden('type', PERFORMANCE);
     form_input_hidden('submit', true);
     form_input_hidden('id', $id);
+    form_input_hidden('composition', $perf->composition);
 
     form_row_start('Performers');
     if ($perf->performers) {
@@ -1612,6 +1637,16 @@ function perf_form($id) {
     }
     echo '<p>Add performers: <input name=add_perfs placeholder="Role codes">';
     form_row_end();
+
+    if ($perf->ensemble) {
+        form_row_start('Ensemble');
+        $ens = DB_ensemble::lookup_id($perf->ensemble);
+        echo ensemble_str($ens);
+        echo '<input type=checkbox name=remove_ens>';
+        form_row_end();
+    } else {
+        form_input_text2('Ensemble', 'ensemble', '', 'Ensemble code');
+    }
 
     form_row_start('Files');
     if ($perf->files) {
@@ -1649,6 +1684,7 @@ function perf_action($id) {
         $perf->files = json_decode($perf->files);
     } else {
         $perf = empty_perf();
+        $perf->composition = get_int('composition');
     }
 
     // handle list add/remove
@@ -1671,6 +1707,18 @@ function perf_action($id) {
         }
     }
 
+    if (get_str('remove_ens', true)) {
+        $perf->ensemble = 0;
+    } else {
+        $ens_code = get_str('ensemble', true);
+        if ($ens_code) {
+            $ens_id = parse_code($ens_code, 'ensemble');
+            if (!$ens_id) {
+                error_page(ens_code_msg());
+            }
+            $perf->ensemble = $ens_id;
+        }
+    }
     $new_files = $perf->files;
     $i = 0;
     foreach ($perf->files as $f) {
@@ -1690,8 +1738,9 @@ function perf_action($id) {
 
     if ($id) {
         $q = sprintf(
-            "performers='%s', files='%s', is_synthesized=%d, section='%s', instrumentation='%s'",
+            "performers='%s', ensemble=%d, files='%s', is_synthesized=%d, section='%s', instrumentation='%s'",
             json_encode($perf->performers, JSON_NUMERIC_CHECK),
+            $perf->ensemble,
             json_encode($perf->files, JSON_NUMERIC_CHECK),
             get_str('is_synthesized', true)?1:0,
             DB::escape(get_str('section')),
@@ -1700,9 +1749,10 @@ function perf_action($id) {
         $perf->update($q);
     } else {
         $q = sprintf(
-            "(composition, performers, is_recording, files, is_synthesized, section, intrumentation) values (%d, '%s', %d, '%s', %d, '%s', '%s')",
-            $comp_id,
+            "(composition, performers, ensemble, is_recording, files, is_synthesized, section, instrumentation) values (%d, '%s', %d, %d, '%s', %d, '%s', '%s')",
+            $perf->composition,
             json_encode($perf->performers, JSON_NUMERIC_CHECK),
+            $perf->ensemble,
             get_str('is_recording', true)?1:0,
             json_encode($perf->files, JSON_NUMERIC_CHECK),
             get_str('is_synthesized', true)?1:0,
@@ -1711,7 +1761,6 @@ function perf_action($id) {
         );
         $id = DB_performance::insert($q);
     }
-    exit;
     header(
         sprintf('Location: item.php?type=%d&id=%d', PERFORMANCE, $id)
     );
