@@ -1179,6 +1179,6 @@ DB::$show_queries = true;
 
 // there are 3079 lines
 
-main(0, 4000);
+main(0, 1);
 
 ?>

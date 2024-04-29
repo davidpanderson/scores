@@ -303,19 +303,18 @@ function concert_form($id) {
 
     form_row_start('Program');
     $n = 0;
-    //echo '<table>';
     start_table();
-    table_header('Title', 'Performers', 'Remove');
+    table_header('Title', 'Remove', 'Performers', 'Ensemble');
     foreach ($con->program as $perf_id) {
         $perf = DB_performance::lookup_id($perf_id);
         $comp = DB_composition::lookup_id($perf->composition);
         $roles = json_decode($perf->performers);
 
-        echo '<tr><td valign=top >';
-        echo composition_str($comp);
-        echo '</td><td>';
+        echo '<tr>';
+        echo sprintf('<td valign=top>%s</td>', composition_str($comp));
+        echo sprintf('<td><input type=checkbox name=remove_perf_%d></td>', $perf_id);
 
-        //echo '<table>';
+        echo '<td>';
         start_table();
         table_header('Name', 'Role', 'Remove');
         foreach ($roles as $role_id) {
@@ -329,29 +328,42 @@ function concert_form($id) {
                 )
             );
         }
-        echo "</table>";
-
-        echo 'Add performers ';
+        end_table();
 
         echo sprintf(
-            '<input title="paste role codes here" name=add_roles_%d placeholder="role codes">',
+            'Add: <input size=12 title="paste role codes here" name=add_roles_%d placeholder="role codes">',
             $n
         );
+
         if ($n>0) {
             echo sprintf(
-                '<p>
-                Copy performers from previous composition <input type=checkbox name=copy_perfs_%d>',
+                '<hr>
+                Copy from previous <input type=checkbox name=copy_perfs_%d>',
                 $n
             );
         }
+        echo '</td>';
+
         echo '<td>';
-        echo sprintf('<input type=checkbox name=remove_perf_%d>', $perf_id);
-        echo '</td></tr>';
+        if ($perf->ensemble) {
+            echo ensemble_str($perf->ensemble, true);
+            echo sprintf('<hr>Remove <input type=checkbox name=remove_ens_%d>',
+                $n
+            );
+        } else {
+            echo sprintf('<p>Add ensemble: 
+                <input title="paste ensemble code here" name=add_ens_%d placeholder="ensemble code">',
+                $n
+            );
+        }
+        echo '</td>';
+
+        echo '</tr>';
         $n++;
     }
-    echo '</table>';
+    end_table();
 
-    echo 'Add compositions: <input name=add_comps placeholder="composition codes">';
+    echo 'Add: <input name=add_comps placeholder="composition codes">';
     form_row_end();
 
     form_select('Venue', 'venue', venue_options(), $con->venue);
@@ -398,6 +410,7 @@ function concert_action($id) {
             if (get_str("copy_perfs_$i", true)) {
                 $prev = $perfs[$i-1];
                 $perf->performers = array_merge($perf->performers, $prev->performers);
+                $perf->ensemble = $prev->ensemble;
                 $perf->modified = true;
             }
         }
@@ -420,15 +433,34 @@ function concert_action($id) {
             }
             $perf->modified = true;
         }
+        // add/remove ensemble
+        //
+        if ($perf->ensemble) {
+            if (get_str(sprintf('remove_ens_%d', $i), true)) {
+                $perf->ensemble = 0;
+                $perf->modified = true;
+            }
+        } else {
+            $code = get_str(sprintf('add_ens_%d', $i), true);
+            if ($code) {
+                $ens_id = parse_code($code, 'ensemble');
+                if (!$ens_id) error_page(ens_code_msg());
+                $perf->ensemble = $ens_id;
+                $perf->modified = true;
+            }
+        }
     }
 
+    // update performances as needed
+    //
     foreach ($perfs as $perf) {
         if ($perf->modified) {
             $perf->performers = array_unique($perf->performers);
             $perf->update(
                 sprintf(
-                    "performers='%s'",
-                    json_encode($perf->performers, JSON_NUMERIC_CHECK)
+                    "performers='%s', ensemble=%d",
+                    json_encode($perf->performers, JSON_NUMERIC_CHECK),
+                    $perf->ensemble
                 )
             );
         }
@@ -463,7 +495,7 @@ function concert_action($id) {
             }
 
             $perf_id = DB_performance::insert(
-                sprintf("(composition, is_recording, performers) values (%d, 0, '%s')",
+                sprintf("(composition, performers) values (%d, '%s')",
                     (int)$comp_id,
                     json_encode([])
                 )
@@ -1584,7 +1616,6 @@ function empty_perf() {
     $x->performers = [];
     $x->ensemble = 0;
     $x->tentative = 0;
-    $x->is_recording = 1;
     $x->files = [];
     $x->is_synthesized = 0;
     $x->section = '';
@@ -1602,16 +1633,15 @@ function perf_form($id) {
     if ($id) {
         $perf = DB_performance::lookup_id($id);
         $perf->performers = json_decode2($perf->performers);
-        $perf->files = json_decode($perf->files);
+        $perf->files = json_decode2($perf->files);
     } else {
         $perf = empty_perf();
         $perf->composition = get_int('composition');
-        $perf->is_recording = 1;
     }
     $comp = DB_composition::lookup_id($perf->composition);
     $title = composition_str($comp, false);
 
-    page_head($id?"Edit recording of $title":"Add recording of $title");
+    page_head($id?"Edit performance of $title":"Add performance of $title");
 
     form_start('edit.php');
     form_input_hidden('type', PERFORMANCE);
@@ -1640,9 +1670,8 @@ function perf_form($id) {
 
     if ($perf->ensemble) {
         form_row_start('Ensemble');
-        $ens = DB_ensemble::lookup_id($perf->ensemble);
-        echo ensemble_str($ens);
-        echo '<input type=checkbox name=remove_ens>';
+        echo ensemble_str($perf->ensemble, true);
+        echo '<p>Remove <input type=checkbox name=remove_ens>';
         form_row_end();
     } else {
         form_input_text2('Ensemble', 'ensemble', '', 'Ensemble code');
@@ -1749,11 +1778,10 @@ function perf_action($id) {
         $perf->update($q);
     } else {
         $q = sprintf(
-            "(composition, performers, ensemble, is_recording, files, is_synthesized, section, instrumentation) values (%d, '%s', %d, %d, '%s', %d, '%s', '%s')",
+            "(composition, performers, ensemble, files, is_synthesized, section, instrumentation) values (%d, '%s', %d, '%s', %d, '%s', '%s')",
             $perf->composition,
             json_encode($perf->performers, JSON_NUMERIC_CHECK),
             $perf->ensemble,
-            get_str('is_recording', true)?1:0,
             json_encode($perf->files, JSON_NUMERIC_CHECK),
             get_str('is_synthesized', true)?1:0,
             DB::escape(get_str('section')),

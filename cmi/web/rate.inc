@@ -265,7 +265,7 @@ function perf_right($perf) {
     [$qavg, $davg] = avg_rating(PERFORMANCE, $perf->id);
     row2('Average rating', rating_bar($qavg));
     end_table();
-    if ($perf->is_recording) {
+    if ($perf->files) {
         echo '<b>Audio quality</b>';
         start_table();
         if ($user) {

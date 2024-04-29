@@ -221,7 +221,7 @@ create table composition (
     tempo_markings          text,
     metronome_markings      text,           -- e.g. quarter=120
     _keys                   text,
-        # 'key' is a reserved word in SQL
+        # 'key' and 'keys' are reserved words in SQL
     time_signatures         text,
     comp_types              json,
     creators                json,

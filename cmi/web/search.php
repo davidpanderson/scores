@@ -282,7 +282,7 @@ function show_compositions($comps) {
             sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
                 COMPOSITION, $c->id, $c->title
             ),
-            creators_str($c->creators, true),
+            creators_str(json_decode2($c->creators), true),
             sprintf('<a href=%s>View</a>', imslp_url($c)),
             $c->_keys,
             $c->opus_catalogue,
@@ -459,12 +459,15 @@ function do_concert() {
     start_table();
     table_header('Details', 'Venue', 'Location', 'Date');
     foreach ($cs as $c) {
-        $v = DB_venue::lookup_id($c->venue);
+        $v = null;
+        if ($c->venue) {
+            $v = DB_venue::lookup_id($c->venue);
+        }
         table_row(
             sprintf('<a href=item.php?type=%d&id=%d>View</a>',
                 CONCERT, $c->id
             ),
-            dash($v->name),
+            dash($v?$v->name:''),
             $v?location_id_to_name($v->location):dash(null),
             DB::date_num_to_str($c->_when)
         );

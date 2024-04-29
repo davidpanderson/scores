@@ -43,7 +43,11 @@ function editor() {
 
 // json decode, but return [] if null
 function json_decode2($s) {
-    return $s?json_decode($s):[];
+    if ($s) {
+        return json_decode($s);
+    } else {
+        return [];
+    }
 }
 
 function select2_head($title) {
@@ -99,9 +103,9 @@ function comp_types_str($cts) {
     return implode(', ', $x);
 }
 
+// $cts is a list of person_role IDs
+//
 function creators_str($cts, $show_role) {
-    if (!$cts) return '';
-    $cts = json_decode($cts);
     $x = [];
     foreach ($cts as $id) {
         $prole = DB_person_role::lookup_id($id);
@@ -506,6 +510,12 @@ function program_perf_str($n, $perf) {
         $s .= sprintf("<br>%s%s\n",
             spaces(6),
             person_role_str($role, true)
+        );
+    }
+    if ($perf->ensemble) {
+        $s .= sprintf("<br>%s%s\n",
+            spaces(6),
+            ensemble_str($perf->ensemble, true)
         );
     }
     return $s;

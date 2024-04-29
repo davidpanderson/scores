@@ -72,6 +72,7 @@ function do_person($id) {
 
 function do_composition($id) {
     $c = DB_composition::lookup_id($id);
+    $c->creators = json_decode2($c->creators);
     if (!$c) error_page("no composition $id\n");
     if ($c->arrangement_of) {
         $par = DB_composition::lookup_id($c->arrangement_of);
@@ -90,6 +91,8 @@ function do_composition($id) {
     page_tail();
 }
 
+// the left panel in a composition page
+//
 function comp_left($arg) {
     [$c, $par] = $arg;
     start_table();
@@ -198,6 +201,7 @@ function comp_left($arg) {
             start_table();
             table_header('Details', 'Section', 'Arranged for', 'Arranger');
             foreach ($arrs as $arr) {
+                $arr->creators = json_decode2($arr->creators);
                 $ics = instrument_combos_str($arr->instrument_combos);
                 $arr->ics = $ics;
                 $arr->arranger = creators_str($arr->creators, false);
@@ -266,31 +270,69 @@ function comp_left($arg) {
         );
     }
 
-    echo "<h3>Recordings</h3>\n";
+    echo "<h3>Recordings/Performances</h3>\n";
     $perfs = DB_performance::enum("composition=$c->id");
     if ($perfs) {
-        start_table();
-        table_header('Details', 'Type', 'Section', 'Ensemble', 'Performers', 'Arranged for', 'File');
+        // performances may be recordings (with files)
+        // or concert performances, or both
+        // See which of these we have to decide what columns to show
+        //
+        $have_type = false;
+        $have_section = false;
+        $have_ensemble = false;
+        $have_performers = false;
+        $have_instrumentation = false;
+        $have_concert = false;
+        $have_files = false;
         foreach ($perfs as $perf) {
-            if (!$perf->is_recording) continue;
-            $files = json_decode($perf->files);
-            $f = [];
-            foreach ($files as $file) {
-                $f[] = sprintf('%s &middot; <a href=%s>file</a>',
-                    $file->desc, $file->name
-                );
-            }
-            table_row(
+            if ($perf->is_synthesized) $have_type = true;
+            if ($perf->section) $have_section = true;
+            if ($perf->ensemble) $have_ensemble = true;
+            $perf->files = json_decode2($perf->files);
+            if ($perf->files) $have_files = true;
+            $perf->performers = json_decode2($perf->performers);
+            if ($perf->performers) $have_performers = true;
+        }
+        $x = ['Details'];
+        if ($have_type) $x[] = 'Type';
+        if ($have_section) $x[] = 'Section';
+        if ($have_ensemble) $x[] = 'Ensemble';
+        if ($have_performers) $x[] = 'Performers';
+        if ($have_instrumentation) $x[] = 'Arranged for';
+        if ($have_files) $x[] = 'Files';
+        start_table();
+        row_heading_array($x);
+        foreach ($perfs as $perf) {
+            $x = [
                 sprintf('<a href=item.php?type=%d&id=%d>view</a>',
                     PERFORMANCE, $perf->id
                 ),
-                $perf->is_synthesized?'Synthesized':'',
-                dash($perf->section),
-                dash(ensemble_str($perf->ensemble, true)),
-                creators_str($perf->performers, true),
-                $perf->instrumentation,
-                implode('<br>', $f)
-            );
+            ];
+            if ($have_section) {
+                $x[] = $perf->is_synthesized?'Synthesized':'';
+            }
+            if ($have_section) {
+                $x[] = dash($perf->section);
+            }
+            if ($have_ensemble) {
+                $x[] = dash(ensemble_str($perf->ensemble, true));
+            }
+            if ($have_performers) {
+                $x[] = creators_str($perf->performers, true);
+            }
+            if ($have_instrumentation) {
+                $x[] = $perf->instrumentation;
+            }
+            if ($have_files) {
+                $f = [];
+                foreach ($perf->files as $file) {
+                    $f[] = sprintf('%s &middot; <a href=%s>file</a>',
+                        $file->desc, $file->name
+                    );
+                }
+                $x[] = implode('<br>', $f);
+            }
+            row_array($x);
         }
         end_table();
     } else {
@@ -455,6 +497,7 @@ function do_organization($id) {
 
 function do_performance($id) {
     $perf = DB_performance::lookup_id($id);
+    $perf->performers = json_decode2($perf->performers);
     page_head("Performance");
     copy_to_clipboard_script();
     grid(null, 'perf_left', 'perf_right', 7, $perf);
@@ -469,7 +512,6 @@ function perf_left($perf) {
         row2('Ensemble', ensemble_str($perf->ensemble, true));
     }
     row2('Performers', creators_str($perf->performers, true));
-    row2('Recording?', $perf->is_recording?'Yes':'No');
     row2('Synthesized?', $perf->is_synthesized?'Yes':'No');
     row2('Section', dash($perf->section));
     row2('Instrumentation', dash($perf->instrumentation));
@@ -482,7 +524,7 @@ function perf_left($perf) {
     end_table();
 
     echo '<h3>Files</h3>';
-    $files = json_decode($perf->files);
+    $files = json_decode2($perf->files);
     start_table();
     table_header('Description', 'Name');
     foreach ($files as $file) {
@@ -503,6 +545,7 @@ function perf_left($perf) {
 
 function do_score($id) {
     $score = DB_score::lookup_id($id);
+    $score->creators = json_decode2($score->creators);
     page_head("Score");
     grid(null, 'score_left', 'score_right', 7, $score);
     page_tail();
@@ -637,17 +680,29 @@ function do_person_role($id) {
 
 function do_ensemble($id) {
     $ens = DB_ensemble::lookup_id($id);
-    page_head("Recordings by $ens->name");
+    page_head("Ensemble: $ens->name");
+    copy_to_clipboard_script();
+    start_table();
+    row2('Alternate names', $ens->alternate_names);
+    row2('Type', ensemble_type_id_to_name($ens->type));
+    row2('Location', location_id_to_name($ens->location));
+    row2('Started', DB::date_num_to_str($ens->started));
+    row2('Ended', DB::date_num_to_str($ens->ended));
+    row2('Code', copy_button($ens->id, 'ensemble'));
+    end_table();
+    echo '<h3>Recordings</h3>';
     $perfs = DB_performance::enum("ensemble=$id");
     start_table();
     table_header('Composition', 'Performers');
     foreach ($perfs as $perf) {
+        $perf->performers = json_decode2($perf->performers);
         $comp = DB_composition::lookup_id($perf->composition);
         table_row(
             composition_str($comp),
             creators_str($perf->performers, true)
         );
     }
+    end_table();
     page_tail();
 }
 
