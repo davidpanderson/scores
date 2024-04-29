@@ -93,14 +93,6 @@ function get_inst_combos() {
     return $inst_combos;
 }
 
-function get_inst_combos_digest() {
-    static $icd;
-    if (!$icd) {
-        $icd = unserialize(file_get_contents('data/inst_combo_digest.ser'));
-    }
-    return $icd;
-}
-
 // does the combo match the spec?
 // See scores/api.h
 //
@@ -167,15 +159,18 @@ if (0) {
 }
 
 // get list of inst combos with given instruments
+// used by composition and inst combo search (web/search.php)
 //
 function inst_combo_ids($spec_ids, $spec_min, $spec_max, $others_ok) {
-    $ics = get_inst_combos_digest();
+    $ics = get_inst_combos();
     $out = [];
     foreach ($ics as $ic) {
         if (inst_combo_match(
-            $ic->inst_ids, $ic->counts, $spec_ids, $spec_min, $spec_max, $others_ok
+            $ic->instruments_sorted->id,
+            $ic->instruments_sorted->count,
+            $spec_ids, $spec_min, $spec_max, $others_ok
         )) {
-            $out[] = $ic->combo_id;
+            $out[] = $ic->id;
         }
     }
     return $out;

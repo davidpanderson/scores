@@ -1372,17 +1372,30 @@ function inst_combo_form() {
 function inst_combo_action() {
     $ids = json_decode(urldecode(get_str('ids')));
     $counts = json_decode(urldecode(get_str('counts')));
-    $x = new StdClass;
-    $x->count = $counts;
-    $x->id = $ids;
-    $ic_json = json_encode($x, JSON_NUMERIC_CHECK);
-    $ic_md5 = md5($ic_json);
-    // TODO: check for dup
-    // TODO: sort by inst ID; same in populate_util.inc
+    $ins = new StdClass;
+    $ins->count = $counts;
+    $ins->id = $ids;
+    $ins_json = json_encode($ins, JSON_NUMERIC_CHECK);
+
+    $ins_sort = clone $ins;
+    array_multisort($ins_sort->id, $ins_sort->count);
+    // convert to JSON and get MD5
+    //
+    $ins_sort_json = json_encode($ins_sort, JSON_NUMERIC_CHECK);
+    $ins_sort_md5 = md5($ins_sort_json);
+
+    $ic = DB_instrument_combo::lookup(
+        sprintf("md5='%s'",
+            DB::escape($ins_sort_md5)
+        )
+    );
+    if ($ic) error_page('The instrumentation already exists.');
+
     DB_instrument_combo::insert(
-        sprintf("(instruments, md5) values ('%s', '%s')",
-            DB::escape($ic_json),
-            DB::escape($ic_md5)
+        sprintf("(instruments, instruments_sorted, md5) values ('%s', '%s', '%s')",
+            DB::escape($ins_json),
+            DB::escape($ins_sort_json),
+            DB::escape($ins_sort_md5)
         )
     );
     write_ser_instrument_combo();

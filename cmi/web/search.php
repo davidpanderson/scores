@@ -228,6 +228,8 @@ function get_combos($insts, $others_ok) {
     return inst_combo_ids($spec_ids, $spec_min, $spec_max, $others_ok);
 }
 
+//print_r(get_combos([115, 61], false)); exit;
+
 // convert list of ints to string like '[1, 5, 10]'
 //
 function make_int_list($list) {

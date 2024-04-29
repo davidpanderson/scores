@@ -474,13 +474,12 @@ function get_performer_role($first, $last, $role) {
 // creating one if needed.
 // For efficiency, cache the table in memory
 //
-$inst_combo_cache = [];
 function get_inst_combo($ic) {
     static $first = true;
     static $insts_by_code;
-    global $inst_combo_cache;
+    static $inst_combo_cache = [];
     if ($first) {
-        // make an array keyed by md5
+        // initialize cache
         $ics = DB_instrument_combo::enum();
         foreach ($ics as $i) {
             $inst_combo_cache[$i->md5] = $i;
@@ -495,44 +494,50 @@ function get_inst_combo($ic) {
     // x.ids: list of IDs
     // The JSON version of this is stored in the DB
     //
-    $x = new StdClass;
-    $x->count=[];
-    $x->id=[];
+    $ins = new StdClass;
+    $ins->count=[];
+    $ins->id=[];
     foreach ($ic as $i=>$pair) {
-        $x->count[] = $pair[0];
-        $x->id[] = $insts_by_code[$pair[1]]->id;
+        $ins->count[] = $pair[0];
+        $ins->id[] = $insts_by_code[$pair[1]]->id;
     }
+    $ins_json = json_encode($ins, JSON_NUMERIC_CHECK);
+
+    // make a sorted version
+    $ins_sort = clone $ins;
+    array_multisort($ins_sort->id, $ins_sort->count);
 
     // convert to JSON and get MD5
     //
-    $ic_json = json_encode($x, JSON_NUMERIC_CHECK);
-    $ic_md5 = md5($ic_json);
+    $ins_sort_json = json_encode($ins_sort, JSON_NUMERIC_CHECK);
+    $ins_sort_md5 = md5($ins_sort_json);
 
     // see if in cache
     //
-    if (array_key_exists($ic_md5, $inst_combo_cache)) {
-        $ic_rec = $inst_combo_cache[$ic_md5];
-        return $ic_rec;
+    if (array_key_exists($ins_sort_md5, $inst_combo_cache)) {
+        return $inst_combo_cache[$ins_sort_md5];
     }
 
     // no - create new entry
     //
     $id = DB_instrument_combo::insert(
-        sprintf("(instruments, md5) values ('%s', '%s')",
-            DB::escape($ic_json),
-            DB::escape($ic_md5)
+        sprintf("(instruments, instruments_sorted, md5) values ('%s', '%s', '%s')",
+            DB::escape($ins_json),
+            DB::escape($ins_sort_json),
+            DB::escape($ins_sort_md5)
         )
     );
 
     // add new entry to cache
     //
     $ic_rec = DB_instrument_combo::lookup_id($id);
-    $inst_combo_cache[$ic_md5] = $ic_rec;
+    $inst_combo_cache[$ins_sort_md5] = $ic_rec;
     return $ic_rec;
 }
 
 // at the end of populate_comp.php,
 // update the count fields of instrument_combo, work_type, language
+// DEPRECATED: can compute these separately if needed
 //
 function flush_inst_combo_cache() {
     global $inst_combo_cache;

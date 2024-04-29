@@ -159,12 +159,14 @@ create table instrument (
 create table instrument_combo (
     id                      integer         not null auto_increment,
     instruments             json,
-        # a structure consisting of 2 same-size lists:
-        # count => array of counts (always >0)
-        # id => array of instrument ids
-        # this lets us search with member/overlap/contain
-        # on (sets of) instrument IDs
-    md5                     varchar(64),        # hash of instruments
+        -- a structure consisting of 2 same-size lists:
+        -- id => instrument IDs (not necessarily in increasing order)
+        -- count => counts (always >0)
+    instruments_sorted      json,
+        -- same, but instrument IDs in increasing order
+        -- unique: so (piano+violin) is same combo as (violin+piano)
+    md5                     char(64)        not null,
+        -- md5 of instruments_sorted
     nworks                  integer         not null default 0,
     nscores                 integer         not null default 0,
     unique(md5),

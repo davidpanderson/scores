@@ -1,5 +1,12 @@
 <?php
 
+// write serialized versions of small-ish DB tables,
+// as arrays indexed either by ID or by name.
+//
+// For tables that contain JSON fields
+// (currently instrument_combo)
+// decode these fields first.
+
 require_once('cmi_db.inc');
 
 // write .ser files by ID and by name
@@ -167,31 +174,13 @@ function compare($c1, $c2) {
     return $c1->ntotal < $c2->ntotal;
 }
 
-// make a serialized version of instrument combos,
-// with instrument IDs in increasing order
-//
-function write_inst_combo_digest($combos) {
-    $x = [];
-    foreach ($combos as $combo) {
-        $y = json_decode($combo->instruments);
-        array_multisort($y->id, $y->count);
-        $z = new StdClass;
-        $z->combo_id = $combo->id;
-        $z->inst_ids = $y->id;
-        $z->counts = $y->count;
-        $x[] = $z;
-    }
-    $f = fopen("data/inst_combo_digest.ser", 'w');
-    fwrite($f, serialize($x));
-    fclose($f);
-}
-
 function write_ser_instrument_combo() {
     $combos = DB_instrument_combo::enum();
+    foreach ($combos as $combo) {
+        $combo->instruments = json_decode($combo->instruments);
+        $combo->instruments_sorted = json_decode($combo->instruments_sorted);
+    }
     write_ser_id($combos , 'instrument_combo');
-    write_inst_combo_digest($combos);
-    //populate_ncombos($combos);
-    //write_inst_combo_select($combos);
 }
 
 ?>
