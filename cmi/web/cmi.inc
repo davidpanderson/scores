@@ -211,6 +211,7 @@ function sex_options() {
     }
     return $x;
 }
+
 function ethnicity_options() {
     $ethnicities = get_ethnicities();
     $x = [[0, dash(null)]];
@@ -532,6 +533,24 @@ function ensemble_str($id, $link) {
     } else {
         return "$ens->name ($type)";
     }
+}
+
+function ensemble_type_options() {
+    $types = get_ensemble_types();
+    $x = [];
+    foreach ($types as $s) {
+        $x[] = [$s->id, $s->name];
+    }
+    return $x;
+}
+
+function concert_str($con) {
+    $venue = DB_venue::lookup_id($con->venue);
+    return sprintf('<a href=item.php?type=%d&id=%d>Concert on %s at %s</a>',
+        CONCERT, $con->id,
+        DB::date_num_to_str($con->_when),
+        $venue->name
+    );
 }
 
 function organization_id_to_name($id) {

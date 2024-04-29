@@ -302,8 +302,8 @@ create table venue (
 );
 
 -- a past or present performance
--- possibly recorded, in which case describes files
--- may consist of several parts (e.g. 1 file per movements)
+-- possibly recorded, in which case this describes files
+-- files may consist of several parts (e.g. 1 file per movements)
 -- You can rate a performance but not its parts.
 
 create table performance (
@@ -313,6 +313,7 @@ create table performance (
         -- person_roles
     ensemble                integer         not null default 0,
     is_recording            tinyint         not null default 0,
+    concert                 integer         not null default 0,
 
     -- the following relevant if recording
     files                   json,
@@ -328,6 +329,7 @@ create table performance (
     license                 integer         not null default 0,
     publisher               integer         not null default 0,
         -- organization ID
+
     nratings1               integer         not null default 0,
     rating_sum1             integer         not null default 0,
     nratings2               integer         not null default 0,

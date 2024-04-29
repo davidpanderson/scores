@@ -120,7 +120,7 @@ define('SCORE', 11);
 define ('PARTS', 1);
 define ('SELECTIONS', 2);
 define ('VOCAL', 4);
-define ('SKETCHES', 5);
+define ('SKETCHES', 8);
 
 define ('NO_RATING', -1);
 ?>

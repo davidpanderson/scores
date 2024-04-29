@@ -95,7 +95,7 @@ class DB {
             return (string)$year;
         }
     }
-    // parse Y-M-D
+    // parse Y-M-D or Y
     // return 0 if parse error
     public static function date_num_parse($s) {
         $x = explode('-', $s);

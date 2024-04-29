@@ -495,9 +495,10 @@ function concert_action($id) {
             }
 
             $perf_id = DB_performance::insert(
-                sprintf("(composition, performers) values (%d, '%s')",
+                sprintf("(composition, performers, concert) values (%d, '%s', %d)",
                     (int)$comp_id,
-                    json_encode([])
+                    json_encode([]),
+                    $id
                 )
             );
             $con->program[] = $perf_id;
@@ -530,6 +531,14 @@ function concert_action($id) {
             json_encode($con->program)
         );
         $id = DB_concert::insert($q);
+
+        // add the concert ID to performances
+        //
+        foreach ($con->program as $perf_id) {
+            $p = new DB_performance;
+            $p->id = $perf->id;
+            $p->update("concert=$id");
+        }
     }
     header(
         sprintf('Location: item.php?type=%d&id=%d', CONCERT, $id)
@@ -697,38 +706,71 @@ function person_action($id) {
 
 ///////////////  ENSEMBLE  /////////////////
 
+function empty_ensemble() {
+    $e = new StdClass;
+    $e->name = '';
+    $e->alternate_names = '';
+    $e->started = 0;
+    $e->ended = 0;
+    $e->type = 0;
+    $e->location = 0;
+    $e->members = [];
+    $e->period =0;
+    return $e;
+}
+
 function ensemble_form($id) {
-    $ens = null;
     if ($id) {
         $ens = DB_ensemble::lookup_id($id);
+    } else {
+        $ens = empty_ensemble();
     }
-    page_head($ens?'Edit ensemble':'Add ensemble');
+    page_head($id?'Edit ensemble':'Add ensemble');
     form_start('edit.php');
     form_input_hidden('type', ENSEMBLE);
+    form_input_hidden('submit', true);
     if ($id) {
         form_input_hidden('id', $id);
     }
-    form_input_text('Name', 'name', $ens?$ens->name:'');
+    form_input_text('Name', 'name', $ens->name);
+    form_input_text('Alternate names', 'alt_names', $ens->alternate_names);
     form_select(
-        'Type', 'type', ensemble_type_options(), $ens?$ens->type:null
+        'Type', 'ens_type', ensemble_type_options(), $ens->type
     );
+    form_select(
+        'Location', 'location', location_options(), $ens->location
+    );
+    form_input_text2(
+        'Started', 'started', DB::date_num_to_str($ens->started), 'YYYY-MM-DD'
+    );
+    form_input_text2(
+        'Ended', 'ended', DB::date_num_to_str($ens->ended), 'YYYY-MM-DD'
+    );
+    form_submit('OK');
     form_end();
     page_tail();
 }
 
 function ensemble_action($id) {
     $name = get_str('name');
-    $type = get_int('type');
+    $alt_names = get_str('alt_names');
+    $type = get_int('ens_type');
+    $started = get_date('Started', 'started');
+    $ended = get_date('Ended', 'ended');
+    $location = get_int('location');
     if ($id) {
         $ens = DB_ensemble::lookup_id($id);
-        $q = sprintf("name='%s', type=%d", DB::escape($name), $type);
+        $q = sprintf(
+            "name='%s', alternate_names='%s', type=%d, started=%d, ended=%d, location=%d",
+            DB::escape($name), DB::escape($alt_names), $type, $started, $ended, $location
+        );
         $ens->update($q);
     } else {
-        $id = DB_ensemble::insert(
-            sprintf("(name, type) values ('%s', %d)",
-                DB::escape($name), $type
-            )
+        $q = sprintf(
+            "(name, alternate_names, type, started, ended, location) values ('%s', '%s', %d, %d, %d, %d)",
+            DB::escape($name), DB::escape($alt_names), $type, $started, $ended, $location
         );
+        $id = DB_ensemble::insert($q);
     }
     header(
         sprintf('Location: item.php?type=%d&id=%d', ENSEMBLE, $id)

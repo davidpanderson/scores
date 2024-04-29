@@ -364,11 +364,16 @@ function organization_type_name_to_id($name) {
 
 /////////////// ensemble_type /////////////////
 
-function ensemble_type_id_to_name($id) {
+function get_ensemble_types() {
     static $types = null;
     if (!$types) {
         $types = unserialize(file_get_contents('data/ensemble_type_by_id.ser'));
     }
+    return $types;
+}
+
+function ensemble_type_id_to_name($id) {
+    $types = get_ensemble_types();
     return $types[$id]->name;
 }
 

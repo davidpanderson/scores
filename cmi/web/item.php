@@ -288,10 +288,12 @@ function comp_left($arg) {
             if ($perf->is_synthesized) $have_type = true;
             if ($perf->section) $have_section = true;
             if ($perf->ensemble) $have_ensemble = true;
-            $perf->files = json_decode2($perf->files);
-            if ($perf->files) $have_files = true;
             $perf->performers = json_decode2($perf->performers);
             if ($perf->performers) $have_performers = true;
+            if ($perf->instrumentation) $have_instrumentation = true;
+            if ($perf->concert) $have_concert = true;
+            $perf->files = json_decode2($perf->files);
+            if ($perf->files) $have_files = true;
         }
         $x = ['Details'];
         if ($have_type) $x[] = 'Type';
@@ -299,6 +301,7 @@ function comp_left($arg) {
         if ($have_ensemble) $x[] = 'Ensemble';
         if ($have_performers) $x[] = 'Performers';
         if ($have_instrumentation) $x[] = 'Arranged for';
+        if ($have_concert) $x[] = 'Concert';
         if ($have_files) $x[] = 'Files';
         start_table();
         row_heading_array($x);
@@ -322,6 +325,14 @@ function comp_left($arg) {
             }
             if ($have_instrumentation) {
                 $x[] = $perf->instrumentation;
+            }
+            if ($have_concert) {
+                $y = '';
+                if ($perf->concert) {
+                    $con = DB_concert::lookup_id($perf->concert);
+                    $y = concert_str($con);
+                }
+                $x[] = $y;
             }
             if ($have_files) {
                 $f = [];
@@ -515,6 +526,10 @@ function perf_left($perf) {
     row2('Synthesized?', $perf->is_synthesized?'Yes':'No');
     row2('Section', dash($perf->section));
     row2('Instrumentation', dash($perf->instrumentation));
+    if ($perf->concert) {
+        $con = DB_concert::lookup_id($perf->concert);
+        row2('Concert', concert_str($con));
+    }
     $lic_str = '';
     if ($perf->license) {
         $lic = DB_license::lookup_id($perf->license);
@@ -690,6 +705,14 @@ function do_ensemble($id) {
     row2('Ended', DB::date_num_to_str($ens->ended));
     row2('Code', copy_button($ens->id, 'ensemble'));
     end_table();
+
+    if (editor()) {
+        show_button(
+            sprintf('edit.php?type=%d&id=%d', ENSEMBLE, $ens->id),
+            'Edit ensemble'
+        );
+    }
+
     echo '<h3>Recordings</h3>';
     $perfs = DB_performance::enum("ensemble=$id");
     start_table();
