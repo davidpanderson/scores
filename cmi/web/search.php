@@ -228,8 +228,6 @@ function get_combos($insts, $others_ok) {
     return inst_combo_ids($spec_ids, $spec_min, $spec_max, $others_ok);
 }
 
-//print_r(get_combos([115, 61], false)); exit;
-
 // convert list of ints to string like '[1, 5, 10]'
 //
 function make_int_list($list) {
@@ -566,7 +564,7 @@ function inst_combo_form($params) {
     form_general('',
         button_text(
             sprintf('edit.php?type=%d', INST_COMBO),
-            'Add new instrument combination'
+            'Add instrumentation'
         )
     );
     form_end();
@@ -580,7 +578,7 @@ function inst_combo_get() {
 }
 
 function do_inst_combo($params) {
-    select2_head('Instrument combinations');
+    select2_head('Instrumentations');
     inst_combo_form($params);
     $combo_ids = get_combos($params->insts, true);
     if (!$combo_ids) {

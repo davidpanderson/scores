@@ -1014,7 +1014,9 @@ function composition_form($id) {
     }
     if (!$is_section && !$is_arrangement) {
         form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
-        select2_multi('Composition types', 'comp_types', comp_type_options(),
+        select2_multi(
+            'Composition types<br><small>You can choose > 1</small>',
+            'comp_types', comp_type_options(),
             $comp->comp_types
         );
     }
@@ -1070,8 +1072,8 @@ function composition_form($id) {
         ';
         form_row_end();
 
-        form_input_text('Composed', 'composed', DB::date_num_to_str($comp->composed));
-        form_input_text('Published', 'published', DB::date_num_to_str($comp->published));
+        form_input_text2('Composed', 'composed', DB::date_num_to_str($comp->composed), 'YYYY-MM-DD');
+        form_input_text2('Published', 'published', DB::date_num_to_str($comp->published), 'YYYY-MM-DD');
     }
 
     // things only main comps can have
