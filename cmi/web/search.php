@@ -234,13 +234,6 @@ function make_int_list($list) {
     return sprintf('[%s]', implode(',', $list));
 }
 
-function imslp_url($c) {
-    $t = str_replace(' ', '_', $c->long_title);
-    $t = str_replace('No._', 'No.', $t);
-    $t = str_replace('Op._', 'Op.', $t);
-    return sprintf('https://imslp.org/wiki/%s', $t);
-}
-
 function show_arrangements($comps) {
     start_table();
     table_header(
@@ -259,37 +252,6 @@ function show_arrangements($comps) {
             comp_types_str($c2->comp_types),
             creators_str($c->creators, false),
             instrument_combos_str($c->instrument_combos)
-        );
-    }
-    end_table();
-}
-
-function show_compositions($comps) {
-    copy_to_clipboard_script();
-    start_table();
-    table_header(
-        'Title<br><small>click for details</small>',
-        'Creators',
-        'IMSLP',
-        'Key',
-        'Opus',
-        'Composed',
-        'Instrumentation',
-        'Code'
-    );
-    foreach ($comps as $c) {
-        table_row(
-            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                COMPOSITION, $c->id, $c->title
-            ),
-            creators_str(json_decode2($c->creators), true),
-            sprintf('<a href=%s>View</a>', imslp_url($c)),
-            $c->_keys,
-            $c->opus_catalogue,
-            DB::date_num_to_str($c->composed),
-            //comp_types_str($c->comp_types),
-            instrument_combos_str($c->instrument_combos),
-            copy_button(item_code($c->id, 'composition'))
         );
     }
     end_table();

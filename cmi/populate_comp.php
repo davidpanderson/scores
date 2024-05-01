@@ -37,8 +37,7 @@ define('DEBUG_SCORES', 0);
     // log stuff related to scores
 define('DEBUG_PERFS', 0);
     // log stuff related to recordings
-
-//$test = false;
+DB::$show_queries = false;
 DB::$exit_on_db_error = true;
 
 // given a string of the form ===FOO, return [3, 'FOO']
@@ -639,6 +638,7 @@ function handle_files($main_comp, $c) {
 
             switch (strtolower($hier[0])) {
             case 'sketches and drafts':
+            case 'drafts and sketches':
                 $flags |= SKETCHES;
                 break;
             case 'parts':
@@ -671,7 +671,6 @@ function handle_files($main_comp, $c) {
 // make a score record
 
 function make_score($item, $comp_id, $flags, $section) {
-    echo "make_score()\n";
     if (!$comp_id) throw new Exception('foo');
     $nfiles = min(count($item->file_names), count($item->file_descs));
     if ($nfiles == 0) return;
@@ -1147,7 +1146,7 @@ function main($start_line, $end_line) {
         foreach ($y as $title => $body) {
             //if ($title != 'Symphony_No.12_in_G_major,_K.110/75b_(Mozart,_Wolfgang_Amadeus)') continue;
             //if ($title != 'Piano_Quartet_No.1,_Op.25_(Brahms,_Johannes)') continue;
-            echo "================ $title ==========\n";
+            echo "======== $title =======\n";
             if (DEBUG_WIKITEXT) {
                 echo "DEBUG_WIKITEXT start\n";
                 echo "$body\n";
@@ -1175,10 +1174,8 @@ function main($start_line, $end_line) {
     fwrite(STDERR, "==> Now run make_ser.php\n");
 }
 
-DB::$show_queries = true;
-
 // there are 3079 lines
 
-main(0, 1);
+main(0, 4000);
 
 ?>

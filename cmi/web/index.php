@@ -74,50 +74,47 @@ function left(){
                     <a href=db_info.php>complex and detailed information</a>:
                     movements, arrangements, instrumentations,
                     creator roles, and so on.
-                <li> CMI is 'normalized': data such as people's names
-                    appears only once, eliminating inconsistency.
                 <li> CMI allows complex queries:
                     for example, you can find string quartets
                     by female French composers.
                 <li> CMI is
-                    <a href=edit_info.php>editable</a>:
+                    <a href=editing.php>editable</a>:
                     composers can add entries about their compositions,
                     and about themselves.
                     Volunteer editors can fix or add details.
-                <li> CMI is designed to encourage
+                <li> CMI supports
                     <a href=https://continuum-hypothesis.com/music_discover.php>music discovery</a>.
-                    You can rate things (compositions, performances, people),
+                    You can rate things,
                     and you can find music you'll like
                     based on other people's ratings.
                 </ul>
-                <p>
-                The code behind CMI is open source and is
-                <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
-                <p>
-                CMI includes data from <a href=https://imslp.org>IMSLP</a>.
             ";
-            echo '<hr>
-                CMI has:
-                <p>
-            ';
+            //echo '<hr> ';
+            start_table();
             show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings');
             show_type('People', 'person', 'Composers, performers, arrangers, etc.');
+            show_type('Ensembles', 'ensemble', 'Orchestras, choirs, chamber groups, etc.');
+            show_type('Organizations', 'organization', 'Publishers and concert sponsors');
+            show_type('Locations', 'location', 'Cities, provinces, countries, continents');
+            show_type('Instrumentations', 'inst_combo', 'Combinations of instruments');
             show_type('Concerts', 'concert', 'Live performances, past and future');
             show_type('Venues', 'venue', 'Concert locations');
-            show_type('Ensembles', 'ensemble', 'Orchestras, choirs, chamber groups, etc.');
-            show_type('Organizations', 'organization', 'Music and record publishers');
-            if (editor()) {
-                show_type('Locations', 'location', 'Cities, provinces, countries, continents');
-                show_type('Instrumentations', 'inst_combo', 'Combinations of instruments');
-            }
+            end_table();
+            echo '
+                <p>
+                The CMI code is open source and is
+                <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
+                CMI includes data from <a href=https://imslp.org>IMSLP</a>.
+            ';
         }
     );
 }
 
 function show_type($title, $name, $desc) {
-    echo "<p><b><a href=search.php?type=$name>$title</a></b>:
+    row_array([
+        "<a href=search.php?type=$name>$title</a>",
         $desc
-    ";
+    ]);
 }
         
 function right() {

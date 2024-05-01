@@ -636,12 +636,17 @@ function do_person_role($id) {
     case 'performer':
         echo '<h3>Performances</h3>';
         start_table();
-        table_header('Composition');
+        table_header('Details', 'Composition');
         $q = sprintf("json_contains(performers, '%d', '$')", $id);
         $perfs = DB_performance::enum($q);
         foreach ($perfs as $perf) {
             $comp = DB_composition::lookup_id($perf->composition);
-            table_row(composition_str($comp));
+            table_row(
+                sprintf('<a href=item.php?type=%d&id=%d>View</a>',
+                    PERFORMANCE, $perf->id
+                ),
+                composition_str($comp)
+            );
         }
         end_table();
         break;
@@ -666,13 +671,9 @@ function do_person_role($id) {
     case 'librettist':
     case 'lyricist':
         start_table();
-        table_header('Composition');
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
         $comps = DB_composition::enum($q);
-        foreach ($comps as $comp) {
-            table_row(composition_str($comp));
-        }
-        end_table();
+        show_compositions($comps);
         break;
     case 'editor':
     case 'translator':
