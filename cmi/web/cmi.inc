@@ -574,8 +574,9 @@ function form_input_text2($label, $name, $value, $placeholder) {
     );
 }
 
-// show a list of compositions as a table.
-// Used for composition search results and for person_role results
+// Show a list of top-level compositions as a table.  Used for
+// 1) composition search results
+// 2) person_role results where role is composer
 //
 function show_compositions($comps) {
     copy_to_clipboard_script();
@@ -603,6 +604,34 @@ function show_compositions($comps) {
             //comp_types_str($c->comp_types),
             instrument_combos_str($c->instrument_combos),
             copy_button(item_code($c->id, 'composition'))
+        );
+    }
+    end_table();
+}
+
+// show a set of arrangements as a table.  Used for
+// - composition search with arrangement checked
+// - person_role results where role is arranger
+//
+function show_arrangements($comps) {
+    start_table();
+    table_header(
+        'Arrangement of', 'Section', 'IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
+    );
+    foreach ($comps as $c) {
+        $c->creators = json_decode2($c->creators);
+        $c2 = DB_composition::lookup_id($c->arrangement_of);
+        table_row(
+            sprintf(
+                '<a href=item.php?type=%d&id=%d>%s</a>',
+                COMPOSITION, $c2->id, $c2->long_title
+            ),
+            $c->title,
+            sprintf('<a href=%s>View</a>', imslp_url($c2)),
+            DB::date_num_to_str($c2->composed),
+            comp_types_str($c2->comp_types),
+            creators_str($c->creators, false),
+            instrument_combos_str($c->instrument_combos)
         );
     }
     end_table();

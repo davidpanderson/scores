@@ -1,5 +1,8 @@
 <?php
 
+// show lists of items of a given type.
+// For large tables, provide a form that lets you filter results
+
 require_once('../inc/util.inc');
 require_once('cmi_db.inc');
 require_once('cmi.inc');
@@ -9,7 +12,7 @@ define('PAGE_SIZE', 50);
 
 /////////////// LOCATION //////////////////
 
-function do_location() {
+function location_search() {
     page_head('Locations');
     $locs = get_locations();
     show_button(
@@ -71,7 +74,7 @@ function person_params_url($params) {
     return $x;
 }
 
-function do_person($params) {
+function person_search($params) {
     page_head('People');
     person_form($params);
     $x = [];
@@ -92,6 +95,12 @@ function do_person($params) {
         $y,
         sprintf('order by last_name,first_name limit %d,%d', $params->offset, PAGE_SIZE+1)
     );
+    if (!$pers) {
+        echo "<h2>No people found</h2>
+        Please modify your search and try again.";
+        page_tail();
+        return;
+    }
     if ($params->offset) {
         $params2 = clone $params;
         $params2->offset = max($params->offset-PAGE_SIZE, 0);
@@ -134,7 +143,7 @@ function comp_form($params) {
     form_input_hidden('type', 'composition');
     form_input_text('Title', 'title', $params->title);
     select2_multi(
-        'Composed for',
+        'Instruments composed for',
         'insts', instrument_options(), $params->insts
     );
     form_checkboxes('Other instruments OK?', [['others_ok', '', $params->others_ok]]);
@@ -234,30 +243,7 @@ function make_int_list($list) {
     return sprintf('[%s]', implode(',', $list));
 }
 
-function show_arrangements($comps) {
-    start_table();
-    table_header(
-        'Arrangement of', 'Section', 'IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
-    );
-    foreach ($comps as $c) {
-        $c2 = DB_composition::lookup_id($c->arrangement_of);
-        table_row(
-            sprintf(
-                '<a href=item.php?type=%d&id=%d>%s</a>',
-                COMPOSITION, $c2->id, $c2->long_title
-            ),
-            $c->title,
-            sprintf('<a href=%s>View</a>', imslp_url($c2)),
-            DB::date_num_to_str($c2->composed),
-            comp_types_str($c2->comp_types),
-            creators_str($c->creators, false),
-            instrument_combos_str($c->instrument_combos)
-        );
-    }
-    end_table();
-}
-
-function do_composition($params) {
+function composition_search($params) {
     select2_head('Compositions');
     comp_form($params);
 
@@ -346,7 +332,7 @@ function do_composition($params) {
             make_int_list($arr_inst_combos)
         );
     }
-    //$query .= 'order by comp1.long_title ';
+    $query .= 'order by comp1.long_title ';
     $query .= sprintf(' limit %d,%d', $params->offset, PAGE_SIZE+1);
 
     if (SHOW_COMP_QUERY) {
@@ -355,7 +341,9 @@ function do_composition($params) {
     $comps = DB::enum($query);
 
     if (!$comps) {
-        echo "No compositions found.";
+        echo "<h2>No compositions found</h2>
+        Please modify your search and try again.";
+        page_tail();
         return;
     }
 
@@ -380,42 +368,9 @@ function do_composition($params) {
     page_tail();
 }
 
-//////////////////// PERSON ROLE ////////////////////
+//////////////////// CONCERT ////////////////////
 
-function do_person_role($id) {
-    $pr = DB_person_role::lookup_id($id);
-    if (!$pr) error_page("No person_role %d\n");
-    $person = DB_person::lookup_id($pr->person);
-    $role = DB_role::lookup_id($pr->role);
-    switch ($role->name) {
-    case 'composer':
-        page_head("Compositions by $person->first_name $person->last_name");
-        show_compositions(
-            DB_composition::enum(sprintf("%d member of (creators->'$')", $id))
-        );
-        break;
-    case 'performer':
-        break;
-    case 'arranger':
-        page_head("Arrangements by $person->first_name $person->last_name");
-        show_arrangements(
-            DB_composition::enum(sprintf("%d member of (creators->'$')", $id))
-        );
-        break;
-    case 'lyricist':
-        page_head("Compositions with lyrics by $person->first_name $person->last_name");
-        break;
-    case 'librettist':
-        page_head("Compositions with libretto by $person->first_name $person->last_name");
-        show_compositions(
-            DB_composition::enum(sprintf("%d member of (creators->'$')", $id))
-        );
-        break;
-    }
-    page_tail();
-}
-
-function do_concert() {
+function concert_search() {
     page_head("Concerts");
     $cs = DB_concert::enum();
     start_table();
@@ -442,7 +397,9 @@ function do_concert() {
     page_tail();
 }
 
-function do_venue() {
+//////////////////// VENUE  ////////////////////
+
+function venue_search() {
     page_head("Venues");
     $vs = DB_venue::enum();
     start_table();
@@ -463,7 +420,7 @@ function do_venue() {
     page_tail();
 }
 
-function do_organization() {
+function organization_search() {
     page_head('Organizations');
     $orgs = DB_organization::enum('', 'order by name');
     start_table();
@@ -485,7 +442,7 @@ function do_organization() {
     page_tail();
 }
 
-function do_ensemble() {
+function ensemble_search() {
     page_head('Ensembles');
     copy_to_clipboard_script();
     $enss = DB_ensemble::enum();
@@ -539,12 +496,13 @@ function inst_combo_get() {
     return $params;
 }
 
-function do_inst_combo($params) {
+function inst_combo_search($params) {
     select2_head('Instrumentations');
     inst_combo_form($params);
     $combo_ids = get_combos($params->insts, true);
     if (!$combo_ids) {
-        echo 'There are currently no instrumentations with those instruments.';
+        echo "<h2>No instrumentations found</h2>
+        Please modify your search and try again.";
         page_tail();
         exit();
     }
@@ -567,41 +525,37 @@ function do_inst_combo($params) {
 function main($type) {
     switch ($type) {
     case 'composition':
-        do_composition(comp_get());
+        composition_search(comp_get());
         break;
     case 'concert':
-        do_concert();
+        concert_search();
         break;
     case 'ensemble':
-        do_ensemble();
+        ensemble_search();
         break;
     case 'instrument':
-        do_instrument();
+        instrument_search();
         break;
     case 'location':
-        do_location();
+        location_search();
         break;
     case 'organization':
-        do_organization();
+        organization_search();
         break;
     case 'person':
-        do_person(person_get());
-        break;
-    case 'person_role':
-        do_person_role(get_int('id'));
+        person_search(person_get());
         break;
     case 'venue':
-        do_venue();
+        venue_search();
         break;
     case 'inst_combo':
-        do_inst_combo(inst_combo_get());
+        inst_combo_search(inst_combo_get());
         break;
     default:
         error_page("$type not implemented");
     }
 }
 
-if (!editor()) error_page("Not authorized to edit");
 main(get_str('type'));
 
 ?>

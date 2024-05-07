@@ -89,6 +89,12 @@ function left(){
                     based on other people's ratings.
                 </ul>
             ";
+            $user = get_logged_in_user(false);
+            if (!$user) {
+                echo 'To rate things, you must ';
+                show_button('signup.php', 'Create an account');
+                echo '<p>';
+            }
             //echo '<hr> ';
             start_table();
             show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings');

@@ -61,7 +61,7 @@ function person_left($p) {
     end_table();
 }
 
-function do_person($id) {
+function person_item($id) {
     $p = DB_person::lookup_id($id);
     if (!$p) error_page("no person $id\n");
     page_head("$p->first_name $p->last_name");
@@ -70,7 +70,7 @@ function do_person($id) {
     page_tail();
 }
 
-function do_composition($id) {
+function composition_item($id) {
     $c = DB_composition::lookup_id($id);
     $c->creators = json_decode2($c->creators);
     if (!$c) error_page("no composition $id\n");
@@ -391,7 +391,7 @@ function score_row($score, $prefix='') {
     );
 }
 
-function do_location($id) {
+function location_item($id) {
     $loc = DB_location::lookup_id($id);
     if (!$loc) error_page("no location $id\n");
     page_head($loc->name);
@@ -426,7 +426,7 @@ function do_location($id) {
     page_tail();
 }
 
-function do_venue($id) {
+function venue_item($id) {
     $v = DB_venue::lookup_id($id);
     if (!$v) error_page("No venue $id");
     page_head("Venue");
@@ -446,7 +446,7 @@ function do_venue($id) {
     page_tail();
 }
 
-function do_concert($id) {
+function concert_item($id) {
     $c = DB_concert::lookup_id($id);
     if (!$c) error_page("No concert $id");
     page_head("Concert");
@@ -468,7 +468,7 @@ function do_concert($id) {
     page_tail();
 }
 
-function do_organization($id) {
+function organization_item($id) {
     $org = DB_organization::lookup_id($id);
     page_head("Organization");
     copy_to_clipboard_script();
@@ -506,7 +506,7 @@ function do_organization($id) {
     page_tail();
 }
 
-function do_performance($id) {
+function performance_item($id) {
     $perf = DB_performance::lookup_id($id);
     $perf->performers = json_decode2($perf->performers);
     page_head("Performance");
@@ -558,7 +558,7 @@ function perf_left($perf) {
     }
 }
 
-function do_score($id) {
+function score_item($id) {
     $score = DB_score::lookup_id($id);
     $score->creators = json_decode2($score->creators);
     page_head("Score");
@@ -622,7 +622,7 @@ function score_left($score) {
     }
 }
 
-function do_person_role($id) {
+function person_role_item($id) {
     $pr = DB_person_role::lookup_id($id);
     $person = DB_person::lookup_id($pr->person);
     $role = role_id_to_name($pr->role);
@@ -665,12 +665,14 @@ function do_person_role($id) {
         }
         end_table();
         break;
-    case 'conductor':
     case 'arranger':
+        $q = sprintf("json_contains(creators, '%d', '$')", $id);
+        $comps = DB_composition::enum($q);
+        show_arrangements($comps);
+        break;
     case 'composer':
     case 'librettist':
     case 'lyricist':
-        start_table();
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
         $comps = DB_composition::enum($q);
         show_compositions($comps);
@@ -694,7 +696,7 @@ function do_person_role($id) {
     page_tail();
 }
 
-function do_ensemble($id) {
+function ensemble_item($id) {
     $ens = DB_ensemble::lookup_id($id);
     page_head("Ensemble: $ens->name");
     copy_to_clipboard_script();
@@ -733,34 +735,34 @@ function do_ensemble($id) {
 function main($type, $id) {
     switch ($type) {
     case PERSON:
-        do_person($id);
+        person_item($id);
         break;
     case COMPOSITION:
-        do_composition($id);
+        composition_item($id);
         break;
     case LOCATION:
-        do_location($id);
+        location_item($id);
         break;
     case VENUE:
-        do_venue($id);
+        venue_item($id);
         break;
     case CONCERT:
-        do_concert($id);
+        concert_item($id);
         break;
     case ORGANIZATION:
-        do_organization($id);
+        organization_item($id);
         break;
     case PERFORMANCE:
-        do_performance($id);
+        performance_item($id);
         break;
     case SCORE:
-        do_score($id);
+        score_item($id);
         break;
     case PERSON_ROLE:
-        do_person_role($id);
+        person_role_item($id);
         break;
     case ENSEMBLE:
-        do_ensemble($id);
+        ensemble_item($id);
         break;
     default: error_page("No type $type");
     }

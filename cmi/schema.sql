@@ -181,8 +181,8 @@ create table role (
     primary key(id)
 );
 
-# the combination of a person/ensemble and a role
-# and an instrument if role is performer
+# the combination of a person and a role
+# (and an instrument if role is performer)
 create table person_role (
     id                      integer         not null auto_increment,
     person                  integer         not null default 0,
@@ -227,13 +227,12 @@ create table composition (
     time_signatures         text,
     comp_types              json,
     creators                json,
-        -- person_role IDs
+        -- person_role IDs, typically of composers and lyricists
     parent                  integer         not null default 0,
     children                json,
     arrangement_of          integer         not null default 0,
     language                integer,
     instrument_combos       json,
-    ensemble_type           integer         not null default 0,
     period                  integer         not null default 0,
     avg_duration_sec        integer         not null default 0,
     n_movements             integer         not null default 0,
@@ -260,7 +259,8 @@ alter table composition add index comp_parent(parent);
 create table score (
     id                      integer         not null auto_increment,
     compositions            json,           -- may be collection of comps
-    creators                json,           -- editor, translator
+    creators                json,
+        -- person_roles, typically editor or translator
     files                   json,
         -- a list of objects, each with
         -- desc (e.g. 'Cellos and Basses')
@@ -312,7 +312,9 @@ create table performance (
     id                      integer         not null auto_increment,
     composition             integer         not null default 0,
     performers              json,
-        -- person_roles
+        -- person_roles, typically of performers
+        -- this is ordered, but doesn't let you explicitly say
+        -- who played violon I and violin II, or sang what part
     ensemble                integer         not null default 0,
     is_recording            tinyint         not null default 0,
     concert                 integer         not null default 0,

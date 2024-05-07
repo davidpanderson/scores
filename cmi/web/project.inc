@@ -143,6 +143,7 @@ function navbar(
     navbar_menu(tra("Community"), array(
         array(tra("Message boards"), $url_prefix."forum_index.php"),
         array(tra("User search"), $url_prefix."user_search.php"),
+        array('Music Match', 'https://music-match.org'),
     ));
     navbar_menu(tra("Site"), array(
         array(tra("Site search"), $url_prefix."site_search.php"),
