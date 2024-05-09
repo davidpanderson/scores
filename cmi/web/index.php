@@ -92,7 +92,7 @@ function left(){
             $user = get_logged_in_user(false);
             if (!$user) {
                 echo 'To rate things, you must ';
-                show_button('signup.php', 'Create an account');
+                show_button('cmi_signup.php', 'Create an account');
                 echo '<p>';
             }
             //echo '<hr> ';
@@ -124,6 +124,17 @@ function show_type($title, $name, $desc) {
 }
         
 function right() {
+    $user = get_logged_in_user(false);
+    if ($user) {
+        BoincForumPrefs::lookup($user);
+        panel('Community',
+            function() use($user){
+                start_table();
+                show_community_private($user);
+                end_table();
+            }
+        );
+    }
     panel(tra('News'),
         function() {
             include("motd.php");

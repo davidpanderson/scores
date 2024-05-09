@@ -366,6 +366,7 @@ function score_row($score, $prefix='') {
     if ($score->is_parts) $type[] = 'parts';
     if ($score->is_selections) $type[] = 'selections';
     if ($score->is_vocal) $type[] = 'vocal score';
+    if ($prefix && $type) $prefix .= '; ';
     $files = json_decode($score->files);
     $s = [];
     foreach ($files as $file) {

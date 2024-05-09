@@ -30,6 +30,12 @@ define('NO_COMPUTING', true);
 define('NO_STATS', true);
 define('NO_HOSTS', true);
 define('NO_GLOBAL_PREFS', true);
+define('UNIQUE_USER_NAME', true);
+define('DISABLE_TEAMS', true);
+define('SHOW_USER_FILENAME', 'user.php');
+define('USER_HOME', 'user.php');
+define('PM_RULES', '');
+define('FORUM_RULES', '');
 
 //-------------- contact info
 

@@ -30,6 +30,12 @@ define('NO_COMPUTING', true);
 define('NO_STATS', true);
 define('NO_HOSTS', true);
 define('NO_GLOBAL_PREFS', true);
+define('UNIQUE_USER_NAME', true);
+define('DISABLE_TEAMS', true);
+define('SHOW_USER_FILENAME', 'user.php');
+define('USER_HOME', 'user.php');
+define('PM_RULES', '');
+define('FORUM_RULES', '');
 
 //-------------- contact info
 
@@ -133,8 +139,8 @@ function navbar(
 
     $x = array();
     if ($user) {
-        $x[] = array(tra("Account"), $url_prefix.USER_HOME);
-        $x[] = array(tra("Join"), $url_prefix."join.php");
+        $x[] = array(tra("Account"), 'account.php');
+        $x[] = array(tra("Join"), 'join.php');
     }
     $x[] = array(tra("About %1", PROJECT), $url_prefix."about.php");
     $x[] = array(tra("Help"), $url_prefix."welcome.php");
