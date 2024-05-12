@@ -80,7 +80,7 @@ function person_search($params) {
     $x = [];
     if ($params->name) {
         $x[] = sprintf(
-            "match (first_name, last_name) against ('%s' in boolean mode)",
+            "match (first_name, last_name) against ('%s')",
             $params->name
         );
     }
@@ -93,7 +93,11 @@ function person_search($params) {
     $y = implode(' and ', $x);
     $pers = DB_person::enum(
         $y,
-        sprintf('order by last_name,first_name limit %d,%d', $params->offset, PAGE_SIZE+1)
+        sprintf(
+            '%s limit %d,%d',
+            $params->name?'':'order by last_name,first_name',
+            $params->offset, PAGE_SIZE+1
+        )
     );
     if (!$pers) {
         echo "<h2>No people found</h2>

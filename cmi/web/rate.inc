@@ -51,19 +51,20 @@ function rating_buttons($is_diff, $sel, $action, $id) {
     return $x.'</nobr>';
 }
 
-function rating_bar($frac) {
-    if ($frac == NO_RATING) return dash('');
-    $width = 240;   // 10*24
+function rating_bar($val, $width=240) {
+    if ($val == NO_RATING) return dash('');
+    $frac = $val/10;
     $n = (int)$width*$frac;
     return sprintf('
-        <table width=264>
+        <table width=%d>
             <tr>
                 <td width=%d align=center bgcolor=palegreen>%.1f</td>
                 <td width=%d bgcolor=lightgray></td>
             </tr>
         </table>
         ',
-        24+$n, $frac*10,
+        $width*1.1,
+        ($width/10)+$n, $frac*10,
         $width - $n
     );
 }
@@ -88,8 +89,8 @@ function avg_rating($type, $target) {
         }
     }
     return [
-        $qn?.1*$qsum/$qn:NO_RATING,
-        $dn?.1*$dsum/$dn:NO_RATING
+        $qn?$qsum/$qn:NO_RATING,
+        $dn?$dsum/$dn:NO_RATING
     ];
 }
 
@@ -137,11 +138,14 @@ function show_reviews($type, $target, $user, $review) {
         if ($user && $user->id == $rev->user) continue;
         $u = BoincUser::lookup_id($rev->user);
         row2(
-            sprintf('Review by <a href=user.php?id=%d>%s</a><br><small>%s</small>',
+            sprintf('Review by <a href=user.php?userid=%d>%s</a><br><small>%s</small>',
                 $rev->user, $u->name,
                 date_str($rev->created)
             ),
-            more_review($rev->review)
+            sprintf('%s%s',
+                $rev->attr1==NO_RATING?'':"(Rating: $rev->attr1)<br>",
+                more_review($rev->review)
+            )
         );
     }
     end_table();

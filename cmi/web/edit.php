@@ -26,7 +26,7 @@ function check_access($item) {
     global $user;
     if ($user->posts == EDIT_ALL) return;
     if ($item->maker != $user->id) {
-        error_page("You don't have access to edit that item.");
+        error_page("You don't have access to edit this item.");
     }
 }
 
@@ -537,9 +537,10 @@ function concert_action($id) {
         $c->update($q);
     } else {
         $q = sprintf(
-            "(_when, venue, organization, program, create_time) values (%d, %d, %d, '%s', %d)",
+            "(_when, venue, organization, program, maker, create_time) values (%d, %d, %d, '%s', %d, %d)",
             $when, $venue, $organization,
             json_encode($con->program),
+            USER_ID,
             time()
         );
         $id = DB_concert::insert($q);
@@ -612,10 +613,11 @@ function location_action($id) {
             error_page('Update failed');
         }
     } else {
-        $q = sprintf("(name, type, parent, create_time) values ('%s', %d, %d, %d)",
+        $q = sprintf("(name, type, parent, maker, create_time) values ('%s', %d, %d, %d, %d)",
             DB::escape($name),
             $loc_type,
             get_int('parent'),
+            USER_ID,
             time()
         );
         $ret = DB_location::insert($q);
@@ -713,7 +715,7 @@ function person_action($id) {
         $p->update($q);
     } else {
         $id = DB_person::insert(
-            sprintf("(first_name, last_name, born, birth_place, died, death_place, locations, sex, ethnicity, create_time) values ('%s', '%s', %d, %d, %d, %d, '%s', %d, '%s', %d)",
+            sprintf("(first_name, last_name, born, birth_place, died, death_place, locations, sex, ethnicity, maker, create_time) values ('%s', '%s', %d, %d, %d, %d, '%s', %d, '%s', %d, %d)",
                 DB::escape($first_name),
                 DB::escape($last_name),
                 $born, $birth_place,
@@ -721,6 +723,7 @@ function person_action($id) {
                 json_encode($locations),
                 $sex,
                 json_encode($ethnicity),
+                USER_ID,
                 time()
             )
         );
@@ -801,13 +804,14 @@ function ensemble_action($id) {
         $ens->update($q);
     } else {
         $q = sprintf(
-            "(name, alternate_names, type, started, ended, location, create_time) values ('%s', '%s', %d, %d, %d, %d, %d)",
+            "(name, alternate_names, type, started, ended, location, maker, create_time) values ('%s', '%s', %d, %d, %d, %d, %d, %d)",
             DB::escape($name),
             DB::escape($alt_names),
             $type,
             $started,
             $ended,
             $location,
+            USER_ID,
             time()
         );
         $id = DB_ensemble::insert($q);
@@ -891,8 +895,12 @@ function venue_action($id) {
         $ven->update($q);
     } else {
         $id = DB_venue::insert(
-            sprintf("(name, location, capacity, create_time) values ('%s', %d, %d, %d)",
-                DB::escape($name), $location, $capacity, time()
+            sprintf("(name, location, capacity, maker, create_time) values ('%s', %d, %d, %d, %d)",
+                DB::escape($name),
+                $location,
+                $capacity,
+                USER_ID,
+                time()
             )
         );
     }
@@ -944,8 +952,13 @@ function organization_action($id) {
         $org->update($q);
     } else {
         $id = DB_organization::insert(
-            sprintf("(name, type, location, url, create_time) values ('%s', %d, %d, '%s', %d)",
-                DB::escape($name), $type, $location, DB::escape($url), time()
+            sprintf("(name, type, location, url, maker, create_time) values ('%s', %d, %d, '%s', %d, %d)",
+                DB::escape($name),
+                $type,
+                $location,
+                DB::escape($url),
+                USER_ID,
+                time()
             )
         );
     }
@@ -1308,8 +1321,8 @@ function composition_action($id) {
         $c->update($q);
     } else {
         $q = sprintf(
-            "(long_title, title, opus_catalogue, composed, published, dedication, time_signatures, tempo_markings, metronome_markings, _keys, avg_duration_sec, n_bars, creators, parent, arrangement_of, instrument_combos, comp_types, create_time)
-                values('%s', '%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, '%s', '%s', %d)
+            "(long_title, title, opus_catalogue, composed, published, dedication, time_signatures, tempo_markings, metronome_markings, _keys, avg_duration_sec, n_bars, creators, parent, arrangement_of, instrument_combos, comp_types, maker, create_time)
+                values('%s', '%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, '%s', '%s', %d, %d)
             ",
             DB::escape($long_title),
             DB::escape($title),
@@ -1328,6 +1341,7 @@ function composition_action($id) {
             $comp->arrangement_of,
             json_encode($comp->instrument_combos),
             json_encode($comp_types),
+            USER_ID,
             time()
         );
         $id = DB_composition::insert($q);
@@ -1697,7 +1711,7 @@ function score_action($id) {
         $score->update($q);
     } else {
         $q = sprintf(
-            "(compositions, files, publisher, license, languages, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal, create_time) values ('%s', '%s', %d, %d, '%s', %d, '%s', '%s', %d, %d, %d, %d)",
+            "(compositions, files, publisher, license, languages, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal, maker, create_time) values ('%s', '%s', %d, %d, '%s', %d, '%s', '%s', %d, %d, %d, %d, %d)",
             json_encode($score->compositions, JSON_NUMERIC_CHECK),
             json_encode($score->files, JSON_NUMERIC_CHECK),
             $publisher,
@@ -1709,6 +1723,7 @@ function score_action($id) {
             $is_parts,
             $is_selections,
             $is_vocal,
+            USER_ID,
             time()
         );
         $id = DB_score::insert($q);
@@ -1892,7 +1907,7 @@ function perf_action($id) {
         $perf->update($q);
     } else {
         $q = sprintf(
-            "(composition, performers, ensemble, files, is_synthesized, section, instrumentation, create_time) values (%d, '%s', %d, '%s', %d, '%s', '%s', %d)",
+            "(composition, performers, ensemble, files, is_synthesized, section, instrumentation, maker, create_time) values (%d, '%s', %d, '%s', %d, '%s', '%s', %d, %d)",
             $perf->composition,
             json_encode($perf->performers, JSON_NUMERIC_CHECK),
             $perf->ensemble,
@@ -1900,6 +1915,7 @@ function perf_action($id) {
             get_str('is_synthesized', true)?1:0,
             DB::escape(get_str('section')),
             DB::escape(get_str('instrumentation')),
+            USER_ID,
             time()
         );
         $id = DB_performance::insert($q);
@@ -1910,6 +1926,7 @@ function perf_action($id) {
 }
 
 $user = get_logged_in_user();
+define('USER_ID', $user->id);
 
 $type = get_str('type', true);
 $submit = get_str('submit', true);

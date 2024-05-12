@@ -143,7 +143,7 @@ function role_str($prole) {
 
 // return e.g. Joe Smith (piano) or Joe Smith (lyricist)
 //
-function person_role_str($prole, $show_role) {
+function person_role_str($prole, $show_role=true) {
     [$s, $r] = person_role_array($prole);
     if (!$show_role) return $s;
     return "$s ($r)";
@@ -510,19 +510,19 @@ function program_perf_str($n, $perf) {
         $role = DB_person_role::lookup_id($role_id);
         $s .= sprintf("<br>%s%s\n",
             spaces(6),
-            person_role_str($role, true)
+            person_role_str($role)
         );
     }
     if ($perf->ensemble) {
         $s .= sprintf("<br>%s%s\n",
             spaces(6),
-            ensemble_str($perf->ensemble, true)
+            ensemble_str($perf->ensemble)
         );
     }
     return $s;
 }
 
-function ensemble_str($id, $link) {
+function ensemble_str($id, $link=true) {
     if (!$id) return '';
     $ens = DB_ensemble::lookup_id($id);
     $type = ensemble_type_id_to_name($ens->type);

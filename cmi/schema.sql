@@ -32,7 +32,8 @@ create table location (
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
     primary key(id),
-    unique(name, type, parent)
+    unique(name, type, parent),
+    index(maker)
 );
 
 create table sex (
@@ -76,7 +77,8 @@ create table person (
     maker                   integer         not null default 0,
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 alter table person add fulltext index (first_name, last_name);
 alter table person add index iname(first_name, last_name);
@@ -127,7 +129,8 @@ create table ensemble (
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
     unique(name),
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 
 # publisher, recording company, conservatory
@@ -149,7 +152,8 @@ create table organization (
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
     primary key(id),
-    unique(name)
+    unique(name),
+    index(maker)
 );
 
 -- can represent
@@ -261,7 +265,8 @@ create table composition (
     maker                   integer         not null default 0,
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 alter table composition add index comp_lt(long_title);
 alter table composition add fulltext cindex (title);
@@ -308,7 +313,8 @@ create table score (
     maker                   integer         not null default 0,
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
 alter table score add index score_crea( (cast(creators->'$' as unsigned array)) );
@@ -325,7 +331,8 @@ create table venue (
     maker                   integer         not null default 0,
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 
 -- a past or present performance
@@ -367,7 +374,8 @@ create table performance (
     maker                   integer         not null default 0,
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 alter table performance add index perf_comp(composition);
 
@@ -383,7 +391,8 @@ create table concert (
     maker                   integer         not null default 0,
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 
 -- a collection of performances

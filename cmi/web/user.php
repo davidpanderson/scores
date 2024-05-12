@@ -9,82 +9,135 @@ require_once('cmi_db.inc');
 require_once('cmi.inc');
 require_once('rate.inc');
 
-function activity($user, $is_me) {
+function table_name($type) {
+    static $names = [
+        LOCATION => 'DB_location',
+        PERSON => 'DB_person',
+        PERSON_ROLE => 'DB_person_role',
+        ENSEMBLE => 'DB_ensemble',
+        ORGANIZATION => 'DB_organization',
+        COMPOSITION => 'DB_composition',
+        SCORE => 'DB_score',
+        VENUE => 'DB_venue',
+        PERFORMANCE => 'DB_performance',
+        CONCERT => 'DB_concert'
+    ];
+    return $names[$type];
+}
+
+function table_desc($type) {
+    static $descs = [
+        LOCATION => 'Location',
+        PERSON => 'Person',
+        PERSON_ROLE => 'Person role',
+        ENSEMBLE => 'Ensemble',
+        ORGANIZATION => 'Organization',
+        COMPOSITION => 'Composition',
+        SCORE => 'Score',
+        VENUE => 'Venue',
+        PERFORMANCE => 'Recording',
+        CONCERT => 'Concert'
+    ];
+    return $descs[$type];
+}
+
+function rating_header($type) {
+    switch ($type) {
+    case COMPOSITION:
+        row_heading_array(
+            ['Composition', 'Quality', 'Difficulty', 'Review', 'When'],
+            null, 'bg-info'
+        );
+        break;
+    case PERFORMANCE:
+        table_header(
+            ['Recording of', 'Performance quality', 'Sound quality', 'Review', 'When'],
+            null, 'bg-info'
+        );
+        break;
+    case SCORE:
+        table_header(
+            ['Score for', 'Edition quality', 'Scan quality', 'Review', 'When'],
+            null, 'bg-info'
+        );
+        break;
+    case PERSON_ROLE:
+        row_heading_array(
+            ['Person/role', 'Rating', '', 'Review', 'When'],
+            null, 'bg-info'
+        );
+        break;
+    }
+}
+
+define('BAR_WIDTH', 100);
+
+function rating_item($type, $rating, $item) {
+    switch ($type) {
+    case COMPOSITION:
+        table_row(
+            composition_str($item),
+            rating_bar($rating->attr1, BAR_WIDTH),
+            rating_bar($rating->attr2, BAR_WIDTH),
+            more_review($rating->review),
+            date_str($rating->created)
+        );
+        break;
+    case PERFORMANCE:
+        $c = DB_composition::lookup_id($item->composition);
+        table_row(
+            composition_str($item),
+            rating_bar($rating->attr1, BAR_WIDTH),
+            rating_bar($rating->attr2, BAR_WIDTH),
+            more_review($rating->review),
+            date_str($rating->created)
+        );
+        break;
+    case SCORE:
+        table_row(
+            score_str($item),
+            rating_bar($rating->attr1, BAR_WIDTH),
+            rating_bar($rating->attr2, BAR_WIDTH),
+            more_review($rating->review),
+            date_str($rating->created)
+        );
+        break;
+    case PERSON_ROLE:
+        table_row(
+            person_role_str($item),
+            rating_bar($rating->attr1, BAR_WIDTH),
+            '',
+            more_review($rating->review),
+            date_str($rating->created)
+        );
+        break;
+    }
+}
+
+function show_ratings_type($ratings, $type) {
+    $ratings2 = array_filter($ratings,
+        function($x) use($type) {return $x->type == $type;}
+    );
+    if (!$ratings2) return false;
+    $table = table_name($type);
+    rating_header($type);
+    foreach ($ratings2 as $rating) {
+        $item = $table::lookup_id($rating->target);
+        rating_item($type, $rating, $item);
+    }
+    return true;
+}
+
+function show_ratings($user, $is_me) {
     $ratings = DB_rating::enum("user=$user->id");
 
-    echo '<h2>Ratings and reviews</h2>';
     $rated = false;
-    $ratings2 = array_filter($ratings,
-        function($x) {return $x->type == COMPOSITION;}
-    );
-    if ($ratings2) {
-        $rated = true;
-        echo '<h3>Compositions</h3>';
-        start_table();
-        table_header('Composition', 'Quality', 'Difficulty', 'Review', 'When');
-        foreach ($ratings2 as $rating) {
-            $comp = DB_composition::lookup_id($rating->target);
-            if ($rating->attr1==NO_RATING) {
-                $r1 = dash();
-            } else {
-                $r1 = rating_bar($rating->attr1/10);
-            }
-            if ($rating->attr2==NO_RATING) {
-                $r2 = dash();
-            } else {
-                $r2 = rating_bar($rating->attr2/10);
-            }
-            table_row(
-                sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                    COMPOSITION, $rating->target, composition_str($comp)
-                ),
-                $r1,
-                $r2,
-                more_review($rating->review),
-                date_str($rating->created)
-            );
-        }
-        end_table();
-    }
-
-    $ratings2 = array_filter($ratings,
-        function($x) {return $x->type == PERFORMANCE;}
-    );
-    if ($ratings2) {
-        $rated = true;
-        echo '<h3>Recordings</h3>';
-        start_table();
-        table_header('Composition', 'Performer', 'Performance quality', 'Sound quality', 'Review');
-        foreach ($ratings2 as $rating) {
-        }
-        end_table();
-    }
-
-    $ratings2 = array_filter($ratings,
-        function($x) {return $x->type == SCORE;}
-    );
-    if ($ratings2) {
-        $rated = true;
-        echo '<h3>Scores</h3>';
-        start_table();
-        table_header('Composition', 'Edition quality', 'Scan quality', 'Review');
-        foreach ($ratings2 as $rating) {
-        }
-        end_table();
-    }
-
-    $ratings2 = array_filter($ratings,
-        function($x) {return $x->type == PERSON_ROLE;}
-    );
-    if ($ratings2) {
-        $rated = true;
-        echo '<h3>People</h3>';
-        start_table();
-        table_header('Person', 'Role', 'Rating', 'Review');
-        foreach ($ratings2 as $rating) {
-        }
-        end_table();
-    }
+    start_table();
+    $rated |= show_ratings_type($ratings, COMPOSITION);
+    $rated |= show_ratings_type($ratings, PERFORMANCE);
+    $rated |= show_ratings_type($ratings, SCORE);
+    $rated |= show_ratings_type($ratings, PERSON_ROLE);
+    end_table();
 
     if (!$rated) {
         echo '<p>No ratings or reviews yet.';
@@ -100,9 +153,21 @@ function activity($user, $is_me) {
             ';
         }
     }
+}
 
-    echo "<hr><h2>Items added to CMI</h2>";
+function show_added ($user, $is_me) {
+    start_table();
     $added = false;
+    $added |= show_added_type($user, LOCATION);
+    $added |= show_added_type($user, PERSON);
+    $added |= show_added_type($user, ENSEMBLE);
+    $added |= show_added_type($user, ORGANIZATION);
+    $added |= show_added_type($user, COMPOSITION);
+    $added |= show_added_type($user, SCORE);
+    $added |= show_added_type($user, VENUE);
+    $added |= show_added_type($user, PERFORMANCE);
+    $added |= show_added_type($user, CONCERT);
+    end_table();
     if (!$added) {
         echo '<p>No items added yet.';
         if ($is_me) {
@@ -114,11 +179,67 @@ function activity($user, $is_me) {
         }
     }
 }
+
+function added_header($type) {
+    row_heading_array(
+        [table_desc($type), 'When'],
+        null, 'bg-info'
+    );
+}
+
+function added_item($type, $item) {
+    switch ($type) {
+    case LOCATION:
+    case ORGANIZATION:
+    case VENUE:
+        return sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
+            $type, $item->id, $item->name
+        );
+    case PERSON:
+        return sprintf('<a href=item.php?type=%d&id=%d>%s %s</a>',
+            PERSON, $item->id, $item->first_name, $item->last_name
+        );
+    case COMPOSITION:
+        return composition_str($item);
+    case ENSEMBLE:
+        return ensemble_str($item);
+    case SCORE:
+        return score_str($item);
+        break;
+    case PERFORMANCE:
+        $c = DB_composition::lookup_id($item->composition);
+        return composition_str($c);
+        break;
+    case CONCERT:
+        return concert_str($item);
+        break;
+    }
+}
+
+function show_added_type($user, $type) {
+    $table = table_name($type);
+    $items = $table::enum("maker=$user->id");
+    if (!$items) return false;
+    added_header($type);
+    foreach ($items as $item) {
+        table_row(
+            added_item($type, $item),
+            date_str($item->create_time)
+        );
+    }
+    return true;
+}
+
 function left($arg) {
     [$user, $is_me]= $arg;
-    panel('Activity',
+    panel('Ratings and reviews',
         function() use ($user, $is_me) {
-            activity($user, $is_me);
+            show_ratings($user, $is_me);
+        }
+    );
+    panel('Items added to CMI',
+        function() use ($user, $is_me) {
+            show_added($user, $is_me);
         }
     );
 }
