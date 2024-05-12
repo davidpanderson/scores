@@ -214,8 +214,8 @@ function person_right($p) {
     foreach ($prs as $pr) {
         $role = DB_role::lookup_id($pr->role);
         $pers_as_role = "$p->first_name $p->last_name as $role->name";
-        echo "<b>$pers_as_role</b>";
         start_table();
+        row_heading($pers_as_role);
         if ($user) {
             [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
             row2('Your rating', rating_buttons(true, $rq, 'rate_pr', $pr->id));
@@ -233,7 +233,6 @@ function person_right($p) {
             $pers_as_role
         );
         show_recommended_prs($p, $role);
-        echo '<hr>';
     }
 }
 

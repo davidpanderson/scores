@@ -18,8 +18,11 @@ function person_left($p) {
     row2('Death place', dash(location_id_to_name($p->death_place)));
     row2('Locations', locations_str($p->locations));
     row2('Sex', sex_id_to_name($p->sex));
+    if ($p->maker) {
+        row2('Added by', user_link($p->maker));
+    }
     row2('Race/Ethnicity', ethnicity_str(json_decode2($p->ethnicity)));
-    if (editor()) {
+    if (can_edit($p)) {
         row2('',
             button_text(
                 sprintf('edit.php?type=%d&id=%d', PERSON, $p->id),
@@ -41,14 +44,12 @@ function person_left($p) {
             $s .= sprintf(' &middot; <a href=item.php?type=%d&id=%d>View works</a>',
                 PERSON_ROLE, $pr->id
             );
-            if (editor()) {
-                $s .= ' &middot; '.copy_button(item_code($pr->id, 'person_role'));
-            }
+            $s .= ' &middot; '.copy_button(item_code($pr->id, 'person_role'));
             $x[] = "$s<p>";
         }
     }
     if (!$x) $x[] = dash();
-    if (editor()) {
+    if (can_edit($p)) {
         $x[] = '<hr>';
         $x[] = button_text(
             sprintf('edit.php?type=%d&person_id=%d', PERSON_ROLE, $p->id),
@@ -139,8 +140,8 @@ function comp_left($arg) {
             row2('Period', period_name($c->period));
         }
     }
-    if (editor()) {
-        row2('Code', copy_button(item_code($c->id, 'composition')));
+    row2('Code', copy_button(item_code($c->id, 'composition')));
+    if (can_edit($c)) {
         if ($is_section) $x = 'section';
         else if ($is_arrangement) $x = 'arrangement';
         else $x = 'composition';
@@ -175,7 +176,7 @@ function comp_left($arg) {
         } else {
             echo '<p>(No sections)<p>';
         }
-        if (editor()) {
+        if (can_edit($c)) {
             show_button(
                 sprintf(
                     'edit.php?type=%d&parent=%d',
@@ -216,7 +217,7 @@ function comp_left($arg) {
         } else {
             echo '<p>(No arrangements)<p>';
         }
-        if (editor()) {
+        if (can_edit($c)) {
             show_button(
                 sprintf(
                     'edit.php?type=%d&arrangement_of=%d',
@@ -257,7 +258,7 @@ function comp_left($arg) {
     } else {
         echo '<p>(No scores)<p>';
     }
-    if (editor()) {
+    if (can_edit($c)) {
         show_button(
             sprintf('edit.php?type=%d&comp_id=%d', SCORE, $c->id),
             'Add score'
@@ -343,7 +344,7 @@ function comp_left($arg) {
     } else {
         echo '<p>(No recordings)<p>';
     }
-    if (editor()) {
+    if (can_edit($c)) {
         show_button(
             sprintf('edit.php?type=%d&composition=%d', PERFORMANCE, $c->id),
             'Add recording'
@@ -429,7 +430,7 @@ function venue_item($id) {
     row2('Name', $v->name);
     row2('Location', location_id_to_name($v->location));
     row2('Capacity', $v->capacity);
-    if (editor()) {
+    if (can_edit($v)) {
         row2('',
             button_text(
                 sprintf('edit.php?type=%d&id=%d', VENUE, $id),
@@ -451,7 +452,7 @@ function concert_item($id) {
     row2('Audience size', $c->audience_size?$c->audience_size:'---');
     row2('Organizer', organization_id_to_name($c->organization));
     row2('Program', program_str(json_decode($c->program)));
-    if (editor()) {
+    if (can_edit($c)) {
         row2('',
             button_text(
                 sprintf('edit.php?type=%d&id=%d', CONCERT, $id),
@@ -474,7 +475,7 @@ function organization_item($id) {
     //row2('Location', location_id_to_name($org->location));
     row2('Location', $org->location);
     row2('URL', sprintf('<a href=%s>%s</a>', $org->url, $org->url));
-    if (editor()) {
+    if (can_edit($org)) {
         row2('Code', copy_button(item_code($id, 'organization')));
         row2('',
             button_text(
@@ -545,7 +546,7 @@ function perf_left($perf) {
     }
     end_table();
 
-    if (editor()) {
+    if (can_edit($perf)) {
         show_button(
             sprintf('edit.php?type=%d&id=%d', PERFORMANCE, $perf->id),
             'Edit recording'
@@ -609,7 +610,7 @@ function score_left($score) {
     }
     end_table();
 
-    if (editor()) {
+    if (can_edit($score)) {
         show_button(
             sprintf('edit.php?type=%d&id=%d', SCORE, $score->id),
             'Edit score'
@@ -704,7 +705,7 @@ function ensemble_item($id) {
     row2('Code', copy_button($ens->id, 'ensemble'));
     end_table();
 
-    if (editor()) {
+    if (can_edit($ens)) {
         show_button(
             sprintf('edit.php?type=%d&id=%d', ENSEMBLE, $ens->id),
             'Edit ensemble'

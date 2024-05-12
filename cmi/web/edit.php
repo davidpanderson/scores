@@ -23,9 +23,7 @@ define('BUTTON_CLASS_ADD', 'btn btn-xs btn-success py-0');
 define('BUTTON_CLASS_REMOVE', 'btn btn-xs btn-warning');
 
 function check_access($item) {
-    global $user;
-    if ($user->posts == EDIT_ALL) return;
-    if ($item->maker != $user->id) {
+    if (!can_edit($item)) {
         error_page("You don't have access to edit this item.");
     }
 }

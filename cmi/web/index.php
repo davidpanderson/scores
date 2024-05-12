@@ -79,8 +79,9 @@ function left(){
                     by female French composers.
                 <li> CMI is
                     <a href=editing.php>editable</a>:
-                    composers can add entries about their compositions,
-                    and about themselves.
+                    you can add entries about your compositions,
+                    your recordings,
+                    or yourself.
                     Volunteer editors can fix or add details.
                 <li> CMI supports
                     <a href=https://continuum-hypothesis.com/music_discover.php>music discovery</a>.

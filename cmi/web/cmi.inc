@@ -35,10 +35,13 @@ function spaces($n) {
     return $s;
 }
 
-// is logged-in user an editor?
+// can user edit this item?
 //
-function editor() {
-    return true;
+function can_edit($item) {
+    $user = get_logged_in_user(false);
+    if (!$user) return false;
+    if ($user->posts == EDIT_ALL) return true;
+    return $item->maker == $user->id;
 }
 
 // json decode, but return [] if null
@@ -642,6 +645,15 @@ function imslp_url($c) {
     $t = str_replace('No._', 'No.', $t);
     $t = str_replace('Op._', 'Op.', $t);
     return sprintf('https://imslp.org/wiki/%s', $t);
+}
+
+// show user name, linked to their user page
+//
+function user_link($user_id) {
+    $user = BoincUser::lookup_id($user_id);
+    return sprintf('<a href=user.php?userid=%d>%s</a>',
+        $user_id, $user->name
+    );
 }
 
 ?>
