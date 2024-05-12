@@ -135,7 +135,7 @@ function show_reviews($type, $target, $user, $review) {
     );
     foreach ($revs as $rev) {
         if ($user && $user->id == $rev->user) continue;
-        $u = BOINCUser::lookup_id($rev->user);
+        $u = BoincUser::lookup_id($rev->user);
         row2(
             sprintf('Review by <a href=user.php?id=%d>%s</a><br><small>%s</small>',
                 $rev->user, $u->name,

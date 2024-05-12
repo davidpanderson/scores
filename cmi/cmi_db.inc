@@ -123,4 +123,10 @@ define ('VOCAL', 4);
 define ('SKETCHES', 8);
 
 define ('NO_RATING', -1);
+
+// editing access levels (stored in user.posts)
+define ('EDIT_DEFAULT', 0);
+    // can edit only items they created
+define ('EDIT_ALL', 1)
+    // can edit anything, changes are immediately visible
 ?>

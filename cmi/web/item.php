@@ -103,9 +103,6 @@ function comp_left($arg) {
         row2('Arrangement of', composition_str($par));
         row2('Creators', dash(creators_str($c->creators, true)));
         row2('Instrumentation', instrument_combos_str($c->instrument_combos));
-        if ($c->ensemble_type) {
-            row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
-        }
     } else if ($is_section) {
         row2('Section of', composition_str($par));
         row2('Title', $c->title);
@@ -137,9 +134,6 @@ function comp_left($arg) {
         row2('Composition types', dash(comp_types_str($c->comp_types)));
         if ($c->language) {
             row2('Language', languages_str([$c->language]));
-        }
-        if ($c->ensemble_type) {
-            row2('Ensemble_type', ensemble_type_id_to_name($c->ensemble_type));
         }
         if ($c->period) {
             row2('Period', period_name($c->period));

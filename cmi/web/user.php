@@ -96,7 +96,7 @@ function activity($user, $is_me) {
                 <p>
                 This will help CMI learn what kinds of things you like,
                 so that it can suggest
-                music you might not know about otherwise.
+                music you might not hear otherwise.
             ';
         }
     }
@@ -108,9 +108,8 @@ function activity($user, $is_me) {
         if ($is_me) {
             echo "<p>
                 You can add items to CMI -
-                perhaps scores or recordings,
-                or you own compositions,
-                or concerts you've attended or are organizing.
+                scores, recordings, you own compositions,
+                concerts you've attended or are organizing.
             ";
         }
     }
@@ -145,8 +144,9 @@ function main($user, $is_me) {
     if ($is_me) {
         page_head("Your home page");
     } else {
-        page_head("$user->name");
+        page_head("CMI user $user->name");
     }
+    echo '<p> </p>';
     grid(null, 'left', 'right', 7, [$user, $is_me]);
     page_tail();
 }
@@ -155,7 +155,7 @@ $user = get_logged_in_user(false);
 $id = get_int('userid', true);
 if ($user && $user->id==$id) $id=0;
 if ($id) {
-    $user = BOINCUser::lookup_id($id);
+    $user = BoincUser::lookup_id($id);
     main($user, false);
 } else {
     $user = get_logged_in_user();

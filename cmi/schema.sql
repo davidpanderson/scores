@@ -4,6 +4,10 @@
 # mysql < create_prod.sql
 # or mysql < create_dev.sql
 
+# We also use a BOINC database for user and social data.
+# Field usage:
+# user.posts: editing access level (see cmi_db.inc)
+
 # an indexed or unique text field must be varchar
 # fulltext index can cover at most 256 char ?? still true?
 
@@ -24,6 +28,9 @@ create table location (
     type                    integer         not null default 0,
     parent                  integer         not null default 0,
     ancestors               json,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id),
     unique(name, type, parent)
 );
@@ -66,6 +73,9 @@ create table person (
     periods                 JSON,
     sex                     integer         not null default 0,
     ethnicity               JSON,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id)
 );
 alter table person add fulltext index (first_name, last_name);
@@ -113,6 +123,9 @@ create table ensemble (
     members                 json,
         # person_roles
     period                  integer         not null default 0,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     unique(name),
     primary key(id)
 );
@@ -132,6 +145,9 @@ create table organization (
     ended                   integer         not null default 0,
     location                text,           -- ideally should be an ID
     url                     varchar(255),
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id),
     unique(name)
 );
@@ -242,6 +258,9 @@ create table composition (
     nratings2               integer         not null default 0,
     rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id)
 );
 alter table composition add index comp_lt(long_title);
@@ -286,6 +305,9 @@ create table score (
     nratings2               integer         not null default 0,
     rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id)
 );
 alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
@@ -300,6 +322,9 @@ create table venue (
     capacity                integer         not null default 0,
     started                 integer         not null default 0,
     ended                   integer         not null default 0,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id)
 );
 
@@ -339,6 +364,9 @@ create table performance (
     nratings2               integer         not null default 0,
     rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id)
 );
 alter table performance add index perf_comp(composition);
@@ -352,6 +380,9 @@ create table concert (
         -- sponsor or organizer
     program                 json,
         -- performances (in order)
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id)
 );
 
