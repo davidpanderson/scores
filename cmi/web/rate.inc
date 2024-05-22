@@ -160,6 +160,10 @@ function comp_right($arg) {
         [$rq, $rd, $review] = get_users_ratings($user, COMPOSITION, $c->id);
     }
     echo '<b>Composition quality</b>';
+    $x = 'composition';
+    if ($c->arrangement_of) $x = 'arrangement';
+    if ($c->parent) $x = 'section';
+    echo "<br><small>How much do you like this $x?</small>";
     start_table();
     if ($user) {
         row2('Your rating',
@@ -170,6 +174,7 @@ function comp_right($arg) {
     row2('Average rating', rating_bar($qavg));
     end_table();
     echo '<b>Technical difficulty</b>';
+    echo "<br><small>If you play this $x, how hard is it for you?</small>";
     start_table();
     if ($user) {
         row2('Your rating', rating_buttons(true, $rd, 'rate_comp_2', $c->id));

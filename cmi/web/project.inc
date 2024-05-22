@@ -139,7 +139,7 @@ function navbar(
 
     $x = array();
     if ($user) {
-        $x[] = array(tra("Account"), $url_prefix.HOME_PAGE);
+        $x[] = array(tra("Account"), 'account.php');
         $x[] = array(tra("Join"), $url_prefix."join.php");
     }
     $x[] = array(tra("About %1", PROJECT), $url_prefix."about.php");

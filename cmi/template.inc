@@ -287,7 +287,7 @@ function expand_template($name, $args, $level) {
 
     static $templates = null;
     if (!$templates) {
-        $templates = unserialize(file_get_contents('data/templates.ser'));
+        $templates = unserialize(file_get_contents('../data/templates.ser'));
     }
     $name = strtolower($name);
     if (!array_key_exists($name, $templates)) {
@@ -336,7 +336,7 @@ function get_template_arg($str, $pos, $args, $level) {
         }
         if (!array_key_exists($key, $args)) {
             // are missing args OK?
-            echo "missing arg: $parts[0]\n";
+            echo "missing arg: $str $key\n";
             print_r($args);
             return ['', $n+3];
             //exit;

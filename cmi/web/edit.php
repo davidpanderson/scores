@@ -514,6 +514,9 @@ function concert_action($id) {
     }
 
     $venue = get_int('venue');
+    if (!$venue) {
+        error_page('You must specify a venue.');
+    }
     $when = get_str('when', true);
     if ($when) {
         $when = DB::date_num_parse($when);
@@ -1473,6 +1476,7 @@ function empty_score() {
     $score = new StdClass;
     $score->id = 0;
     $score->compositions = [];
+    $score->creators = [];
     $score->files = [];
     $score->publisher = 0;
     $score->license = 0;

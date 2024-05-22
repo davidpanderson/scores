@@ -182,7 +182,7 @@ function show_added ($user, $is_me) {
 
 function added_header($type) {
     row_heading_array(
-        [table_desc($type), 'When'],
+        [table_desc($type), 'Added'],
         null, 'bg-info'
     );
 }

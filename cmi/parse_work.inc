@@ -65,10 +65,9 @@ function parse_publisher($str) {
         } else {
             $args = $item->args;
             $n = count($args);
-            switch ($item->name) {
-            case 'P':
-            case 'P2':
+            switch (strtolower($item->name)) {
             case 'p':
+            case 'p2':
                 $pub->name = $n>0?$args[0]:'';
                 $pub->imprint = $n>1?$args[1]:'';
                 $pub->location = $n>2?$args[2]:'';
@@ -90,7 +89,7 @@ function parse_publisher($str) {
                     continue 2;
                 }
                 break;
-            case 'RC':
+            case 'rc':
                 $pub->name = $n>1?$args[1]:'';
                 $pub->year = $n>4?(int)$args[4]:0;
                 $pub->edition_number = $n>6?$args[6]:'';
@@ -98,110 +97,110 @@ function parse_publisher($str) {
             case 'knuth':
                 $pub->name = 'Jürgen Knuth';
                 break;
-            case 'BeethovenComplete':
+            case 'beethovencomplete':
                 $pub->name = 'Breitkopf und Härtel';
                 $pub->year = $n>2?(int)$args[2]:0;
                 break;
-            case 'MozartComplete':
+            case 'mozartcomplete':
                 $pub->name = 'Breitkopf und Härtel';
                 $pub->year = $n>2?(int)$args[2]:0;
                 break;
-            case 'BrahmsComplete':
+            case 'brahmscomplete':
                 $pub->name = 'Breitkopf und Härtel';
                 break;
-            case 'Liszt-Stiftung':
+            case 'liszt-stiftung':
                 $pub->name = 'Breitkopf und Härtel';
                 $pub->year = $n>2?(int)$args[2]:0;
                 break;
-            case 'NeueLisztAusgabe':
+            case 'neuelisztausgabe':
                 $pub->name = 'Editio Musica';
                 $pub->location = 'Budapest';
                 $pub->year = $n>2?(int)$args[2]:0;
                 break;
-            case 'CCARH':
+            case 'ccarh':
                 $pub->name = 'CCARH';
                 break;
-            case 'MozartNMA':
+            case 'mozartnma':
                 $pub->name = 'Bärenreiter-Verlag';
                 $pub->year = $n>5?(int)$args[5]:0;
                 break;
-            case 'Mutopia':
+            case 'mutopia':
                 $pub->name = 'Mutopia';
                 break;
-            case 'BulowLebertAlbumSch':
+            case 'bulowlebertalbumsch':
                 $pub->name = 'G. Schirmer';
                 $pub->year = 1896;
                 break;
-            case 'GardnerMus':
+            case 'gardnermus':
                 $pub->name = 'Isabella Stewart Gardner Museum';
                 $pub->location = 'Boston';
                 break;
-            case 'BeethPfsonCasella':
+            case 'beethpfsoncasella':
                 $pub->name = 'Edizione Ricordi';
                 $pub->location = 'Milan';
                 $pub->year = $n>1?(int)$args[1]:0;
                 break;
-            case 'SMPlink':
+            case 'smplink':
                 $pub->name = 'Ullstein';
                 $pub->location = 'Berlin';
                 break;
             case 'plain':
                 $pub->name = $args[1];
                 break;
-            case 'AGarch':
+            case 'agarch':
                 $pub->name = 'Pandora Records/Al Goldstein Archive';
                 break;
-            case 'ChopinJoseffyEd':
-            case 'ChopinMikuliSch':
-            case 'ChopinKullakS':
+            case 'chopinjoseffyed':
+            case 'chopinmikulisch':
+            case 'chopinkullaks':
                 $pub->name = 'G. Schirmer';
                 $pub->year = $n>1?(int)$args[1]:0;
                 break;
-            case 'ChopinScholtzEP':
-            case 'BrahmsSauer':
+            case 'chopinscholtzep':
+            case 'brahmssauer':
                 $pub->name = 'C.F. Peters';
                 break;
-            case 'ChopinKlindworth':
+            case 'chopinklindworth':
                 $pub->name = 'Bote & Bock';
                 $pub->location = 'Berlin';
                 break;
-            case 'ChopinComplete':
+            case 'chopincomplete':
                 $pub->name = 'Breitkopf und Härtel';
                 break;
-            case 'ChopinPaderewskiPWM':
+            case 'chopinpaderewskipwm':
                 $pub->name = 'Polskie Wydawnictwo Muzyczne';
                 break;
-            case 'EinzelAus':
+            case 'einzelaus':
                 $pub->name = 'Schott';
                 $pub->year = $n>2?(int)$args[2]:0;
                 break;
-            case 'Sarro':
+            case 'sarro':
                 $pub->name = 'Felipe Sarro';
                 break;
-            case 'BestWTarMasters':
+            case 'bestwtarmasters':
                 $pub->name = 'Novello, Ewer & Co.';
                 $pub->location = 'London';
                 break;
-            case 'KlassischerStucke':
+            case 'klassischerstucke':
                 $pub->name = 'Edition Peters';
                 break;
-            case 'CVartist':
+            case 'cvartist':
                 $pub->name = 'Clasica Viva';
                 break;
-            case 'MssAu':
-            case 'MssD':
+            case 'mssau':
+            case 'mssd':
                 $pub->name = 'Manuscript';
                 if ($n>1) {
                     $pub->year = (100*(int)$args[0])+(int)$args[1];
                 }
                 break;
-            case 'Mss':
+            case 'mss':
                 $pub->name = 'Manuscript';
                 break;
-            case 'Plain':
+            case 'plain':
                 $pub->name = $args[1];
                 break;
-            case 'LinkName':
+            case 'linkname':
                 $pub->name = $args[0];
                 if ($n>1) $pub->name .= ' '.$args[1];
                 break;
@@ -1397,22 +1396,74 @@ function expand_title($s) {
 
 // expand {{HaydnHob...}}, and remove ; and after
 //
-function parse_opus($s) {
-    $n1 = stripos($s, '{{HaydnHob');
-    if ($n1 !== false) {
-        $n2 = strpos($s, '}}');
-        if ($n2 === false) {
-            echo "unrecognized opus $s\n";
-            return '';
+function parse_opus($str) {
+    $pos = 0;
+    $s = '';
+    while (true) {
+        [$item, $new_pos] = parse_item($str, $pos);
+        $pos = $new_pos;
+        if ($item === false) break;
+        if ($item === null) break;
+        if (is_string($item)) {
+            $s .= "$item";
+        } else {
+            $args = $item->args;
+            $n = count($args);
+            switch (strtolower($item->name)) {
+            case 'haydnhob':
+                if ($n<2) {
+                    echo "unrecognized opus $str\n";
+                    return '';
+                }
+                $s .= sprintf('Hob.%s', $args[1]);
+            case 'linkname':
+                $s .= "$args[0] $args[1]";
+                break;
+            case 'en':
+                $s .= '-';
+                break;
+            case 'key':
+                echo "unrecognized opus $str\n";
+                return '';
+            case 'plain':
+                return $args[1];
+            case 'risms':
+            case 'rismc':
+                return "RISM $args[1]";
+            case 'k6':
+                $s .= "K.$args[0]";
+                break;
+            case 'version':
+                $s .= $args[0];
+                break;
+            case 'mwv':
+                return "MWV $args[0] $args[1]";
+            case 'sb':
+                if ($s) $s .= 'see below';
+                break;
+            default:
+                break;
+            }
         }
-        $t = substr2($s, $n1+2, $n2);
-        $x = explode('|', $t);
-        return sprintf('Hob.%s', $x[2]);
     }
-    $n1 = strpos($s, ';');
-    if ($n1 !== false) {
-        $s = substr2($s, 0, $n1);
+    $x = explode(';', $s);
+    $s = $x[0];
+    $x = explode('<br>', $s);
+    $s = $x[0];
+    $x = explode('[', $s);
+    $s = $x[0];
+    $x = explode('*', $s);
+    $s = $x[0];
+    if (strstr($s, 'see below')) {
+        $x = explode('(', $s);
+        $s = $x[0];
     }
+    $x = explode("#", $s);
+    if (count($x)>1) {
+        var_dump($s);
+        $s = implode('; ', array_slice($x, 1));
+    }
+
     return trim($s);
 }
 
