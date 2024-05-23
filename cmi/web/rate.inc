@@ -174,7 +174,7 @@ function comp_right($arg) {
     row2('Average rating', rating_bar($qavg));
     end_table();
     echo '<b>Technical difficulty</b>';
-    echo "<br><small>If you play this $x, how hard is it for you?</small>";
+    echo "<br><small>If you play this $x, how difficult is it for you?</small>";
     start_table();
     if ($user) {
         row2('Your rating', rating_buttons(true, $rd, 'rate_comp_2', $c->id));

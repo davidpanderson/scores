@@ -326,7 +326,8 @@ function concert_form($id) {
         table_header('Name', 'Role', 'Remove');
         foreach ($roles as $role_id) {
             $prole = DB_person_role::lookup_id($role_id);
-            [$name, $role] = person_role_array($prole);
+            $name = person_id_to_name($prole->person);
+            $role = role_str($prole);
             table_row(
                 $name,
                 $role,
@@ -379,6 +380,7 @@ function concert_form($id) {
     } else {
         form_input_text2('Date', 'when', '', 'YYYY-MM-DD');
     }
+    form_input_text('Audience size', 'audience_size', dash($con->audience_size));
     form_select('Sponsoring organization', 'organization', organization_options(), $con->organization);
     form_submit($id?'Update concert':'Add concert');
     form_end();
@@ -525,22 +527,25 @@ function concert_action($id) {
         error_page('You must specify a date.');
     }
     $organization = get_int('organization');
+    $audience_size = get_int('audience_size');
 
     if ($id) {
         $c = DB_concert::lookup_id($id);
         if (!$c) error_page("No concert $id");
         $q = sprintf(
-            "_when=%d, venue=%d, organization=%d, program='%s', edit_time=%d",
+            "_when=%d, venue=%d, organization=%d, program='%s', audience_size=%d, edit_time=%d",
             $when, $venue, $organization,
             json_encode($con->program),
+            $audience_size,
             time()
         );
         $c->update($q);
     } else {
         $q = sprintf(
-            "(_when, venue, organization, program, maker, create_time) values (%d, %d, %d, '%s', %d, %d)",
+            "(_when, venue, organization, program, audience_size, maker, create_time) values (%d, %d, %d, '%s', %d, %d, %d)",
             $when, $venue, $organization,
             json_encode($con->program),
+            $audience_size,
             USER_ID,
             time()
         );
@@ -1784,7 +1789,8 @@ function perf_form($id) {
         table_header('Name', 'Role', 'Remove');
         foreach ($perf->performers as $pr_id) {
             $prole = DB_person_role::lookup_id($pr_id);
-            [$name, $role] = person_role_array($prole);
+            $name = person_id_to_name($prole->person);
+            $role = role_str($prole);
             table_row(
                 $name, $role,
                 sprintf('<input type=checkbox name=remove_role_%d', $pr_id)

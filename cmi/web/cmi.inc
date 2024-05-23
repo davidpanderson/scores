@@ -106,32 +106,16 @@ function comp_types_str($cts) {
     return implode(', ', $x);
 }
 
-// $cts is a list of person_role IDs
-//
-function creators_str($cts, $show_role) {
-    $x = [];
-    foreach ($cts as $id) {
-        $prole = DB_person_role::lookup_id($id);
-        $p = DB_person::lookup_id($prole->person);
-        $s = sprintf(
-            "<a href=item.php?type=%d&id=%d>%s</a>",
-            PERSON,
-            $p->id,
-            person_id_to_name($prole->person)
-        );
-        if ($show_role) {
-            $s .= sprintf(' (%s)', role_str($prole));
-        }
-        $x[] = $s;
-    }
-    return implode(' and ', $x);
-}
-
-// return 'first last'
+// return 'first last', linked to person item page
 //
 function person_id_to_name($id) {
     $person = DB_person::lookup_id($id);
-    return "$person->first_name $person->last_name";
+    return sprintf(
+        "<a href=item.php?type=%d&id=%d>%s %s</a>",
+        PERSON,
+        $id,
+        $person->first_name, $person->last_name
+    );
 }
 
 // if performer, return instrument name if present, else 'performer'
@@ -140,28 +124,30 @@ function person_id_to_name($id) {
 function role_str($prole) {
     if ($prole->instrument) {
         return instrument_id_to_name($prole->instrument);
+    } else {
+        return role_id_to_name($prole->role);
     }
-    return role_id_to_name($prole->role);
 }
 
 // return e.g. Joe Smith (piano) or Joe Smith (lyricist)
 //
 function person_role_str($prole, $show_role=true) {
-    [$s, $r] = person_role_array($prole);
-    if (!$show_role) return $s;
-    return "$s ($r)";
+    $s = person_id_to_name($prole->person);
+    if ($show_role) {
+        $s .= sprintf(' (%s)', role_str($prole));
+    }
+    return $s;
 }
 
-// same, but return name and role separately
+// $cts is a list of person_role IDs
 //
-function person_role_array($role) {
-    $person = DB_person::lookup_id($role->person);
-    $s = "$person->first_name $person->last_name";
-    $t = role_id_to_name($role->role);
-    if ($role->instrument) {
-        $t = instrument_id_to_name($role->instrument);
+function creators_str($cts, $show_role) {
+    $x = [];
+    foreach ($cts as $id) {
+        $prole = DB_person_role::lookup_id($id);
+        $x[] = person_role_str($prole, $show_role);
     }
-    return [$s, $t];
+    return implode(' and ', $x);
 }
 
 function pluralize($x) {

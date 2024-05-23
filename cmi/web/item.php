@@ -205,11 +205,7 @@ function comp_left($arg) {
                         COMPOSITION, $arr->id
                     ),
                     $arr->title?$arr->title:'Complete',
-                    sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                        COMPOSITION,
-                        $arr->id,
-                        $ics?$ics:'---'
-                    ),
+                    dash($ics),
                     $arr->arranger
                 );
             }
@@ -430,6 +426,17 @@ function venue_item($id) {
     row2('Name', $v->name);
     row2('Location', location_id_to_name($v->location));
     row2('Capacity', $v->capacity);
+    $concerts = DB_concert::enum("venue=$id");
+    if ($concerts) {
+        $x = [];
+        foreach ($concerts as $c) {
+            $x[] = sprintf(
+                '<a href=item.php?type=%d&id=%d>%s</a>',
+                CONCERT, $c->id, DB::date_num_to_str($c->_when)
+            );
+        }
+        row2('Concerts', implode('<br>', $x));
+    }
     if (can_edit($v)) {
         row2('',
             button_text(
@@ -449,7 +456,7 @@ function concert_item($id) {
     start_table();
     row2('When', DB::date_num_to_str($c->_when));
     row2('Venue', venue_str($c->venue));
-    row2('Audience size', $c->audience_size?$c->audience_size:'---');
+    row2('Audience size', dash($c->audience_size));
     row2('Organizer', organization_id_to_name($c->organization));
     row2('Program', program_str(json_decode($c->program)));
     if (can_edit($c)) {
