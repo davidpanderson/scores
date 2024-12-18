@@ -146,11 +146,16 @@ function comp_form($params) {
     form_start('search.php');
     form_input_hidden('type', 'composition');
     form_input_text('Title', 'title', $params->title);
+    form_general('Composed for:', '');
     select2_multi(
-        'Instruments composed for',
+        'You can either select one or more instruments:',
         'insts', instrument_options(), $params->insts
     );
-    form_checkboxes('Other instruments OK?', [['others_ok', '', $params->others_ok]]);
+    form_input_text(
+        '... or enter an <a href=search.php?type=inst_combo>instrumentation code</a>',
+        'inst_combo', $params->inst_combo
+    );
+    form_checkboxes('Additional instruments OK?', [['others_ok', '', $params->others_ok]]);
     echo "<hr>";
     form_input_text('Composer name', 'name', $params->name);
     form_select('Composer sex', 'sex', sex_options(), $params->sex);
@@ -159,12 +164,17 @@ function comp_form($params) {
     form_checkboxes(
         'Show arrangements', [['arr', '', $params->arr]], 'id=arr_check'
     );
+    form_general('Arranged for:', '');
     select2_multi(
-        'For',
+        'You can either select one or more instruments:',
         'arr_insts', instrument_options(), $params->arr_insts, 'id=arr_inst'
     );
+    form_input_text(
+        '... or enter an <a href=search.php?type=inst_combo>instrumentation code</a>',
+        'arr_inst_combo', $params->arr_inst_combo, '', 'id=arr_inst_combo'
+    );
     form_checkboxes(
-        'Other instruments OK?', [['arr', '', $params->arr_others_ok]],
+        'Additional instruments OK?', [['arr_others_ok', '', $params->arr_others_ok]],
         'id=arr_others_ok'
     );
     form_submit('Search');
@@ -179,9 +189,11 @@ function comp_form($params) {
 <script>
 var arr_check = document.getElementById('arr_check');
 var arr_inst = document.getElementById('arr_inst');
+var arr_inst_combo = document.getElementById('arr_inst_combo');
 var arr_others_ok = document.getElementById('arr_others_ok');
 f = function() {
     arr_inst.disabled = !arr_check.checked;
+    arr_inst_combo.disabled = !arr_check.checked;
     arr_others_ok.disabled = !arr_check.checked;
 };
 f();
@@ -195,12 +207,14 @@ function comp_get() {
     $params->offset = get_int('offset', true);
     $params->title = get_str('title', true);
     $params->insts = get_str('insts', true);
+    $params->inst_combo = get_str('inst_combo', true);
     $params->others_ok = get_str('others_ok', true);
     $params->name = get_str('name', true);
     $params->sex = get_int('sex', true);
     $params->location = get_int('location', true);
     $params->arr = get_str('arr', true);
     $params->arr_insts = get_str('arr_insts', true);
+    $params->arr_inst_combo = get_str('arr_inst_combo', true);
     $params->arr_others_ok = get_str('arr_others_ok', true);
     return $params;
 }
@@ -212,6 +226,7 @@ function comp_encode($params) {
     if ($params->insts) $x .= sprintf(
         '&insts[]=%s', implode(',', $params->insts)
     );
+    if ($params->inst_combo) $x .= "&inst_combo=$params->inst_combo";
     if ($params->others_ok) $x .= "&others_ok=$params->others_ok";
     if ($params->name) $x .= "&name=$params->name";
     if ($params->sex) $x .= "&sex=$params->sex";
@@ -220,6 +235,7 @@ function comp_encode($params) {
     if ($params->arr_insts) $x .= sprintf(
         '&arr_insts[]=%s', implode(',', $params->arr_insts)
     );
+    if ($params->arr_inst_combo) $x .= "&arr_inst_combo=$params->arr_inst_combo";
     if ($params->arr_others_ok) $x .= "&arr_others_ok=$params->arr_others_ok";
     return $x;
 }
@@ -227,7 +243,7 @@ function comp_encode($params) {
 // return list of inst combos that contain the given instruments
 // (and possibly others)
 //
-function get_combos($insts, $others_ok) {
+function get_combos_with_instruments($insts, $others_ok) {
     $spec_ids = [];
     $spec_min = [];
     $spec_max = [];
@@ -241,6 +257,26 @@ function get_combos($insts, $others_ok) {
     return inst_combo_ids($spec_ids, $spec_min, $spec_max, $others_ok);
 }
 
+// Return list of inst combos that extend the given one
+//
+function inst_combos_extend($ic_id) {
+    $ics = get_inst_combos();
+    $ic = $ics[$ic_id];
+    $spec_ids = [];
+    $spec_min = [];
+    $spec_max = [];
+    $ids = $ic->instruments_sorted->id;
+    $counts = $ic->instruments_sorted->count;
+    $n = count($ids);
+    for ($i=0; $i<$n; $i++) {
+        $spec_ids[] = $ids[$i];
+        $spec_min[] = $counts[$i];
+        $spec_max[] = 999;
+    }
+    return inst_combo_ids($spec_ids, $spec_min, $spec_max, true);
+}
+
+
 // convert list of ints to string like '[1, 5, 10]'
 //
 function make_int_list($list) {
@@ -253,18 +289,58 @@ function composition_search($params) {
 
     // make a SQL query based on search params
 
-    if ($params->insts && $params->insts<>[0]) {
-        $inst_combos = get_combos($params->insts, $params->others_ok);
+    // get lists of inst combos for composition and/or arrangement
+
+    $inst_combos = null;
+    if ($params->insts) {
+        if ($params->inst_combo) {
+            echo "Specify either instruments or instrumentation code, but not both";
+            return;
+        }
+        $inst_combos = get_combos_with_instruments(
+            $params->insts, $params->others_ok
+        );
         if (!$inst_combos) {
-            echo 'Nothing composed for those instruments.';
+            echo 'No compositions for those instruments.';
             return;
         }
     }
-    if ($params->arr_insts && $params->arr_insts<>[0]) {
-        $arr_inst_combos = get_combos($params->arr_insts, $params->arr_others_ok);
+    if ($params->inst_combo) {
+        $ic_id = parse_code($params->inst_combo, 'inst_combo');
+        if (!$ic_id) {
+            echo 'Invalid instrumentation code';
+            return;
+        }
+        if ($params->others_ok) {
+            $inst_combos = inst_combos_extend($ic_id);
+        } else {
+            $inst_combos = [$ic_id];
+        }
+    }
+    $arr_inst_combos = null;
+    if ($params->arr_insts) {
+        if ($params->inst_combo) {
+            echo "Specify either arrangement instruments or instrumentation code, but not both";
+            return;
+        }
+        $arr_inst_combos = get_combos_with_instruments(
+            $params->arr_insts, $params->arr_others_ok
+        );
         if (!$arr_inst_combos) {
             echo 'Nothing arranged for those instruments.';
             return;
+        }
+    }
+    if ($params->arr_inst_combo) {
+        $ic_id = parse_code($params->arr_inst_combo, 'inst_combo');
+        if (!$ic_id) {
+            echo 'Invalid arrangement instrumentation code';
+            return;
+        }
+        if ($params->arr_others_ok) {
+            $arr_inst_combos = inst_combos_extend($ic_id);
+        } else {
+            $arr_inst_combos = [$ic_id];
         }
     }
 
@@ -293,7 +369,7 @@ function composition_search($params) {
         $query .= ' and comp1.arrangement_of = 0 and comp1.parent = 0
         ';
     }
-    if ($params->insts) {
+    if ($inst_combos) {
         $query .= sprintf(' and json_overlaps("%s", comp1.instrument_combos)',
             make_int_list($inst_combos)
         );
@@ -329,9 +405,9 @@ function composition_search($params) {
         ';
     }
 
-    // arrangement
+    // arrangements
     //
-    if ($params->arr_insts) {
+    if ($arr_inst_combos) {
         $query .= sprintf(' and json_overlaps("%s", comp2.instrument_combos)',
             make_int_list($arr_inst_combos)
         );
@@ -503,7 +579,7 @@ function inst_combo_get() {
 function inst_combo_search($params) {
     select2_head('Instrumentations');
     inst_combo_form($params);
-    $combo_ids = get_combos($params->insts, true);
+    $combo_ids = get_combos_with_instruments($params->insts, true);
     if (!$combo_ids) {
         echo "<h2>No instrumentations found</h2>
         Please modify your search and try again.";

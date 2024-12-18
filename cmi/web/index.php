@@ -112,6 +112,12 @@ function left(){
                 The CMI code is open source and is
                 <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
                 CMI includes data from <a href=https://imslp.org>IMSLP</a>.
+                <p>
+                CMI is under development.
+                The database may be reset,
+                in which case items you add will be lost.
+                Features based on ratings are simulated
+                until we get a critical mass of ratings.
             ';
         }
     );

@@ -583,7 +583,7 @@ function score_left($score) {
         $pub = DB_organization::lookup_id($score->publisher);
         $pub_str = $pub->name;
     }
-    row2('Creators', dash(creators_str($score->creators, true)));
+    row2('Contributors', dash(creators_str($score->creators, true)));
     row2('Publisher', dash($pub_str));
     $x = '';
     if ($score->languages) {

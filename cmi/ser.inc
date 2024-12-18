@@ -158,8 +158,9 @@ if (0) {
     exit;
 }
 
-// get list of inst combos with given instruments
-// used by composition and inst combo search (web/search.php)
+// Return list of inst combos that match the spec:
+// bounded numbers of the given instruments, and possibly other insts
+// Used by composition and inst combo search (web/search.php)
 //
 function inst_combo_ids($spec_ids, $spec_min, $spec_max, $others_ok) {
     $ics = get_inst_combos();
