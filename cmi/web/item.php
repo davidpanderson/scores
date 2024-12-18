@@ -226,7 +226,7 @@ function comp_left($arg) {
 
     echo "<h3>Scores</h3>\n";
     $scores = DB_score::enum(
-        sprintf('json_overlaps("[%s]", compositions)', $c->id)
+        sprintf('json_overlaps("[%s]", compositions->\'$\')', $c->id)
     );
     if ($scores || $arrs) {
         start_table();
@@ -236,7 +236,7 @@ function comp_left($arg) {
         }
         foreach ($arrs as $arr) {
             $scores = DB_score::enum(
-                sprintf('json_overlaps("[%s]", compositions)', $arr->id)
+                sprintf('json_overlaps("[%s]", compositions->\'$\')', $arr->id)
             );
             foreach ($scores as $score) {
                 if ($arr->ics) {

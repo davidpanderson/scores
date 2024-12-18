@@ -370,7 +370,7 @@ function composition_search($params) {
         ';
     }
     if ($inst_combos) {
-        $query .= sprintf(' and json_overlaps("%s", comp1.instrument_combos)',
+        $query .= sprintf(' and json_overlaps("%s", comp1.instrument_combos->\'$\')',
             make_int_list($inst_combos)
         );
     }
@@ -408,7 +408,7 @@ function composition_search($params) {
     // arrangements
     //
     if ($arr_inst_combos) {
-        $query .= sprintf(' and json_overlaps("%s", comp2.instrument_combos)',
+        $query .= sprintf(' and json_overlaps("%s", comp2.instrument_combos->\'$\')',
             make_int_list($arr_inst_combos)
         );
     }

@@ -197,7 +197,7 @@ function comp_right($arg) {
 // TODO: use data.  Show only unrated comps
 //
 function show_recommended_comps($c) {
-    $comps = DB_composition::enum("id <> $c->id", 'order by rand() limit 3');
+    $comps = DB_composition::enum('', 'limit 3');
     echo '<ul>';
     foreach ($comps as $comp) {
         show_recommended_comp($comp);
@@ -246,7 +246,7 @@ function person_right($p) {
 function show_recommended_prs($p, $role) {
     $prs = DB_person_role::enum(
         sprintf('role=%d', $role->id),
-        'order by rand() limit 3'
+        'limit 3'
     );
     echo '<ul>';
     foreach ($prs as $pr) {
@@ -296,7 +296,7 @@ function perf_right($perf) {
 }
 
 function show_recommended_perfs($perf) {
-    $ps = DB_performance::enum('', 'order by rand() limit 3');
+    $ps = DB_performance::enum('', 'limit 3');
     echo '<ul>';
     foreach ($ps as $p) {
         $comp = DB_composition::lookup_id($p->composition);
