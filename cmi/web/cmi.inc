@@ -429,7 +429,7 @@ function copy_to_clipboard(x) {
 }
 
 function copy_button($text) {
-    return sprintf("<button onclick=\"copy_to_clipboard('%s')\" title=\"Copy code to clipboard\">Copy</button>",
+    return sprintf("<img width=20 src=clipboard-copy-512.png onclick=\"copy_to_clipboard('%s')\" title=\"Copy code to clipboard\">",
         $text
     );
 }
@@ -469,7 +469,7 @@ function score_str($score, $link=true) {
     $score->compositions = json_decode($score->compositions);
     $comp = DB_composition::lookup_id($score->compositions[0]);
     $s = '';
-    if ($score->section) {
+    if ($score->section && $score->section != 'Complete') {
         $s = "$score->section from ";
     }
     $s .= composition_str($comp, false);
@@ -584,11 +584,11 @@ function form_input_text2($label, $name, $value, $placeholder) {
 //
 function show_compositions($comps) {
     copy_to_clipboard_script();
-    start_table();
+    start_table('table-striped');
     table_header(
         'Title<br><small>click for details</small>',
         'Creators',
-        'IMSLP',
+        'View on IMSLP',
         'Key',
         'Opus',
         'Composed',
@@ -601,7 +601,7 @@ function show_compositions($comps) {
                 COMPOSITION, $c->id, $c->title
             ),
             creators_str(json_decode2($c->creators), true),
-            sprintf('<a href=%s>View</a>', imslp_url($c)),
+            imslp_link($c),
             $c->_keys,
             $c->opus_catalogue,
             DB::date_num_to_str($c->composed),
@@ -618,9 +618,9 @@ function show_compositions($comps) {
 // - person_role results where role is arranger
 //
 function show_arrangements($comps) {
-    start_table();
+    start_table('table-striped');
     table_header(
-        'Arrangement of', 'Section', 'IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
+        'Arrangement of', 'Section', 'View on IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
     );
     foreach ($comps as $c) {
         $c->creators = json_decode2($c->creators);
@@ -631,7 +631,7 @@ function show_arrangements($comps) {
                 COMPOSITION, $c2->id, $c2->long_title
             ),
             $c->title,
-            sprintf('<a href=%s>View</a>', imslp_url($c2)),
+            imslp_link($c2),
             DB::date_num_to_str($c2->composed),
             comp_types_str($c2->comp_types),
             creators_str($c->creators, false),
@@ -641,11 +641,15 @@ function show_arrangements($comps) {
     end_table();
 }
 
-function imslp_url($c) {
+function imslp_link($c) {
     $t = str_replace(' ', '_', $c->long_title);
     $t = str_replace('No._', 'No.', $t);
     $t = str_replace('Op._', 'Op.', $t);
-    return sprintf('https://imslp.org/wiki/%s', $t);
+    $url = sprintf('https://imslp.org/wiki/%s', $t);
+    return sprintf(
+        '<a href=%s><img width=50 src=imslp_logo.png></a>',
+        $url
+    );
 }
 
 // show user name, linked to their user page
@@ -657,4 +661,35 @@ function user_link($user_id) {
     );
 }
 
+// show org name, linked to org page
+//
+function org_link($id) {
+    if ($id) {
+        $org = DB_organization::lookup_id($id);
+        return sprintf(
+            '<a href=item.php?type=%d&id=%d>%s</a>',
+            ORGANIZATION, $org->id, $org->name
+        );
+    }
+    return dash();
+}
+
+define('BUTTON_STYLE', "background-color:#ffd0a0;border:1px solid #c08070;padding: 4px 10px;border-radius: 4px;");
+
+function form_submit2($text) {
+    form_general(
+        "",
+        sprintf('<button type="submit" style="%s">%s</button>',
+            BUTTON_STYLE, $text
+        )
+    );
+}
+
+function button_link($url, $text, $title=null) {
+    if ($title) $title=$text;
+    return sprintf(
+        '<a href="%s" title="%s" class="button" style="%s;color:black; text-decoration:none;">%s</a>',
+        $url, $title, BUTTON_STYLE, $text
+    );
+}
 ?>

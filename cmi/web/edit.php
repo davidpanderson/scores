@@ -382,7 +382,7 @@ function concert_form($id) {
     }
     form_input_text('Audience size', 'audience_size', dash($con->audience_size));
     form_select('Sponsoring organization', 'organization', organization_options(), $con->organization);
-    form_submit($id?'Update concert':'Add concert');
+    form_submit2($id?'Update concert':'Add concert');
     form_end();
 
     page_tail();
@@ -589,7 +589,7 @@ function location_form($id) {
     form_select('Parent', 'parent', location_options(),
         $loc?$loc->parent:null
     );
-    form_submit($loc?'Update':'Add');
+    form_submit2($loc?'Update':'Add');
     form_end();
     page_tail();
 }
@@ -685,7 +685,7 @@ function person_form($id) {
     select2_multi('Locations', 'locations', location_options(), $p->locations);
     form_select('Sex', 'sex', sex_options(), $p->sex);
     select2_multi('Race/Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
-    form_submit($id?'Update':'Add');
+    form_submit2($id?'Update':'Add');
     form_end();
     page_tail();
 }
@@ -782,7 +782,7 @@ function ensemble_form($id) {
     form_input_text2(
         'Ended', 'ended', DB::date_num_to_str($ens->ended), 'YYYY-MM-DD'
     );
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -844,7 +844,7 @@ function person_role_form() {
         'Instrument<br><small>If performer</small>',
         'instrument', instrument_options(true), 0
     );
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -883,7 +883,7 @@ function venue_form($id) {
         'Location', 'location', location_options(), $ven?$ven->location:null
     );
     form_input_text('Capacity', 'capacity', $ven?$ven->capacity:null);
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -938,7 +938,7 @@ function organization_form($id) {
         $org?$org->location:null
     );
     form_input_text('URL', 'url', $org?$org->url:'');
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -1092,7 +1092,7 @@ function composition_form($id) {
         // creators
         form_row_start('Creators');
         if ($comp->creators) {
-            start_table('', 'width:50%');
+            start_table('table-striped');
             table_header('Name', 'Role', 'Remove');
             foreach ($comp->creators as $prole_id) {
                 $prole = DB_person_role::lookup_id($prole_id);
@@ -1105,7 +1105,7 @@ function composition_form($id) {
             }
             end_table();
         } else {
-            echo dash('');
+            echo dash();
         }
         echo '
             <p><p>
@@ -1118,7 +1118,7 @@ function composition_form($id) {
         //
         form_row_start('Instrumentations');
         if ($comp->instrument_combos) {
-            start_table('', 'width:50%');
+            start_table('table-striped');
             table_header('Name', 'Remove');
             foreach ($comp->instrument_combos as $icid) {
                 $ic = DB_instrument_combo::lookup_id($icid);
@@ -1174,11 +1174,11 @@ function composition_form($id) {
     form_input_text('# measures', 'n_bars', blank($comp->n_bars));
 
     if ($is_section) {
-        form_submit($id?'Update section':'Add section');
+        form_submit2($id?'Update section':'Add section');
     } else if ($is_arrangement) {
-        form_submit($id?'Update arrangement':'Add arrangement');
+        form_submit2($id?'Update arrangement':'Add arrangement');
     } else {
-        form_submit($id?'Update composition':'Add composition');
+        form_submit2($id?'Update composition':'Add composition');
     }
     form_end();
 
@@ -1431,7 +1431,7 @@ function inst_combo_form() {
     table_row('', '<input type=submit value="Add instrument">');
     echo '</form>';
     end_table();
-    show_button(
+    echo button_link(
         sprintf('edit.php?type=%d&counts=%s&ids=%s&submit=1',
             INST_COMBO,
             urlencode(json_encode($counts)), urlencode(json_encode($ids))
@@ -1523,7 +1523,7 @@ function score_form($id) {
 
     form_row_start('Compositions');
     if ($score->compositions) {
-        start_table('', 'width:50%');
+        start_table('table-striped');
         table_header('Name', 'Remove');
         foreach ($score->compositions as $cid) {
             $comp = DB_composition::lookup_id($cid);
@@ -1546,7 +1546,7 @@ function score_form($id) {
 
     form_row_start('Creators');
     if ($score->creators) {
-        start_table('', 'width:50%');
+        start_table('table-striped');
         table_header('Name', 'Role', 'Remove');
         foreach ($score->creators as $prole_id) {
             $prole = DB_person_role::lookup_id($prole_id);
@@ -1570,13 +1570,14 @@ function score_form($id) {
 
     form_row_start('Files');
     if ($score->files) {
-        start_table('', 'width:50%');
-        table_header('Description', 'Name', 'Remove');
+        start_table('table-striped');
+        table_header('Description', 'Filename', 'Pages', 'Remove');
         $i = 0;
         foreach ($score->files as $file) {
             table_row(
                 $file->desc,
                 $file->name,
+                dash($file->pages),
                 "<input type=checkbox name=remove_file_$i>"
             );
             $i++;
@@ -1588,7 +1589,7 @@ function score_form($id) {
     echo '
         <p><p>
         Add file:
-        <input name=add_file_name placeholder="File name">
+        <input name=add_file_name placeholder="Filename">
         <input name=add_file_desc placeholder="Description">
         <input name=add_file_pages placeholder="# pages">
     ';
@@ -1609,7 +1610,7 @@ function score_form($id) {
         ['is_vocal', 'Vocal score', $score->is_vocal]
     ];
     form_checkboxes('Attributes', $x);
-    form_submit($id?'Update score':'Add score');
+    form_submit2($id?'Update score':'Add score');
     form_end();
     page_tail();
 }
@@ -1830,14 +1831,14 @@ function perf_form($id) {
     }
     echo '<p>Add file:
         <input name=add_file_desc placeholder="Description">
-        <input name=add_file_name placeholder="Name">
+        <input name=add_file_name placeholder="Filename">
     ';
     form_row_end();
 
     form_input_text('Instrumentation', 'instrumentation', $perf->instrumentation);
     form_checkboxes('Synthesized', [['is_synthesized', '', $perf->is_synthesized]]);
     form_input_text('Section', 'section', $perf->section);
-    form_submit($id?'Update recording':'Add recording');
+    form_submit2($id?'Update recording':'Add recording');
     page_tail();
 }
 

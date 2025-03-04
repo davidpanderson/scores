@@ -122,13 +122,13 @@ function show_reviews($type, $target, $user, $review) {
         $url = "rate.php?action=rev_form&type=$type&target=$target";
         if ($review) {
             row2(
-                sprintf('Your review<br>%s',
-                    button_text($url, 'edit', 'Edit your review', ' btn-success btn-xs')
+                sprintf('<p>Your review<p>%s',
+                    button_link($url, 'edit', 'Edit your review', ' btn-success btn-xs')
                 ),
                 more_review($review)
             );
         } else {
-            row2('', button_text($url, 'Write a review'));
+            row2('', button_link($url, 'Write a review'));
         }
     }
     $revs = DB_rating::enum(

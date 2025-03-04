@@ -11,6 +11,7 @@
 require_once('../inc/util.inc');
 require_once('cmi_db.inc');
 require_once('ser.inc');
+require_once('cmi.inc');
 
 function review_form($type, $target) {
     $user = get_logged_in_user();
@@ -70,7 +71,7 @@ function review_form($type, $target) {
     form_input_hidden('type', $type);
     form_input_hidden('target', $target);
     form_input_hidden('action', 'rev_action');
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }

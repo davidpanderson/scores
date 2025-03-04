@@ -15,12 +15,12 @@ define('PAGE_SIZE', 50);
 function location_search() {
     page_head('Locations');
     $locs = get_locations();
-    show_button(
+    echo button_link(
         sprintf('edit.php?type=%d', LOCATION),
         'Add location'
     );
     echo '<p>';
-    start_table();
+    start_table('table-striped');
     table_header(
         'name', 'adjective', 'type', 'parent'
     );
@@ -46,9 +46,9 @@ function person_form($params) {
     form_input_text('Name', 'name', $params->name);
     form_select('Sex', 'sex', sex_options(), $params->sex);
     form_select('Nationality', 'location', country_options(), $params->location);
-    form_submit('Search');
+    form_submit2('Search');
     form_general('',
-        button_text(
+        button_link(
             sprintf('edit.php?type=%d', PERSON),
             'Add person'
         )
@@ -84,6 +84,7 @@ function person_search($params) {
             $params->name
         );
     }
+    $x[] = " last_name<>'' ";
     if ($params->sex) {
         $x[] = sprintf('sex=%d', $params->sex);
     }
@@ -112,7 +113,7 @@ function person_search($params) {
             person_params_url($params2), PAGE_SIZE 
         );
     }
-    start_table();
+    start_table('table-striped');
     table_header(
         'Name', 'Sex', 'Born', 'Locations'
     );
@@ -145,7 +146,7 @@ function person_search($params) {
 function comp_form($params) {
     form_start('search.php');
     form_input_hidden('type', 'composition');
-    form_input_text('Title', 'title', $params->title);
+    form_input_text('Title contains', 'title', $params->title);
     form_general('', '<b><font size=+1>Composed for:</font></b>');
     select2_multi(
         'Select one or more instruments:',
@@ -160,7 +161,7 @@ function comp_form($params) {
     );
     form_checkboxes('Additional instruments OK?', [['others_ok', '', $params->others_ok]]);
     echo "<hr>";
-    form_input_text('Composer name', 'name', $params->name);
+    form_input_text('Composer name contains', 'name', $params->name);
     form_select('Composer sex', 'sex', sex_options(), $params->sex);
     form_select('Composer nationality', 'location', country_options(), $params->location);
     echo "<hr>";
@@ -183,9 +184,9 @@ function comp_form($params) {
         'Additional instruments OK?', [['arr_others_ok', '', $params->arr_others_ok]],
         'id=arr_others_ok'
     );
-    form_submit('Search');
+    form_submit2('Search');
     form_general('',
-        button_text(
+        button_link(
             sprintf('edit.php?type=%d', COMPOSITION),
             'Add composition'
         )
@@ -497,7 +498,7 @@ function composition_search($params) {
 function concert_search() {
     page_head("Concerts");
     $cs = DB_concert::enum();
-    start_table();
+    start_table('table-striped');
     table_header('Details', 'Venue', 'Location', 'Date');
     foreach ($cs as $c) {
         $v = null;
@@ -514,7 +515,7 @@ function concert_search() {
         );
     }
     end_table();
-    show_button(
+    echo button_link(
         sprintf('edit.php?type=%d', CONCERT),
         'Add concert'
     );
@@ -526,7 +527,7 @@ function concert_search() {
 function venue_search() {
     page_head("Venues");
     $vs = DB_venue::enum();
-    start_table();
+    start_table('table-striped');
     table_header('Name', 'Location');
     foreach ($vs as $v) {
         table_row(
@@ -537,7 +538,7 @@ function venue_search() {
         );
     }
     end_table();
-    show_button(
+    echo button_link(
         sprintf('edit.php?type=%d', VENUE),
         'Add venue'
     );
@@ -547,7 +548,7 @@ function venue_search() {
 function organization_search() {
     page_head('Organizations');
     $orgs = DB_organization::enum('', 'order by name');
-    start_table();
+    start_table('table-striped');
     table_header('Name', 'Type', 'Location');
     foreach ($orgs as $org) {
         table_row(
@@ -559,7 +560,7 @@ function organization_search() {
         );
     }
     end_table();
-    show_button(
+    echo button_link(
         sprintf('edit.php?type=%d', ORGANIZATION),
         'Add organization'
     );
@@ -570,7 +571,7 @@ function ensemble_search() {
     page_head('Ensembles');
     copy_to_clipboard_script();
     $enss = DB_ensemble::enum();
-    start_table();
+    start_table('table-striped');
     table_header('Name', 'Type', 'Location', 'Code');
     foreach($enss as $ens) {
         $loc = null;
@@ -587,7 +588,7 @@ function ensemble_search() {
         );
     }
     end_table();
-    show_button(
+    echo button_link(
         sprintf('edit.php?type=%d', ENSEMBLE),
         'Add ensemble'
     );
@@ -603,9 +604,9 @@ function inst_combo_form($params) {
         'Instruments',
         'insts', instrument_options(), $params->insts
     );
-    form_submit('Search');
+    form_submit2('Search');
     form_general('',
-        button_text(
+        button_link(
             sprintf('edit.php?type=%d', INST_COMBO),
             'Add instrumentation'
         )
@@ -630,7 +631,7 @@ function inst_combo_search($params) {
         page_tail();
         exit();
     }
-    start_table();
+    start_table('table-striped');
     copy_to_clipboard_script();
     table_header('Instrumentation', '# of compositions and arrangements', 'Code');
     foreach ($combo_ids as $id) {

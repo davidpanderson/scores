@@ -24,7 +24,7 @@ function person_left($p) {
     row2('Race/Ethnicity', ethnicity_str(json_decode2($p->ethnicity)));
     if (can_edit($p)) {
         row2('',
-            button_text(
+            button_link(
                 sprintf('edit.php?type=%d&id=%d', PERSON, $p->id),
                 'Edit info'
             )
@@ -51,7 +51,7 @@ function person_left($p) {
     if (!$x) $x[] = dash();
     if (can_edit($p)) {
         $x[] = '<hr>';
-        $x[] = button_text(
+        $x[] = button_link(
             sprintf('edit.php?type=%d&person_id=%d', PERSON_ROLE, $p->id),
             'Add role'
         );
@@ -104,6 +104,7 @@ function comp_left($arg) {
         row2('Arrangement of', composition_str($par));
         row2('Creators', dash(creators_str($c->creators, true)));
         row2('Instrumentation', instrument_combos_str($c->instrument_combos));
+        row2('View on IMSLP', imslp_link($par));
     } else if ($is_section) {
         row2('Section of', composition_str($par));
         row2('Title', $c->title);
@@ -113,6 +114,7 @@ function comp_left($arg) {
         row2('Time signatures', dash($c->time_signatures));
         row2('Average duration (sec)', dash($c->avg_duration_sec));
         row2('Number of measures', dash($c->n_bars));
+        row2('View on IMSLP', imslp_link($par));
     } else {
         row2('Title', $c->title);
         if ($c->alternative_title) {
@@ -139,6 +141,7 @@ function comp_left($arg) {
         if ($c->period) {
             row2('Period', period_name($c->period));
         }
+        row2('View on IMSLP', imslp_link($c));
     }
     row2('Code', copy_button(item_code($c->id, 'composition')));
     if (can_edit($c)) {
@@ -146,7 +149,7 @@ function comp_left($arg) {
         else if ($is_arrangement) $x = 'arrangement';
         else $x = 'composition';
         row2('',
-            button_text(
+            button_link(
                 sprintf('edit.php?type=%d&id=%d', COMPOSITION, $c->id),
                 "Edit $x"
             )
@@ -158,7 +161,7 @@ function comp_left($arg) {
         echo "<h3>Sections</h3>\n";
         $children = DB_composition::enum(sprintf('parent=%d', $c->id));
         if ($children) {
-            start_table();
+            start_table('table-striped');
             table_header('Title<br><small>click for details</small>',
                 'Metronome', 'Key', 'Measures'
             );
@@ -177,7 +180,7 @@ function comp_left($arg) {
             echo '<p>(No sections)<p>';
         }
         if (can_edit($c)) {
-            show_button(
+            echo button_link(
                 sprintf(
                     'edit.php?type=%d&parent=%d',
                     COMPOSITION, $c->id
@@ -193,7 +196,7 @@ function comp_left($arg) {
         echo "<h3>Arrangements</h3>\n";
         $arrs = DB_composition::enum(sprintf('arrangement_of=%d', $c->id));
         if ($arrs) {
-            start_table();
+            start_table('table-striped');
             table_header('Details', 'Section', 'Arranged for', 'Arranger');
             foreach ($arrs as $arr) {
                 $arr->creators = json_decode2($arr->creators);
@@ -214,7 +217,7 @@ function comp_left($arg) {
             echo '<p>(No arrangements)<p>';
         }
         if (can_edit($c)) {
-            show_button(
+            echo button_link(
                 sprintf(
                     'edit.php?type=%d&arrangement_of=%d',
                     COMPOSITION, $c->id
@@ -229,7 +232,7 @@ function comp_left($arg) {
         sprintf('json_overlaps("[%s]", compositions->\'$\')', $c->id)
     );
     if ($scores || $arrs) {
-        start_table();
+        start_table('table-striped');
         table_header('Details', 'Section', 'Type', 'Publisher', 'Date', 'File');
         foreach ($scores as $score) {
             score_row($score);
@@ -255,7 +258,7 @@ function comp_left($arg) {
         echo '<p>(No scores)<p>';
     }
     if (can_edit($c)) {
-        show_button(
+        echo button_link(
             sprintf('edit.php?type=%d&comp_id=%d', SCORE, $c->id),
             'Add score'
         );
@@ -294,7 +297,7 @@ function comp_left($arg) {
         if ($have_instrumentation) $x[] = 'Arranged for';
         if ($have_concert) $x[] = 'Concert';
         if ($have_files) $x[] = 'Files';
-        start_table();
+        start_table('table-striped');
         row_heading_array($x);
         foreach ($perfs as $perf) {
             $x = [
@@ -302,6 +305,9 @@ function comp_left($arg) {
                     PERFORMANCE, $perf->id
                 ),
             ];
+            if ($have_type) {
+                $x[] = 'Synthesized';
+            }
             if ($have_section) {
                 $x[] = $perf->is_synthesized?'Synthesized':'';
             }
@@ -341,7 +347,7 @@ function comp_left($arg) {
         echo '<p>(No recordings)<p>';
     }
     if (can_edit($c)) {
-        show_button(
+        echo button_link(
             sprintf('edit.php?type=%d&composition=%d', PERFORMANCE, $c->id),
             'Add recording'
         );
@@ -349,10 +355,6 @@ function comp_left($arg) {
 }
 
 function score_row($score, $prefix='') {
-    $pub = null;
-    if ($score->publisher) {
-        $pub = DB_organization::lookup_id($score->publisher);
-    }
     $type = [];
     if ($score->is_parts) $type[] = 'parts';
     if ($score->is_selections) $type[] = 'selections';
@@ -365,19 +367,12 @@ function score_row($score, $prefix='') {
             $file->desc, $file->name
         );
     }
-    $pub_str = '';
-    $pub_year = '';
-    if ($pub) {
-        $pub_str = $pub->name;
-        if ($score->publish_date) {
-            $pub_year = DB::date_num_to_str($score->publish_date);
-        }
-    }
+    $pub_year = DB::date_num_to_str($score->publish_date);
     table_row(
         sprintf('<a href=item.php?type=%d&id=%d>view</a>', SCORE, $score->id),
         $score->section?$score->section:'Complete',
         dash($prefix.implode(',', $type)),
-        dash($pub_str),
+        org_link($score->publisher),
         dash($pub_year),
         implode('<br>', $s)
     );
@@ -409,7 +404,7 @@ function location_item($id) {
         row2('Parent', '---');
     }
     row2('',
-        button_text(
+        button_link(
             sprintf('edit.php?type=%d&id=%d', LOCATION, $loc->id),
             'Edit'
         )
@@ -439,7 +434,7 @@ function venue_item($id) {
     }
     if (can_edit($v)) {
         row2('',
-            button_text(
+            button_link(
                 sprintf('edit.php?type=%d&id=%d', VENUE, $id),
                 'Edit'
             )
@@ -461,7 +456,7 @@ function concert_item($id) {
     row2('Program', program_str(json_decode($c->program)));
     if (can_edit($c)) {
         row2('',
-            button_text(
+            button_link(
                 sprintf('edit.php?type=%d&id=%d', CONCERT, $id),
                 'Edit'
             )
@@ -480,12 +475,14 @@ function organization_item($id) {
     $type_str = organization_type_str($org->type);
     row2('Type', $type_str);
     //row2('Location', location_id_to_name($org->location));
-    row2('Location', $org->location);
-    row2('URL', sprintf('<a href=%s>%s</a>', $org->url, $org->url));
+    row2('Location', dash($org->location));
+    row2('URL',
+        $org->url?sprintf('<a href=%s>%s</a>', $org->url, $org->url):dash()
+    );
     if (can_edit($org)) {
         row2('Code', copy_button(item_code($id, 'organization')));
         row2('',
-            button_text(
+            button_link(
                 sprintf('edit.php?type=%d&id=%d', ORGANIZATION, $id),
                 'Edit'
             )
@@ -496,11 +493,12 @@ function organization_item($id) {
         $scores = DB_score::enum("publisher=$id");
         if ($scores) {
             echo '<h3>Scores</h3>';
-            start_table();
-            table_header('Composition');
+            start_table('table-striped');
+            table_header('Composition', 'Published');
             foreach ($scores as $score) {
                 table_row(
-                    score_str($score, true)
+                    score_str($score, true),
+                    DB::date_num_to_str($score->publish_date)
                 );
             }
             end_table();
@@ -543,8 +541,8 @@ function perf_left($perf) {
 
     echo '<h3>Files</h3>';
     $files = json_decode2($perf->files);
-    start_table();
-    table_header('Description', 'Name');
+    start_table('table-striped');
+    table_header('Description', 'IMSLP filename');
     foreach ($files as $file) {
         table_row(
             sprintf('<nobr>%s</nobr>', $file->desc),
@@ -554,7 +552,7 @@ function perf_left($perf) {
     end_table();
 
     if (can_edit($perf)) {
-        show_button(
+        echo button_link(
             sprintf('edit.php?type=%d&id=%d', PERFORMANCE, $perf->id),
             'Edit recording'
         );
@@ -578,13 +576,8 @@ function score_left($score) {
         $comp_str[] = composition_str($comp);
     }
     row2('Composition', implode('<br>', $comp_str));
-    $pub_str = '';
-    if ($score->publisher) {
-        $pub = DB_organization::lookup_id($score->publisher);
-        $pub_str = $pub->name;
-    }
     row2('Contributors', dash(creators_str($score->creators, true)));
-    row2('Publisher', dash($pub_str));
+    row2('Publisher', org_link($score->publisher));
     $x = '';
     if ($score->languages) {
         $x = languages_str(json_decode($score->languages));
@@ -606,8 +599,8 @@ function score_left($score) {
 
     echo '<h3>Files</h3>';
     $files = json_decode($score->files);
-    start_table();
-    table_header('Description', 'Name', 'Pages');
+    start_table('table-striped');
+    table_header('Description', 'IMSLP filename', 'Pages');
     foreach ($files as $file) {
         table_row(
             $file->desc,
@@ -618,7 +611,7 @@ function score_left($score) {
     end_table();
 
     if (can_edit($score)) {
-        show_button(
+        echo button_link(
             sprintf('edit.php?type=%d&id=%d', SCORE, $score->id),
             'Edit score'
         );
@@ -638,7 +631,7 @@ function person_role_item($id) {
     switch ($role) {
     case 'performer':
         echo '<h3>Performances</h3>';
-        start_table();
+        start_table('table-striped');
         table_header('Details', 'Composition');
         $q = sprintf("json_contains(performers, '%d', '$')", $id);
         $perfs = DB_performance::enum($q);
@@ -655,7 +648,7 @@ function person_role_item($id) {
         break;
     case 'conductor':
         echo '<h3>Performances</h3>';
-        start_table();
+        start_table('table-striped');
         table_header('Composition', 'Ensemble');
         $q = sprintf("json_contains(performers, '%d', '$')", $id);
         $perfs = DB_performance::enum($q);
@@ -683,14 +676,14 @@ function person_role_item($id) {
     case 'editor':
     case 'translator':
         echo '<h3>Scores</h3>';
-        start_table();
+        start_table('table-striped');
         table_header('Composition', 'Attributes');
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
         $scores = DB_score::enum($q);
         foreach ($scores as $score) {
             table_row(
                 score_str($score),
-                score_attrs_str($score)
+                dash(score_attrs_str($score))
             );
         }
         end_table();
@@ -713,7 +706,7 @@ function ensemble_item($id) {
     end_table();
 
     if (can_edit($ens)) {
-        show_button(
+        echo button_link(
             sprintf('edit.php?type=%d&id=%d', ENSEMBLE, $ens->id),
             'Edit ensemble'
         );
@@ -721,7 +714,7 @@ function ensemble_item($id) {
 
     echo '<h3>Recordings</h3>';
     $perfs = DB_performance::enum("ensemble=$id");
-    start_table();
+    start_table('table-striped');
     table_header('Composition', 'Performers');
     foreach ($perfs as $perf) {
         $perf->performers = json_decode2($perf->performers);

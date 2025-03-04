@@ -1,6 +1,7 @@
 # initialize DB manually, e.g.
 #   mysql < create_dev.sql
 #   mysql cmi_dev < schema.sql
+# then select.sh dev (or prod)
 
 all: data/make_ser_done
 
