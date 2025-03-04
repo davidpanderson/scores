@@ -157,7 +157,10 @@ function pluralize($x) {
 }
 
 function instrument_combo_str($ic) {
-    $is = json_decode($ic->instruments);
+    $is = $ic->instruments;
+    if (is_string($is)) {
+        $is = json_decode($is);
+    }
     $x = [];
     $n= count($is->count);
     if (!$n) return '';
@@ -239,6 +242,18 @@ function instrument_options($include_none=false) {
     }
     foreach ($insts as $inst) {
         $x[] = [$inst->id, $inst->name];
+    }
+    return $x;
+}
+
+function inst_combo_options($n) {
+    $ics = get_inst_combos();
+    $x = [[0, dash(null)]];
+    $i = 0;
+    foreach ($ics as $ic) {
+        $x[] = [$ic->id, instrument_combo_str($ic)];
+        $i++;
+        if ($i == $n) break;
     }
     return $x;
 }

@@ -25,7 +25,10 @@ data/category_done: data/composition_type_done
 data/comp_done: data/category_done
 	populate_comp.php > pc.out && touch data/comp_done
 
-data/make_ser_done: data/comp_done
+data/populate_nworks_done: data/comp_done
+	populate_nworks.php && touch data/populate_nworks_done
+
+data/make_ser_done: data/populate_nworks_done
 	make_ser.php && touch data/make_ser_done
 
 clean:

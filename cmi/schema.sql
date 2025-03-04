@@ -193,6 +193,7 @@ create table instrument_combo (
     primary key(id)
 );
 alter table instrument_combo add index icinst( (cast(instruments->'$.id' as unsigned array)) );
+alter table instrument_combo add index icnworks(nworks);
 
 # performer, composer, lyricist, etc.
 create table role (

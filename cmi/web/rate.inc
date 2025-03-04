@@ -169,6 +169,8 @@ function comp_right($arg) {
         row2('Your rating',
             rating_buttons(false, $rq, 'rate_comp_1', $c->id)
         );
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(COMPOSITION, $c->id);
     row2('Average rating', rating_bar($qavg));
@@ -178,6 +180,8 @@ function comp_right($arg) {
     start_table();
     if ($user) {
         row2('Your rating', rating_buttons(true, $rd, 'rate_comp_2', $c->id));
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     row2('Average rating', rating_bar($davg));
     end_table();
@@ -224,6 +228,8 @@ function person_right($p) {
         if ($user) {
             [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
             row2('Your rating', rating_buttons(true, $rq, 'rate_pr', $pr->id));
+        } else {
+            row2('<a href=login_form.php>Log in</a> to rate', '');
         }
         [$qavg, $davg] = avg_rating(PERSON_ROLE, $pr->id);
         row2('Average rating', rating_bar($qavg));
@@ -269,6 +275,8 @@ function perf_right($perf) {
         row2('Your rating',
             rating_buttons(false, $rq, 'rate_perf_1', $perf->id)
         );
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(PERFORMANCE, $perf->id);
     row2('Average rating', rating_bar($qavg));
@@ -278,6 +286,8 @@ function perf_right($perf) {
         start_table();
         if ($user) {
             row2('Your rating', rating_buttons(true, $rd, 'rate_perf_2', $perf->id));
+        } else {
+            row2('<a href=login_form.php>Log in</a> to rate', '');
         }
         row2('Average rating', rating_bar($davg));
         end_table();
@@ -318,6 +328,8 @@ function score_right($score) {
         row2('Your rating',
             rating_buttons(false, $rq, 'rate_score_1', $score->id)
         );
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(SCORE, $score->id);
     row2('Average rating', rating_bar($qavg));
@@ -326,6 +338,8 @@ function score_right($score) {
     start_table();
     if ($user) {
         row2('Your rating', rating_buttons(true, $rd, 'rate_score_2', $score->id));
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     row2('Average rating', rating_bar($davg));
     end_table();
