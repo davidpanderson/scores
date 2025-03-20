@@ -17,7 +17,7 @@ define('DIFFICULTY_TERMS', [
     'extremely difficult'
 ]);
 
-define ('QUALITY_TERMS', [
+define ('COMPOSITION_TERMS', [
     'terrible',
     'not good',
     'mediocre',
@@ -31,8 +31,21 @@ define ('QUALITY_TERMS', [
     'excellent',
 ]);
 
-function rating_buttons($is_diff, $sel, $action, $id) {
-    $terms = $is_diff?DIFFICULTY_TERMS:QUALITY_TERMS;
+define ('QUALITY_TERMS', [
+    'terrible',
+    'bad',
+    'mediocre',
+    'barely OK',
+    'decent',
+    'average',
+    'above average',
+    'fairly good',
+    'good',
+    'very good',
+    'excellent',
+]);
+
+function rating_buttons($terms, $sel, $action, $id) {
     $x = '<nobr>';
     for ($i=0; $i<=10; $i++) {
         if ($i === $sel) {
@@ -167,7 +180,7 @@ function comp_right($arg) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'rate_comp_1', $c->id)
+            rating_buttons(COMPOSITION_TERMS, $rq, 'rate_comp_1', $c->id)
         );
     } else {
         row2('<a href=login_form.php>Log in</a> to rate', '');
@@ -179,7 +192,7 @@ function comp_right($arg) {
     echo "<br><small>If you play this $x: how difficult is it for you?</small>";
     start_table();
     if ($user) {
-        row2('Your rating', rating_buttons(true, $rd, 'rate_comp_2', $c->id));
+        row2('Your rating', rating_buttons(DIFFICULTY_TERMS, $rd, 'rate_comp_2', $c->id));
     } else {
         row2('<a href=login_form.php>Log in</a> to rate', '');
     }
@@ -227,7 +240,7 @@ function person_right($p) {
         row_heading($pers_as_role);
         if ($user) {
             [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
-            row2('Your rating', rating_buttons(true, $rq, 'rate_pr', $pr->id));
+            row2('Your rating', rating_buttons(QUALITY_TERMS, $rq, 'rate_pr', $pr->id));
         } else {
             row2('<a href=login_form.php>Log in</a> to rate', '');
         }
@@ -273,7 +286,7 @@ function perf_right($perf) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'rate_perf_1', $perf->id)
+            rating_buttons(QUALITY_TERMS, $rq, 'rate_perf_1', $perf->id)
         );
     } else {
         row2('<a href=login_form.php>Log in</a> to rate', '');
@@ -285,7 +298,7 @@ function perf_right($perf) {
         echo '<b>Audio quality</b>';
         start_table();
         if ($user) {
-            row2('Your rating', rating_buttons(true, $rd, 'rate_perf_2', $perf->id));
+            row2('Your rating', rating_buttons(QUALITY_TERMS, $rd, 'rate_perf_2', $perf->id));
         } else {
             row2('<a href=login_form.php>Log in</a> to rate', '');
         }
@@ -326,7 +339,7 @@ function score_right($score) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'rate_score_1', $score->id)
+            rating_buttons(QUALITY_TERMS, $rq, 'rate_score_1', $score->id)
         );
     } else {
         row2('<a href=login_form.php>Log in</a> to rate', '');
@@ -337,7 +350,7 @@ function score_right($score) {
     echo '<b>Scan image quality</b>';
     start_table();
     if ($user) {
-        row2('Your rating', rating_buttons(true, $rd, 'rate_score_2', $score->id));
+        row2('Your rating', rating_buttons(QUALITY_TERMS, $rd, 'rate_score_2', $score->id));
     } else {
         row2('<a href=login_form.php>Log in</a> to rate', '');
     }

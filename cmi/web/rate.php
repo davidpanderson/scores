@@ -58,14 +58,32 @@ function review_form($type, $target) {
         break;
     case PERFORMANCE:
         $perf = DB_performance::lookup_id($target);
-        echo "to be completed";
+        $comp = DB_composition::lookup_id($perf->composition);
+        $c = composition_str($comp);
+        $performers = creators_str(json_decode2($perf->performers), false);
+        echo "
+            Please write a brief review of the performance of $c by $performers,
+            perhaps including:
+            <ul>
+            <li> Why you do or don't like it.
+            <li> What it expresses to you.
+            <li> Your experiences hearing or playing it.
+            </ul>
+        ";
         break;
     case SCORE:
-        echo "to be completed";
+        echo "
+            Please write a brief review of this score,
+            perhaps including:
+            <ul>
+            <li> Its readability.
+            <li> The quality of the editing.
+            </ul>
+        ";
         break;
     default: error_page('bad type');
     }
-    echo 'Text only - no HTML tags.';
+    echo '<p>Text only - no HTML tags.';
     form_start('rate.php');
     form_input_textarea('Review', 'review', $review);
     form_input_hidden('type', $type);

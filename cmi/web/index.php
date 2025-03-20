@@ -63,7 +63,7 @@ function top() {
 function left(){
     global $user;
     panel(
-        'About',
+        'About CMI',
         function() {
             echo "
                 <p>
@@ -92,11 +92,13 @@ function left(){
             ";
             $user = get_logged_in_user(false);
             if (!$user) {
-                echo 'To rate things, you must ';
+                echo 'To rate or create items, you must first ';
                 echo button_link('cmi_signup.php', 'create an account');
                 echo '<p>';
             }
-            echo 'Search for:<p>';
+            echo "
+            <h4>Search for:</h4>
+            ";
             start_table();
             show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings');
             show_type('People', 'person', 'Composers, performers, arrangers, etc.');
@@ -109,14 +111,22 @@ function left(){
             end_table();
             echo '
                 <p>
-                The CMI code is open source and is
-                <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
+                CMI is a non-profit project, created and operated by volunteers.
+                Its source code is open source and is available on
+                <a href=https://github.com/davidpanderson/scores/tree/master/cmi>Github</a>.
                 <p>
                 CMI is under development.
-                The database may be reset,
-                in which case items you add will be lost.
+                The database may be reset at any time,
+                in which case your account and items you\'ve added will be lost.
+                Please <a href=contact.php>contact us</a>
+                if this is a problem.
+                <p>
                 Features based on ratings are simulated
-                until we get a critical mass of ratings.
+                until we get enough ratings.
+                <p>
+                Check out CMI\'s companion project,
+                <a href=https://music-match.org>Music Match</a>,
+                which helps performers and composers discover each other.
             ';
         }
     );
@@ -153,7 +163,7 @@ function right() {
 
 page_head(null, null, true);
 
-grid('top', 'left', 'right');
+grid('top', 'left', 'right', 7);
 
 page_tail(false, "", true);
 

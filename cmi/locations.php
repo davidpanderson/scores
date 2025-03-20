@@ -73,6 +73,8 @@ function state($name, $adj, $name_native='', $adj_native='') {
     );
 }
 
+// Incomplete, and doesn't include provinces or cities
+//
 function populate() {
     continent('Africa', 'African');
     country('Democratic Republic of the Congo', 'Congolese');

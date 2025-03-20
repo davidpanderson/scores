@@ -21,7 +21,7 @@ function dash($s=null) {
     return $s?$s:'&mdash;';
 }
 
-// if arg is falsey, return '', else arg
+// if arg is false, return '', else arg
 //
 function blank($s) {
     return $s?$s:'';
@@ -223,10 +223,71 @@ function ethnicity_str($eths) {
     return implode(', ', $x);
 }
 
+// continents can have subcontinents.
+// But some countries are just in a continent, not a subcontinent
+//
+// make the location list (country and above) into a hierarchy
+//
+function country_hier($locs) {
+    $cont_type = location_type_name_to_id('continent');
+    $subcont_type = location_type_name_to_id('subcontinent');
+    $country_type = location_type_name_to_id('country');
+
+    // set up lists
+    //
+    foreach ($locs as $loc) {
+        if ($loc->type == $cont_type) {
+            $loc->subconts = [];
+            $loc->countries = [];
+        } else if ($loc->type == $subcont_type) {
+            $loc->countries = [];
+        }
+    }
+
+    // add to parent lists
+    //
+    $conts = [];
+    foreach ($locs as $loc) {
+        if ($loc->type == $country_type) {
+            $par = $locs[$loc->parent];
+            $par->countries[] = $loc->id;
+        } else if ($loc->type == $subcont_type) {
+            $par = $locs[$loc->parent];
+            $par->subconts[] = $loc->id;
+        } else if ($loc->type == $cont_type) {
+            $conts[] = $loc;
+        }
+    }
+    return $conts;
+}
+
 function country_options() {
+    $locs = get_locations();
+    $conts = country_hier($locs);
+    $opts = [[0, dash()]];
+    $sp = '&nbsp;&nbsp;&nbsp;&nbsp;';
+    foreach ($conts as $cont) {
+        $opts[] = [$cont->id, $cont->name];
+        foreach ($cont->subconts as $subcont) {
+            $x = $locs[$subcont];
+            $opts[] = [$subcont, "$sp$x->name"];
+            foreach ($x->countries as $country) {
+                $x = $locs[$country];
+                $opts[] = [$country, "$sp$sp$x->name"];
+            }
+        }
+        foreach ($cont->countries as $country) {
+            $x = $locs[$country];
+            $opts[] = [$country, "$sp$x->name"];
+        }
+    }
+    return $opts;
+}
+
+function country_options_old() {
     $cid = location_type_name_to_id('country');
     $locs = get_locations();
-    $x = [[0, dash(null)]];
+    $x = [[0, dash()]];
     foreach ($locs as $loc) {
         if ($loc->type != $cid) continue;
         $x[] = [$loc->id, $loc->name];
@@ -452,7 +513,10 @@ function composition_str($c, $link=true) {
         $c2 = DB_composition::lookup_id($c->parent);
         $s = sprintf('Section (%s) of %s', $c->title, $c2->long_title);
     } else {
-        $s = $c->long_title;
+        $s = sprintf('%s for %s',
+            $c->long_title,
+            instrument_combos_str($c->instrument_combos)
+        );
     }
     if ($link) {
         return sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
@@ -674,7 +738,7 @@ function org_link($id) {
     return dash();
 }
 
-define('BUTTON_STYLE', "background-color:#ffd0a0;border:1px solid #c08070;padding: 4px 10px;border-radius: 4px;");
+define('BUTTON_STYLE', "background-color:#ffe0b0;border:1px solid #c08070;padding: 4px 10px;border-radius: 4px;");
 
 function form_submit2($text) {
     form_general(

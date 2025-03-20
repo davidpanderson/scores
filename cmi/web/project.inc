@@ -142,8 +142,8 @@ function navbar(
         $x[] = array(tra("Account"), 'account.php');
         $x[] = array(tra("Join"), $url_prefix."join.php");
     }
-    $x[] = array(tra("About %1", PROJECT), $url_prefix."about.php");
-    $x[] = array(tra("Help"), $url_prefix."welcome.php");
+    $x[] = array(tra("About %1", PROJECT), "about.php");
+    $x[] = array(tra("Contact"), "contact.php");
     navbar_menu(tra("Project"), $x);
 
     navbar_menu(tra("Community"), array(

@@ -43,7 +43,7 @@ function location_search() {
 function person_form($params) {
     form_start('search.php');
     form_input_hidden('type', 'person');
-    form_input_text('Name', 'name', $params->name);
+    form_input_text('Name contains', 'name', $params->name);
     form_select('Sex', 'sex', sex_options(), $params->sex);
     form_select('Nationality', 'location', country_options(), $params->location);
     form_submit2('Search');
@@ -89,7 +89,23 @@ function person_search($params) {
         $x[] = sprintf('sex=%d', $params->sex);
     }
     if ($params->location) {
-        $x[] = sprintf("%d member of (locations->'$')", $params->location);
+        $locs = get_locations();
+        $loc = $locs[$params->location];
+        $country_type = location_type_name_to_id('country');
+        if ($loc->type == $country_type) {
+            $x[] = sprintf("%d member of (locations->'$')", $params->location);
+        } else {
+            $countries = [];
+            foreach ($locs as $loc) {
+                if (!$loc->ancestors) continue;
+                $a = json_decode($loc->ancestors);
+                if (in_array($params->location, $a)) {
+                    $countries[] = $loc->id;
+                }
+            }
+            $c = implode(',', $countries);
+            $x[] = sprintf("json_overlaps (\"[%s]\", locations->'$')", $c);
+        }
     }
     $y = implode(' and ', $x);
     $pers = DB_person::enum(
@@ -144,9 +160,14 @@ function person_search($params) {
 /////////////// COMPOSITION //////////////////
 
 function comp_form($params) {
+    echo "All fields are optional.  Results are shown below.<p>";
     form_start('search.php');
     form_input_hidden('type', 'composition');
     form_input_text('Title contains', 'title', $params->title);
+    form_general('', '<b><font size=+1>Composer</font></b>');
+    form_input_text('Name contains', 'name', $params->name);
+    form_select('Sex', 'sex', sex_options(), $params->sex);
+    form_select('Nationality', 'location', country_options(), $params->location);
     form_general('', '<b><font size=+1>Composed for:</font></b>');
     select2_multi(
         'Select one or more instruments:',
@@ -160,15 +181,10 @@ function comp_form($params) {
         'inst_combo_code', $params->inst_combo_code
     );
     form_checkboxes('Additional instruments OK?', [['others_ok', '', $params->others_ok]]);
-    echo "<hr>";
-    form_input_text('Composer name contains', 'name', $params->name);
-    form_select('Composer sex', 'sex', sex_options(), $params->sex);
-    form_select('Composer nationality', 'location', country_options(), $params->location);
-    echo "<hr>";
+    form_general('', '<b><font size=+1>Arranged for:</font></b>');
     form_checkboxes(
         'Show arrangements', [['arr', '', $params->arr]], 'id=arr_check'
     );
-    form_general('', '<b><font size=+1>Arranged for:</font></b>');
     select2_multi(
         'Select one or more instruments:',
         'arr_insts', instrument_options(), $params->arr_insts, 'id=arr_inst'
@@ -435,11 +451,25 @@ function composition_search($params) {
             $query .= sprintf(" and person.sex=%d", $params->sex);
         }
         if ($params->location) {
-            $query .= sprintf(
-                " and %d member of (person.locations->'$')",
-                $params->location
-            );
+            $locs = get_locations();
+            $loc = $locs[$params->location];
+            $country_type = location_type_name_to_id('country');
+            if ($loc->type == $country_type) {
+                $query .= sprintf(" and %d member of (person.locations->'$')", $params->location);
+            } else {
+                $countries = [];
+                foreach ($locs as $loc) {
+                    if (!$loc->ancestors) continue;
+                    $a = json_decode($loc->ancestors);
+                    if (in_array($params->location, $a)) {
+                        $countries[] = $loc->id;
+                    }
+                }
+                $c = implode(',', $countries);
+                $query .= sprintf(" and json_overlaps (\"[%s]\", person.locations->'$')", $c);
+            }
         }
+
         if ($params->name) {
             $query .= sprintf(
                 " and match(person.first_name, person.last_name) against ('%s' in boolean mode)",

@@ -14,7 +14,7 @@ function person_left($p) {
     row2('Last name', $p->last_name);
     row2('Born', DB::date_num_to_str($p->born));
     row2('Birth place', dash(location_id_to_name($p->birth_place)));
-    row2('Died', DB::date_num_to_str($p->died));
+    row2('Died', dash(DB::date_num_to_str($p->died)));
     row2('Death place', dash(location_id_to_name($p->death_place)));
     row2('Locations', locations_str($p->locations));
     row2('Sex', sex_id_to_name($p->sex));
@@ -627,7 +627,7 @@ function person_role_item($id) {
         $inst = DB_instrument::lookup_id($pr->instrument);
         $inst = " ($inst->name)";
     }
-    page_head("Works by $person->first_name $person->last_name as $role $inst");
+    page_head("Works with $person->first_name $person->last_name as $role $inst");
     switch ($role) {
     case 'performer':
         echo '<h3>Performances</h3>';
