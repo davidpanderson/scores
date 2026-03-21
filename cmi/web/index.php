@@ -67,21 +67,20 @@ function left(){
         function() {
             echo "
                 <p>
-                Classical Music Index (CMI)
-                is a database of classical music information.
+                Classical Music Index (CMI) is a searchable and editable
+                database of classical music information.
                 <ul>
                 <li> It has
-                    <a href=db_info.php>complex and detailed information</a>:
+                    <a href=db_info.php>detailed information</a>:
                     movements, arrangements, instrumentations,
-                    creator roles, and so on.
-                <li> It allows complex queries:
+                    creator roles, concerts, and so on.
+                <li> It supports complex queries:
                     for example, you can find string quartets
-                    by female French composers.
-                <li> It is
-                    <a href=editing.php>editable</a>:
-                    you can add entries about your compositions,
-                    your recordings,
-                    or yourself.
+                    by composed by French women,
+                    or piano music by North Africans.
+                <li>
+                    You can <a href=editing.php>add information</a>
+                    about your compositions, your recordings, or yourself.
                     Volunteer editors can fix or add details.
                 <li> It supports
                     <a href=https://continuum-hypothesis.com/music_discover.php>music discovery</a>.
@@ -111,8 +110,8 @@ function left(){
             end_table();
             echo '
                 <p>
-                CMI is a non-profit project, created and operated by volunteers.
-                Its source code is open source and is available on
+                CMI is non-profit, created and operated by volunteers.
+                Its code is open-source and is available on
                 <a href=https://github.com/davidpanderson/scores/tree/master/cmi>Github</a>.
                 <p>
                 CMI is under development.
@@ -124,9 +123,10 @@ function left(){
                 Features based on ratings are simulated
                 until we get enough ratings.
                 <p>
-                Check out CMI\'s companion project,
+                CMI helps performers discover compositions.
+                Its companion project,
                 <a href=https://music-match.org>Music Match</a>,
-                which helps performers and composers discover each other.
+                helps performers and composers discover each other.
             ';
         }
     );

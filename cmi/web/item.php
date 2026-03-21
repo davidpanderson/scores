@@ -209,7 +209,7 @@ function comp_left($arg) {
                     ),
                     $arr->title?$arr->title:'Complete',
                     dash($ics),
-                    $arr->arranger
+                    dash($arr->arranger)
                 );
             }
             end_table();
@@ -321,7 +321,7 @@ function comp_left($arg) {
                 $x[] = creators_str($perf->performers, true);
             }
             if ($have_instrumentation) {
-                $x[] = $perf->instrumentation;
+                $x[] = dash($perf->instrumentation);
             }
             if ($have_concert) {
                 $y = '';
@@ -700,8 +700,8 @@ function ensemble_item($id) {
     row2('Alternate names', $ens->alternate_names);
     row2('Type', ensemble_type_id_to_name($ens->type));
     row2('Location', location_id_to_name($ens->location));
-    row2('Started', DB::date_num_to_str($ens->started));
-    row2('Ended', DB::date_num_to_str($ens->ended));
+    row2('Started', dash(DB::date_num_to_str($ens->started)));
+    row2('Ended', dash(DB::date_num_to_str($ens->ended)));
     row2('Code', copy_button($ens->id, 'ensemble'));
     end_table();
 

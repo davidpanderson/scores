@@ -661,10 +661,10 @@ function person_form($id) {
         check_access($p);
         $p->locations = $p->locations?json_decode($p->locations):[];
         $p->ethnicity = $p->ethnicity?json_decode($p->ethnicity):[];
-        select2_head("Edit person");
+        page_head_select2("Edit person");
     } else {
         $p = empty_person();
-        select2_head("Add person");
+        page_head_select2("Add person");
     }
     form_start('edit.php');
     form_input_hidden('type', PERSON);
@@ -682,9 +682,9 @@ function person_form($id) {
         $p->died?DB::date_num_to_str($p->died):'YYYY-MM-DD'
     );
     form_select('Death place', 'death_place', location_options(), $p->death_place);
-    select2_multi('Locations', 'locations', location_options(), $p->locations);
+    form_select2_multi('Locations', 'locations', location_options(), $p->locations);
     form_select('Sex', 'sex', sex_options(), $p->sex);
-    select2_multi('Race/Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
+    form_select2_multi('Race/Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
     form_submit2($id?'Update':'Add');
     form_end();
     page_tail();
@@ -1068,7 +1068,7 @@ function composition_form($id) {
     } else {
         $x = 'composition';
     }
-    select2_head($id?"Edit $x":"Add $x");
+    page_head_select2($id?"Edit $x":"Add $x");
     
     form_start('edit.php', 'get');
     form_input_hidden('type', COMPOSITION);
@@ -1079,7 +1079,7 @@ function composition_form($id) {
     }
     if (!$is_section && !$is_arrangement) {
         form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
-        select2_multi(
+        form_select2_multi(
             'Composition types<br><small>You can choose > 1</small>',
             'comp_types', comp_type_options(),
             $comp->comp_types
@@ -1514,7 +1514,7 @@ function score_form($id) {
 
     // show page
 
-    select2_head($id?'Edit score':'Add score');
+    page_head_select2($id?'Edit score':'Add score');
 
     form_start('edit.php');
     form_input_hidden('type', SCORE);
@@ -1597,7 +1597,7 @@ function score_form($id) {
 
     form_select('Publisher', 'publisher', organization_options(), $score->publisher);
     form_select('License', 'license', license_options(), $score->license);
-    select2_multi('Languages', 'languages', language_options(), $score->languages);
+    form_select2_multi('Languages', 'languages', language_options(), $score->languages);
     form_input_text2(
         'Publish date', 'publish_date',
         DB::date_num_to_str($score->publish_date), 'YYYY-MM-DD'

@@ -169,7 +169,7 @@ function comp_form($params) {
     form_select('Sex', 'sex', sex_options(), $params->sex);
     form_select('Nationality', 'location', country_options(), $params->location);
     form_general('', '<b><font size=+1>Composed for:</font></b>');
-    select2_multi(
+    form_select2_multi(
         'Select one or more instruments:',
         'insts', instrument_options(), $params->insts
     );
@@ -185,7 +185,7 @@ function comp_form($params) {
     form_checkboxes(
         'Show arrangements', [['arr', '', $params->arr]], 'id=arr_check'
     );
-    select2_multi(
+    form_select2_multi(
         'Select one or more instruments:',
         'arr_insts', instrument_options(), $params->arr_insts, 'id=arr_inst'
     );
@@ -358,7 +358,7 @@ function form_get_combos($insts, $inst_combo_id, $inst_combo_code, $others_ok) {
 }
 
 function composition_search($params) {
-    select2_head('Compositions');
+    page_head_select2('Compositions');
     comp_form($params);
 
     // make a SQL query based on search params
@@ -630,7 +630,7 @@ function ensemble_search() {
 function inst_combo_form($params) {
     form_start('search.php');
     form_input_hidden('type', 'inst_combo');
-    select2_multi(
+    form_select2_multi(
         'Instruments',
         'insts', instrument_options(), $params->insts
     );
@@ -652,7 +652,7 @@ function inst_combo_get() {
 }
 
 function inst_combo_search($params) {
-    select2_head('Instrumentations');
+    page_head_select2('Instrumentations');
     inst_combo_form($params);
     $combo_ids = get_combos_with_instruments($params->insts, true);
     if (!$combo_ids) {

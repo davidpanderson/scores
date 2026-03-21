@@ -711,7 +711,7 @@ function imslp_link($c) {
     $t = str_replace('Op._', 'Op.', $t);
     $url = sprintf('https://imslp.org/wiki/%s', $t);
     return sprintf(
-        '<a href=%s><img width=50 src=imslp_logo.png></a>',
+        '<a href=%s><img width=50 src=imslp_logo.jpg></a>',
         $url
     );
 }

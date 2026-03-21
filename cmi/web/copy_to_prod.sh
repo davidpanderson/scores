@@ -21,3 +21,4 @@ cp search.php prod/user/
 cp user.php prod/user/
 cp *.jpg prod/user/
 cp *.png prod/user/
+cp *.ico prod/user/
