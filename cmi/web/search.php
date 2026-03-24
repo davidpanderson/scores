@@ -74,9 +74,20 @@ function person_params_url($params) {
     return $x;
 }
 
+function person_no_params($params) {
+    if ($params->sex) return false;
+    if ($params->name) return false;
+    if ($params->location) return false;
+    return true;
+}
+
 function person_search($params) {
-    page_head('People');
+    page_head('People search');
     person_form($params);
+    if (person_no_params($params)) {
+        page_tail();
+        return;
+    }
     $x = [];
     if ($params->name) {
         $x[] = sprintf(
@@ -246,6 +257,87 @@ function comp_get() {
     return $params;
 }
 
+function comp_no_params($params) {
+    if ($params->title) return false;
+    if ($params->insts) return false;
+    if ($params->inst_combo_id) return false;
+    if ($params->inst_combo_code) return false;
+    if ($params->name) return false;
+    if ($params->sex) return false;
+    if ($params->location) return false;
+    if ($params->arr_insts) return false;
+    if ($params->arr_inst_combo_id) return false;
+    if ($params->arr_inst_combo_code) return false;
+    return true;
+}
+
+function inst_names($insts, $inst_combo_id, $inst_combo_code, $others_ok) {
+    if ($insts) {
+        $x = [];
+        foreach ($insts as $id) {
+            $x[] = instrument_id_to_name($id);
+        }
+        $x = implode(' and ', $x);
+        if ($others_ok) {
+            $x .= ' (and possibly other instruments)';
+        }
+        return $x;
+    }
+    if ($inst_combo_code) {
+        $id = parse_code($inst_combo_code, COMPOSITION);
+    } else if ($inst_combo_id) {
+        $id = $inst_combo_id;
+    } else {
+        return null;
+    }
+    $ic = DB_instrument_combo::lookup_id($id);
+    $x = instrument_combo_str($ic);
+    if ($others_ok) {
+        $x .= ' (and possibly other instruments)';
+    }
+    return $x;
+}
+
+function comp_explain($params) {
+    if ($params->arr) {
+        echo sprintf(
+            'The following are arrangements for %s of compositions that:',
+            inst_names(
+                $params->arr_insts, $params->arr_inst_combo_id,
+                $params->arr_inst_combo_code, $params->arr_others_ok
+            )
+        );
+    } else {
+        echo "The following compositions\n";
+    }
+    echo '<ul>';
+    if ($params->title) {
+        echo sprintf('<li> Contain "%s" in the title', $params->title);
+    }
+    $x = inst_names(
+        $params->insts, $params->inst_combo_id,
+        $params->inst_combo_code, $params->others_ok
+    );
+    if ($x) {
+        echo sprintf('<li> Were written for %s', $x);
+    }
+    if ($params->name) {
+        echo sprintf(
+            '<li> Have a composer whose name includes "%s"',
+            $params->name
+        );
+    }
+    if ($params->sex) {
+        echo sprintf('<li> Have a %s composer', sex_id_to_name($params->sex));
+    }
+    if ($params->location) {
+        echo sprintf('<li> Have a composer from %s',
+            location_id_to_name($params->location)
+        );
+    }
+    echo '</ul>';
+}
+
 function comp_encode($params) {
     $x = '';
     if ($params->offset) $x .= "&offset=$params->offset";
@@ -358,9 +450,29 @@ function form_get_combos($insts, $inst_combo_id, $inst_combo_code, $others_ok) {
 }
 
 function composition_search($params) {
-    page_head_select2('Compositions');
-    comp_form($params);
-
+    if (comp_no_params($params)) {
+        page_head_select2('Composition search');
+        comp_form($params);
+        page_tail();
+        return;
+    }
+    if (get_str('show_form', true)) {
+        page_head_select2('Composition search');
+        comp_form($params);
+        page_tail();
+        return;
+    }
+    page_head('Compositions');
+    comp_explain($params);
+    echo button_link(
+        sprintf(
+            'search.php?type=composition%s&show_form=1>',
+            comp_encode($params)
+        ),
+        'Change search'
+    );
+    echo "<p>";
+    
     // make a SQL query based on search params
 
     // get lists of inst combos for composition and/or arrangement
@@ -631,7 +743,7 @@ function inst_combo_form($params) {
     form_start('search.php');
     form_input_hidden('type', 'inst_combo');
     form_select2_multi(
-        'Instruments',
+        'Instruments include:',
         'insts', instrument_options(), $params->insts
     );
     form_submit2('Search');

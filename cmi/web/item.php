@@ -354,6 +354,17 @@ function comp_left($arg) {
     }
 }
 
+function imslp_image_name_to_url($name) {
+    return "https://imslp.org/wiki/Special:ImagefromIndex/$name";
+    if (substr($name, 0, 5) == 'IMSLP') {
+        $id = (int) substr($name, 5);
+        if ($id) {
+            return "https://imslp.org/wiki/Special:ImagefromIndex/$id";
+        }
+    }
+    return "https://imslp.org/wiki/FILE:$name";
+}
+
 function score_row($score, $prefix='') {
     $type = [];
     if ($score->is_parts) $type[] = 'parts';
@@ -363,8 +374,9 @@ function score_row($score, $prefix='') {
     $files = json_decode($score->files);
     $s = [];
     foreach ($files as $file) {
-        $s[] = sprintf('%s &middot; <a href=%s>view</a>',
-            $file->desc, $file->name
+        $url = imslp_image_name_to_url($file->name);
+        $s[] = sprintf('%s &middot; <a href="%s">view</a>',
+            $file->desc, imslp_image_name_to_url($file->name)
         );
     }
     $pub_year = DB::date_num_to_str($score->publish_date);
