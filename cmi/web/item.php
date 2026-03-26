@@ -306,9 +306,6 @@ function comp_left($arg) {
                 ),
             ];
             if ($have_type) {
-                $x[] = 'Synthesized';
-            }
-            if ($have_section) {
                 $x[] = $perf->is_synthesized?'Synthesized':'';
             }
             if ($have_section) {
@@ -334,8 +331,9 @@ function comp_left($arg) {
             if ($have_files) {
                 $f = [];
                 foreach ($perf->files as $file) {
-                    $f[] = sprintf('%s &middot; <a href=%s>file</a>',
-                        $file->desc, $file->name
+                    $f[] = sprintf('%s &middot; <a href=%s>listen</a>',
+                        $file->desc,
+                        imslp_image_name_to_url($file->name)
                     );
                 }
                 $x[] = implode('<br>', $f);
@@ -343,9 +341,22 @@ function comp_left($arg) {
             row_array($x);
         }
         end_table();
-    } else {
-        echo '<p>(No recordings)<p>';
     }
+
+    if ($is_section) {
+        $t = "$c->title $par->long_title";
+    } else {
+        $t = $c->long_title;
+    }
+    echo button_link(
+        sprintf(
+            'https://youtube.com/results?search_query=%s',
+            urlencode($t)
+        ),
+        'YouTube'
+    );
+    echo "<p><br>";
+
     if (can_edit($c)) {
         echo button_link(
             sprintf('edit.php?type=%d&composition=%d', PERFORMANCE, $c->id),
@@ -554,11 +565,13 @@ function perf_left($perf) {
     echo '<h3>Files</h3>';
     $files = json_decode2($perf->files);
     start_table('table-striped');
-    table_header('Description', 'IMSLP filename');
+    table_header('Description', 'File');
     foreach ($files as $file) {
         table_row(
             sprintf('<nobr>%s</nobr>', $file->desc),
-            $file->name
+            sprintf('<a href=%s>Listen',
+                imslp_image_name_to_url($file->name)
+            )
         );
     }
     end_table();
@@ -612,11 +625,13 @@ function score_left($score) {
     echo '<h3>Files</h3>';
     $files = json_decode($score->files);
     start_table('table-striped');
-    table_header('Description', 'IMSLP filename', 'Pages');
+    table_header('Description', 'File', 'Pages');
     foreach ($files as $file) {
         table_row(
             $file->desc,
-            $file->name,
+            sprintf('<a href=%s>View</a>',
+                imslp_image_name_to_url($file->name)
+            ),
             $file->pages?$file->pages:dash('')
         );
     }

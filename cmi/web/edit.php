@@ -286,6 +286,7 @@ function empty_concert() {
     $con->id = 0;
     $con->_when = '';
     $con->venue = 0;
+    $con->audience_size = 0;
     $con->organization = 0;
     $con->program = [];
     return $con;

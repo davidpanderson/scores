@@ -270,7 +270,7 @@ create table composition (
     index(maker)
 );
 alter table composition add index comp_lt(long_title);
-alter table composition add fulltext cindex (title);
+alter table composition add fulltext cindex (title, alternative_title);
 alter table composition add index wwt( (cast(comp_types->'$' as unsigned array)) );
 alter table composition add index wic( (cast(instrument_combos->'$' as unsigned array)) );
 alter table composition add index comp_crea( (cast(creators->'$' as unsigned array)) );

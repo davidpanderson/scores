@@ -171,15 +171,18 @@ function person_search($params) {
 /////////////// COMPOSITION //////////////////
 
 function comp_form($params) {
-    echo "All fields are optional.  Results are shown below.<p>";
+    text_start(1000);
+    echo "All fields are optional.<p><br>";
     form_start('search.php');
     form_input_hidden('type', 'composition');
     form_input_text('Title contains', 'title', $params->title);
-    form_general('', '<b><font size=+1>Composer</font></b>');
+    echo "<hr>";
+    form_general('<font size=+2>Composer:</font>', '');
     form_input_text('Name contains', 'name', $params->name);
     form_select('Sex', 'sex', sex_options(), $params->sex);
     form_select('Nationality', 'location', country_options(), $params->location);
-    form_general('', '<b><font size=+1>Composed for:</font></b>');
+    echo "<hr>";
+    form_general('<font size=+2>Composed for:</font>', '');
     form_select2_multi(
         'Select one or more instruments:',
         'insts', instrument_options(), $params->insts
@@ -187,12 +190,15 @@ function comp_form($params) {
     form_select('... or select an instrumentation',
         'inst_combo_id', inst_combo_options(1000), $params->inst_combo_id
     );
+    if (0) {
     form_input_text(
         '... or enter an <a href=search.php?type=inst_combo>instrumentation code</a>',
         'inst_combo_code', $params->inst_combo_code
     );
+    }
     form_checkboxes('Additional instruments OK?', [['others_ok', '', $params->others_ok]]);
-    form_general('', '<b><font size=+1>Arranged for:</font></b>');
+    echo "<hr>";
+    form_general('<font size=+2>Arranged for:</font>', '');
     form_checkboxes(
         'Show arrangements', [['arr', '', $params->arr]], 'id=arr_check'
     );
@@ -203,10 +209,12 @@ function comp_form($params) {
     form_select('... or select an instrumentation',
         'arr_inst_combo_id', inst_combo_options(1000), $params->arr_inst_combo_id
     );
+    if (0) {
     form_input_text(
         '... or enter an <a href=search.php?type=inst_combo>instrumentation code</a>',
         'arr_inst_combo_code', $params->arr_inst_combo_code, '', 'id=arr_inst_combo_code'
     );
+    }
     form_checkboxes(
         'Additional instruments OK?', [['arr_others_ok', '', $params->arr_others_ok]],
         'id=arr_others_ok'
@@ -215,21 +223,22 @@ function comp_form($params) {
     form_general('',
         button_link(
             sprintf('edit.php?type=%d', COMPOSITION),
-            'Add composition'
+            'Add a composition'
         )
     );
     form_end();
+    text_end();
     echo "
 <script>
 var arr_check = document.getElementById('arr_check');
 var arr_inst = document.getElementById('arr_inst');
 var arr_inst_combo_id = document.getElementById('arr_inst_combo_id');
-var arr_inst_combo_code = document.getElementById('arr_inst_combo_code');
+//var arr_inst_combo_code = document.getElementById('arr_inst_combo_code');
 var arr_others_ok = document.getElementById('arr_others_ok');
 f = function() {
     arr_inst.disabled = !arr_check.checked;
     arr_inst_combo_id.disabled = !arr_check.checked;
-    arr_inst_combo_code.disabled = !arr_check.checked;
+    //arr_inst_combo_code.disabled = !arr_check.checked;
     arr_others_ok.disabled = !arr_check.checked;
 };
 f();
@@ -341,14 +350,14 @@ function comp_explain($params) {
 function comp_encode($params) {
     $x = '';
     if ($params->offset) $x .= "&offset=$params->offset";
-    if ($params->title) $x .= "&title=$params->title";
+    if ($params->title) $x .= sprintf('&title=%s', urlencode($params->title));
     if ($params->insts) $x .= sprintf(
         '&insts[]=%s', implode(',', $params->insts)
     );
     if ($params->inst_combo_id) $x .= "&inst_combo_id=$params->inst_combo_id";
     if ($params->inst_combo_code) $x .= "&inst_combo_code=$params->inst_combo_code";
     if ($params->others_ok) $x .= "&others_ok=$params->others_ok";
-    if ($params->name) $x .= "&name=$params->name";
+    if ($params->name) $x .= sprintf('&name=%s', urlencode($params->name));
     if ($params->sex) $x .= "&sex=$params->sex";
     if ($params->location) $x .= "&location=$params->location";
     if ($params->arr) $x .= "&arr=$params->arr";
@@ -449,6 +458,65 @@ function form_get_combos($insts, $inst_combo_id, $inst_combo_code, $others_ok) {
     return [$inst_combos, ''];
 }
 
+// the comp search params include a composer name.
+// Do a person search ranked by text match score.
+// Return:
+// null if there are no person matches
+// 0    if there are multiple equal-score matches
+// id   if there is a best-score match
+//
+// The goal is that if you enter e.g. 'carl bach'
+// it will show you pieces by CPE Bach,
+// not a bunch of random people with 'carl' and 'bach' in their names
+//
+function comp_single_person($params) {
+    if (!$params->name) {
+        return 0;
+    }
+    $name = DB::escape($params->name);
+    $query = sprintf(
+        "select id, match(first_name, last_name) against ('%s' in boolean mode) as score from person where match (first_name, last_name) against ('%s' in boolean mode)",
+        $name, $name
+    );
+    if ($params->sex) {
+        $query .= sprintf(" and person.sex=%d", $params->sex);
+    }
+    if ($params->location) {
+        $locs = get_locations();
+        $loc = $locs[$params->location];
+        $country_type = location_type_name_to_id('country');
+        if ($loc->type == $country_type) {
+            $query .= sprintf(" and %d member of (person.locations->'$')", $params->location);
+        } else {
+            $countries = [];
+            foreach ($locs as $loc) {
+                if (!$loc->ancestors) continue;
+                $a = json_decode($loc->ancestors);
+                if (in_array($params->location, $a)) {
+                    $countries[] = $loc->id;
+                }
+            }
+            $c = implode(',', $countries);
+            $query .= sprintf(
+                " and json_overlaps (\"[%s]\", person.locations->'$')",
+                $c
+            );
+        }
+    }
+    $query .= ' order by score desc limit 2';
+    $persons = DB::enum($query);
+    if (count($persons) == 0) {
+        return null;
+    }
+    if (count($persons) == 1) {
+        return $persons[0]->id;
+    }
+    if ($persons[0]->score > $persons[1]->score) {
+        return $persons[0]->id;
+    }
+    return 0;
+}
+
 function composition_search($params) {
     if (comp_no_params($params)) {
         page_head_select2('Composition search');
@@ -517,9 +585,8 @@ function composition_search($params) {
         }
     }
 
-    $composer_params = $params->name || $params->sex || $params->location;
-
     $query = 'select';
+
     if ($params->arr) {
         $query .= ' comp2.* from composition as comp2
             join composition as comp1
@@ -529,17 +596,18 @@ function composition_search($params) {
         $query .= ' comp1.* from composition as comp1
         ';
     }
+
     $query .= ' where true ';
 
     // clauses for main composition
     //
     if ($params->title) {
-        $query .= sprintf(" and match(comp1.title) against ('%s' in boolean mode)",
+        $query .= sprintf(" and match(comp1.title, comp1.alternative_title) against ('%s' in boolean mode)",
             DB::escape($params->title)
         );
     }
     if (!$params->arr) {
-        $query .= ' and comp1.arrangement_of = 0 and comp1.parent = 0
+        $query .= ' and comp1.arrangement_of = 0
         ';
     }
     if ($inst_combos) {
@@ -550,35 +618,58 @@ function composition_search($params) {
 
     // composer
     //
+    $composer_params = $params->name || $params->sex || $params->location;
     if ($composer_params) {
-        $query .= 'and json_overlaps(
-            (select json_arrayagg(person_role.id) from person_role
-                join person
-                on person.id = person_role.person
-        ';
-        $query .= sprintf('where person_role.role=%d',
-            role_name_to_id('composer')
-        );
-        if ($params->sex) {
-            $query .= sprintf(" and person.sex=%d", $params->sex);
+        $id = comp_single_person($params);
+        if ($id === null) {
+            echo "<p>There are no matching composers.";
+            page_tail();
+            return;
         }
-        if ($params->location) {
-            $locs = get_locations();
-            $loc = $locs[$params->location];
-            $country_type = location_type_name_to_id('country');
-            if ($loc->type == $country_type) {
-                $query .= sprintf(" and %d member of (person.locations->'$')", $params->location);
-            } else {
-                $countries = [];
-                foreach ($locs as $loc) {
-                    if (!$loc->ancestors) continue;
-                    $a = json_decode($loc->ancestors);
-                    if (in_array($params->location, $a)) {
-                        $countries[] = $loc->id;
+        if ($id > 0) {
+            // Here there's a single composer matching the spec
+            //
+            $query .= 'and json_overlaps(
+                (select json_arrayagg(person_role.id) from person_role
+                    join person
+                    on person.id = person_role.person
+            ';
+            $query .= sprintf('where person_role.role=%d',
+                role_name_to_id('composer')
+            );
+            $query .= " and person.id = $id";
+        } else {
+            // Here there are multiple composers matching the spec
+            //
+            $query .= 'and json_overlaps(
+                (select json_arrayagg(person_role.id) from person_role
+                    join person
+                    on person.id = person_role.person
+            ';
+            $query .= sprintf('where person_role.role=%d',
+                role_name_to_id('composer')
+            );
+            if ($params->sex) {
+                $query .= sprintf(" and person.sex=%d", $params->sex);
+            }
+            if ($params->location) {
+                $locs = get_locations();
+                $loc = $locs[$params->location];
+                $country_type = location_type_name_to_id('country');
+                if ($loc->type == $country_type) {
+                    $query .= sprintf(" and %d member of (person.locations->'$')", $params->location);
+                } else {
+                    $countries = [];
+                    foreach ($locs as $loc) {
+                        if (!$loc->ancestors) continue;
+                        $a = json_decode($loc->ancestors);
+                        if (in_array($params->location, $a)) {
+                            $countries[] = $loc->id;
+                        }
                     }
+                    $c = implode(',', $countries);
+                    $query .= sprintf(" and json_overlaps (\"[%s]\", person.locations->'$')", $c);
                 }
-                $c = implode(',', $countries);
-                $query .= sprintf(" and json_overlaps (\"[%s]\", person.locations->'$')", $c);
             }
         }
 

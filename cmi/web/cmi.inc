@@ -513,10 +513,10 @@ function composition_str($c, $link=true) {
         $c2 = DB_composition::lookup_id($c->parent);
         $s = sprintf('Section (%s) of %s', $c->title, $c2->long_title);
     } else {
-        $s = sprintf('%s for %s',
-            $c->long_title,
-            instrument_combos_str($c->instrument_combos)
-        );
+        $s = $c->long_title;
+        if ($c->instrument_combos) {
+            $s .= ' for '.instrument_combos_str($c->instrument_combos);
+        }
     }
     if ($link) {
         return sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
@@ -660,12 +660,25 @@ function show_compositions($comps) {
         'Code'
     );
     foreach ($comps as $c) {
+        if ($c->parent) {
+            $p = DB_composition::lookup_id($c->parent);
+            $alt = $p->alternative_title?" ($p->alternative_title)":'';
+            $par = sprintf(
+                '<br>Section of <a href=item.php?type=%d&id=%d>%s</a>%s',
+                COMPOSITION, $p->id, $p->title, $alt
+            );
+            $ilink = imslp_link($p);
+        } else {
+            $par = '';
+            $ilink = imslp_link($c);
+        }
+        $alt = $c->alternative_title?" ($c->alternative_title)":'';
         table_row(
-            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                COMPOSITION, $c->id, $c->title
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>%s%s',
+                COMPOSITION, $c->id, $c->title, $alt, $par
             ),
             creators_str(json_decode2($c->creators), true),
-            imslp_link($c),
+            $ilink,
             $c->_keys,
             $c->opus_catalogue,
             DB::date_num_to_str($c->composed),
@@ -705,6 +718,8 @@ function show_arrangements($comps) {
     end_table();
 }
 
+// link to IMSLP page for a composition
+//
 function imslp_link($c) {
     $t = str_replace(' ', '_', $c->long_title);
     $t = str_replace('No._', 'No.', $t);
