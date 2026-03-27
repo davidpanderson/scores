@@ -176,6 +176,8 @@ function comp_form($params) {
     form_start('search.php');
     form_input_hidden('type', 'composition');
     form_input_text('Title contains', 'title', $params->title);
+    form_select('Period/style', 'period', period_options(), $params->period);
+    form_select('Type', 'comp_type', comp_type_options(), $params->comp_type);
     echo "<hr>";
     form_general('<font size=+2>Composer:</font>', '');
     form_input_text('Name contains', 'name', $params->name);
@@ -251,6 +253,8 @@ function comp_get() {
     $params = new stdClass;
     $params->offset = get_int('offset', true);
     $params->title = get_str('title', true);
+    $params->period = get_int('period', true);
+    $params->comp_type = get_int('comp_type', true);
     $params->insts = get_str('insts', true);
     $params->inst_combo_id = get_int('inst_combo_id', true);
     $params->inst_combo_code = get_str('inst_combo_code', true);
@@ -268,6 +272,8 @@ function comp_get() {
 
 function comp_no_params($params) {
     if ($params->title) return false;
+    if ($params->period) return false;
+    if ($params->comp_type) return false;
     if ($params->insts) return false;
     if ($params->inst_combo_id) return false;
     if ($params->inst_combo_code) return false;
@@ -323,6 +329,17 @@ function comp_explain($params) {
     if ($params->title) {
         echo sprintf('<li> Contain "%s" in the title', $params->title);
     }
+    if ($params->period) {
+        echo sprintf('<li> Have period/style "%s"',
+            period_id_to_name($params->period)
+        );
+    }
+    if ($params->comp_type) {
+        echo sprintf('<li> Are of type"%s"',
+            comp_type_id_to_name($params->comp_type)
+        );
+    }
+
     $x = inst_names(
         $params->insts, $params->inst_combo_id,
         $params->inst_combo_code, $params->others_ok
@@ -351,6 +368,8 @@ function comp_encode($params) {
     $x = '';
     if ($params->offset) $x .= "&offset=$params->offset";
     if ($params->title) $x .= sprintf('&title=%s', urlencode($params->title));
+    if ($params->period) $x .= "&period=$params->period";
+    if ($params->comp_type) $x .= "&comp_type=$params->comp_type";
     if ($params->insts) $x .= sprintf(
         '&insts[]=%s', implode(',', $params->insts)
     );
@@ -517,6 +536,22 @@ function comp_single_person($params) {
     return 0;
 }
 
+// given a list of compositions, remove children whose parents are in the list
+//
+function prune_children($comps) {
+    $ca = [];
+    foreach ($comps as $c) {
+        $ca[$c->id] = $c;
+    }
+    $out = [];
+    foreach ($comps as $c) {
+        if (!array_key_exists($c->parent, $ca)) {
+            $out[] = $c;
+        }
+    }
+    return $out;
+}
+
 function composition_search($params) {
     if (comp_no_params($params)) {
         page_head_select2('Composition search');
@@ -616,6 +651,15 @@ function composition_search($params) {
         );
     }
 
+    if ($params->period) {
+        $query .= sprintf(' and comp1.period = %d', $params->period);
+    }
+    if ($params->comp_type) {
+        $query .= sprintf(" and json_contains(comp1.comp_types, '%d', '$')",
+            $params->comp_type
+        );
+    }
+
     // composer
     //
     $composer_params = $params->name || $params->sex || $params->location;
@@ -629,7 +673,7 @@ function composition_search($params) {
         if ($id > 0) {
             // Here there's a single composer matching the spec
             //
-            $query .= 'and json_overlaps(
+            $query .= ' and json_overlaps(
                 (select json_arrayagg(person_role.id) from person_role
                     join person
                     on person.id = person_role.person
@@ -641,7 +685,7 @@ function composition_search($params) {
         } else {
             // Here there are multiple composers matching the spec
             //
-            $query .= 'and json_overlaps(
+            $query .= ' and json_overlaps(
                 (select json_arrayagg(person_role.id) from person_role
                     join person
                     on person.id = person_role.person
@@ -690,13 +734,14 @@ function composition_search($params) {
             make_int_list($arr_inst_combos)
         );
     }
-    $query .= 'order by comp1.long_title ';
+    $query .= ' order by comp1.long_title ';
     $query .= sprintf(' limit %d,%d', $params->offset, PAGE_SIZE+1);
 
     if (SHOW_COMP_QUERY) {
         echo "QUERY: $query\n";
     }
     $comps = DB::enum($query);
+    $comps = prune_children($comps);
 
     if (!$comps) {
         echo "<h2>No compositions found</h2>
@@ -911,7 +956,7 @@ function main($type) {
         inst_combo_search(inst_combo_get());
         break;
     default:
-        error_page("$type not implemented");
+        error_page("search type $type not implemented");
     }
 }
 

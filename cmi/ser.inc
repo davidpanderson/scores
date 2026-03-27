@@ -28,6 +28,11 @@ function period_name_to_id($name) {
     return $period_by_name[$name];
 }
 
+function period_id_to_name($id) {
+    $ps = get_periods();
+    return $ps[$id]->name;
+}
+
 /////////////// composition type /////////////////
 
 function get_comp_types() {

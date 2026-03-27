@@ -104,7 +104,7 @@ function comp_left($arg) {
         row2('Arrangement of', composition_str($par));
         row2('Creators', dash(creators_str($c->creators, true)));
         row2('Instrumentation', instrument_combos_str($c->instrument_combos));
-        row2('View on IMSLP', imslp_link($par));
+        row2(imslp_logo(), sprintf('<a href=%s>View</a>', imslp_comp_url($par)));
     } else if ($is_section) {
         row2('Section of', composition_str($par));
         row2('Title', $c->title);
@@ -114,14 +114,14 @@ function comp_left($arg) {
         row2('Time signatures', dash($c->time_signatures));
         row2('Average duration (sec)', dash($c->avg_duration_sec));
         row2('Number of measures', dash($c->n_bars));
-        row2('View on IMSLP', imslp_link($par));
+        row2(imslp_logo(), sprintf('<a href=%s>View</a>', imslp_comp_url($par)));
     } else {
         row2('Title', $c->title);
         if ($c->alternative_title) {
             row2('Alternative title', $c->alternative_title);
         }
         row2('Creators', dash(creators_str($c->creators, true)));
-        row2('Opus', $c->opus_catalogue);
+        row2('Opus', dash($c->opus_catalogue));
         row2('Instrumentation', dash(instrument_combos_str($c->instrument_combos)));
         row2('Number of movements', dash($c->n_movements));
         row2('Keys', dash($c->_keys));
@@ -141,7 +141,7 @@ function comp_left($arg) {
         if ($c->period) {
             row2('Period', period_name($c->period));
         }
-        row2('View on IMSLP', imslp_link($c));
+        row2(imslp_logo(), sprintf('<a href=%s>View</a>', imslp_comp_url($c)));
     }
     row2('Code', copy_button(item_code($c->id, 'composition')));
     if (can_edit($c)) {
@@ -233,7 +233,7 @@ function comp_left($arg) {
     );
     if ($scores || $arrs) {
         start_table('table-striped');
-        table_header('Details', 'Section', 'Type', 'Publisher', 'Date', 'File');
+        table_header('Details', 'Section', 'Type', 'Publisher', 'Date', 'File (click to view)');
         foreach ($scores as $score) {
             score_row($score);
         }
@@ -296,7 +296,7 @@ function comp_left($arg) {
         if ($have_performers) $x[] = 'Performers';
         if ($have_instrumentation) $x[] = 'Arranged for';
         if ($have_concert) $x[] = 'Concert';
-        if ($have_files) $x[] = 'Files';
+        if ($have_files) $x[] = 'Files (click to listen)';
         start_table('table-striped');
         row_heading_array($x);
         foreach ($perfs as $perf) {
@@ -331,9 +331,9 @@ function comp_left($arg) {
             if ($have_files) {
                 $f = [];
                 foreach ($perf->files as $file) {
-                    $f[] = sprintf('%s &middot; <a href=%s>listen</a>',
-                        $file->desc,
-                        imslp_image_name_to_url($file->name)
+                    $f[] = sprintf('<a href="%s">%s</a>',
+                        imslp_image_name_to_url($file->name),
+                        $file->desc
                     );
                 }
                 $x[] = implode('<br>', $f);
@@ -386,8 +386,9 @@ function score_row($score, $prefix='') {
     $s = [];
     foreach ($files as $file) {
         $url = imslp_image_name_to_url($file->name);
-        $s[] = sprintf('%s &middot; <a href="%s">view</a>',
-            $file->desc, imslp_image_name_to_url($file->name)
+        $s[] = sprintf('<a href="%s">%s</a>',
+            imslp_image_name_to_url($file->name),
+            $file->desc
         );
     }
     $pub_year = DB::date_num_to_str($score->publish_date);
@@ -689,14 +690,14 @@ function person_role_item($id) {
         end_table();
         break;
     case 'arranger':
-        $q = sprintf("json_contains(creators, '%d', '$')", $id);
+        $q = sprintf("json_contains(creators, '%d', '$') and parent=0", $id);
         $comps = DB_composition::enum($q);
         show_arrangements($comps);
         break;
     case 'composer':
     case 'librettist':
     case 'lyricist':
-        $q = sprintf("json_contains(creators, '%d', '$')", $id);
+        $q = sprintf("json_contains(creators, '%d', '$') and parent=0", $id);
         $comps = DB_composition::enum($q);
         show_compositions($comps);
         break;

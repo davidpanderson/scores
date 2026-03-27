@@ -429,6 +429,15 @@ function comp_type_options() {
     return $x;
 }
 
+function period_options() {
+    $ps = get_periods();
+    $x = [[0, dash(null)]];
+    foreach ($ps as $p) {
+        $x[] = [$p->id, $p->name];
+    }
+    return $x;
+}
+
 function organization_type_str($id) {
     $ot = DB_organization_type::lookup_id($id);
     return $ot->name;
@@ -652,7 +661,6 @@ function show_compositions($comps) {
     table_header(
         'Title<br><small>click for details</small>',
         'Creators',
-        'View on IMSLP',
         'Key',
         'Opus',
         'Composed',
@@ -667,10 +675,8 @@ function show_compositions($comps) {
                 '<br>Section of <a href=item.php?type=%d&id=%d>%s</a>%s',
                 COMPOSITION, $p->id, $p->title, $alt
             );
-            $ilink = imslp_link($p);
         } else {
             $par = '';
-            $ilink = imslp_link($c);
         }
         $alt = $c->alternative_title?" ($c->alternative_title)":'';
         table_row(
@@ -678,7 +684,6 @@ function show_compositions($comps) {
                 COMPOSITION, $c->id, $c->title, $alt, $par
             ),
             creators_str(json_decode2($c->creators), true),
-            $ilink,
             $c->_keys,
             $c->opus_catalogue,
             DB::date_num_to_str($c->composed),
@@ -697,7 +702,7 @@ function show_compositions($comps) {
 function show_arrangements($comps) {
     start_table('table-striped');
     table_header(
-        'Arrangement of', 'Section', 'View on IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
+        'Arrangement of', 'Section', 'Composed', 'Type', 'Arranger', 'Instrumentation'
     );
     foreach ($comps as $c) {
         $c->creators = json_decode2($c->creators);
@@ -708,7 +713,6 @@ function show_arrangements($comps) {
                 COMPOSITION, $c2->id, $c2->long_title
             ),
             $c->title,
-            imslp_link($c2),
             DB::date_num_to_str($c2->composed),
             comp_types_str($c2->comp_types),
             creators_str($c->creators, false),
@@ -718,17 +722,17 @@ function show_arrangements($comps) {
     end_table();
 }
 
-// link to IMSLP page for a composition
+// URL of IMSLP page for a composition
 //
-function imslp_link($c) {
+function imslp_comp_url($c) {
     $t = str_replace(' ', '_', $c->long_title);
     $t = str_replace('No._', 'No.', $t);
     $t = str_replace('Op._', 'Op.', $t);
-    $url = sprintf('https://imslp.org/wiki/%s', $t);
-    return sprintf(
-        '<a href=%s><img width=50 src=imslp_logo.jpg></a>',
-        $url
-    );
+    return sprintf('https://imslp.org/wiki/%s', $t);
+}
+
+function imslp_logo() {
+    return '<img width=50 src=imslp_logo.jpg>';
 }
 
 // show user name, linked to their user page
