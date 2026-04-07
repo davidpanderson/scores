@@ -1,8 +1,14 @@
-# initialize DB manually, e.g.
-#   mysql < create_dev.sql
-#   mysql cmi_dev < schema.sql
+# to set up a CMI database:
+# - initialize the DB manually, e.g.
+#   mysql < create_dev.sql; mysql cmi_dev < schema.sql
+#   or
+#   mysql < create_prod.sql; mysql cmi < schema.sql
+# - select.sh dev (or prod)
+# - edit populate_comp.php to select size
+# - make clean
+# - make
 
-all: data/make_ser_done
+all: data/make_prop_done
 
 data/init_done:
 	populate_init.php && touch data/init_done
@@ -25,8 +31,14 @@ data/category_done: data/composition_type_done
 data/comp_done: data/category_done
 	populate_comp.php > pc.out && touch data/comp_done
 
-data/make_ser_done: data/comp_done
+data/populate_nworks_done: data/comp_done
+	populate_nworks.php && touch data/populate_nworks_done
+
+data/make_ser_done: data/populate_nworks_done
 	make_ser.php && touch data/make_ser_done
+
+data/make_prop_done: data/make_ser_done
+	propagate.php && touch data/make_prop_done
 
 clean:
 	rm -f data/*_done data/*.ser

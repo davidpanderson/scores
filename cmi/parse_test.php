@@ -167,12 +167,29 @@ function test_title() {
 function test_opus() {
     $ts = [
         'K.428 ; {{K6|421b}} ; Op.10 No.4',
-        '{{HaydnHob|n801|XVI:52}} ; Op.92'
+        '{{HaydnHob|n801|XVI:52}} ; Op.92',
+        "Op.25 ({{Sb}})",
+        "{{MWV|W|13}}",
+        "Op.19 / 44 (but {{Sb}})",
+        "RISM B/I: 1514{{Sup|1}}",
+        "{{RISMs|000124897|Ricasoli Profana 255 (No.5)}}",
+        "Op.13 [also assigned to {{LinkWorkN|Grande valse No.1|Op.13|Pessard|Émile|0}}]",
+        "R.101-110  (Rubio's catalogue : R.423(101){{EN}}432(110) )",
+        "{{K6|Anh.C 15.11}}",
+        "Op.47 {{Version|A}}",
+        "{{RISMc|00001000000456|RISM A/I: SS-7238a}}",
+        "Published as Op.3 <br>  {{LinkWork|Symphony in C major|M.A6/I:11|Rosetti|Antonio|0}}",
+        "{{plain|https://archive.org/stream/JosephHaydnThematisch-bibliographischesWerkverzeichnis/Hoboken1-3#page/n1168/mode/1up|Hob.XXVIa:a2}}",
+        "{{LinkName|Felix|Mendelssohn}}'s Op.9, Nos.7, 10, 12",
+        "{{Key|F}}",
+        "R.1{{EN}}10  (Rubio's catalogue : R.336(1){{EN}}345(10) )",
+        "{{sb}}\n#Solitude, VWV 1044\n#La petite chevrière, VWV 1045\n#L'absence, VWV 1046
+        ",
     ];
     foreach($ts as $t) {
-        echo "----------------\ninput: $t\noutput: ";
-        print_r(parse_opus($t));
-        echo "\n";
+        echo "----------------\ninput: $t\n";
+        $x = parse_opus($t);
+        echo "output: $x\n";
     }
 }
 
@@ -245,12 +262,29 @@ function test_template() {
         '{{MssAu|17|79}}, dated July 9.',
         '{{Mss}} (Copyist)',
         'London: {{MssD|19|16}} (March)',
-        '{{BrahmsSauer|1|a|9487}}'
+        '{{BrahmsSauer|1|a|9487}}',
+        "Op.25 ({{Sb}})",
+        "{{MWV|W|13}}",
+        "Op.19 / 44 (but {{Sb}})",
+        "RISM B/I: 1514{{Sup|1}}",
+        "{{RISMs|000124897|Ricasoli Profana 255 (No.5)}}",
+        "Op.13 [also assigned to {{LinkWorkN|Grande valse No.1|Op.13|Pessard|Émile|0}}]",
+        "R.101-110  (Rubio's catalogue : R.423(101){{EN}}432(110) )",
+        "{{K6|Anh.C 15.11}}",
+        "Op.47 {{Version|A}}",
+        "{{RISMc|00001000000456|RISM A/I: SS-7238a}}",
+        "Published as Op.3 <br>  {{LinkWork|Symphony in C major|M.A6/I:11|Rosetti|Antonio|0}}",
+        "{{plain|https://archive.org/stream/JosephHaydnThematisch-bibliographischesWerkverzeichnis/Hoboken1-3#page/n1168/mode/1up|Hob.XXVIa:a2}}",
+        "{{LinkName|Felix|Mendelssohn}}'s Op.9, Nos.7, 10, 12",
+        "{{Key|F}}",
+        "R.1{{EN}}10  (Rubio's catalogue : R.336(1){{EN}}345(10) )",
+        "{{sb}}\n#Solitude, VWV 1044",
+        "{{LinkName|Felix|Mendelssohn}}"
     ];
     foreach ($ts as $t) {
-        echo "----------------\ninput: $t\noutput: ";
-        echo expand_mw_text($t);
-        echo "\n";
+        echo "----------------\ninput: $t\n";
+        $x = expand_mw_text($t);
+        echo "output: $x\n";
     }
 }
 
@@ -262,8 +296,8 @@ function test_template() {
 //test_arrangement_target();
 //test_tags();
 //test_title();
-//test_opus();
+test_opus();
 //test_publisher();
 //test_template();
-test_performer();
+//test_performer();
 ?>

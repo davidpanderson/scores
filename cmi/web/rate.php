@@ -11,9 +11,9 @@
 require_once('../inc/util.inc');
 require_once('cmi_db.inc');
 require_once('ser.inc');
+require_once('cmi.inc');
 
-function review_form($type, $target) {
-    $user = get_logged_in_user();
+function review_form($user, $type, $target) {
     $r = DB_rating::lookup(
         sprintf('user=%d and type=%d and target=%d',
             $user->id, $type, $target
@@ -57,26 +57,43 @@ function review_form($type, $target) {
         break;
     case PERFORMANCE:
         $perf = DB_performance::lookup_id($target);
-        echo "to be completed";
+        $comp = DB_composition::lookup_id($perf->composition);
+        $c = composition_str($comp);
+        $performers = creators_str(json_decode2($perf->performers), false);
+        echo "
+            Please write a brief review of the performance of $c by $performers,
+            perhaps including:
+            <ul>
+            <li> Why you do or don't like it.
+            <li> What it expresses to you.
+            <li> Your experiences hearing or playing it.
+            </ul>
+        ";
         break;
     case SCORE:
-        echo "to be completed";
+        echo "
+            Please write a brief review of this score,
+            perhaps including:
+            <ul>
+            <li> Its readability.
+            <li> The quality of the editing.
+            </ul>
+        ";
         break;
     default: error_page('bad type');
     }
-    echo 'Text only - no HTML tags.';
+    echo '<p>Text only - no HTML tags.';
     form_start('rate.php');
     form_input_textarea('Review', 'review', $review);
     form_input_hidden('type', $type);
     form_input_hidden('target', $target);
     form_input_hidden('action', 'rev_action');
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
 
-function review_action($type, $target) {
-    $user = get_logged_in_user();
+function review_action($user, $type, $target) {
     $rev = strip_tags(get_str('review'));
     $r = DB_rating::lookup(
         sprintf('user=%d and type=%d and target=%d',
@@ -135,8 +152,7 @@ function update_ratings($type, $id, $attr, $old, $new) {
     $item->update($q);
 }
 
-function do_rate($type, $id, $attr) {
-    $user = get_logged_in_user();
+function do_rate($user, $type, $id, $attr) {
     $val = get_int('val');
     $r = DB_rating::lookup(
         sprintf('user=%d and type=%d and target=%d',
@@ -169,36 +185,37 @@ function do_rate($type, $id, $attr) {
     }
 }
 
+$user = get_logged_in_user();
 $action = get_str('action');
 $type = get_int('type', true);
 $target = get_int('target');
 switch($action) {
 case 'rate_comp_1':
-    do_rate(COMPOSITION, $target, 1);
+    do_rate($user, COMPOSITION, $target, 1);
     break;
 case 'rate_comp_2':
-    do_rate(COMPOSITION, $target, 2);
+    do_rate($user, COMPOSITION, $target, 2);
     break;
 case 'rate_perf_1':
-    do_rate(PERFORMANCE, $target, 1);
+    do_rate($user, PERFORMANCE, $target, 1);
     break;
 case 'rate_perf_2':
-    do_rate(PERFORMANCE, $target, 2);
+    do_rate($user, PERFORMANCE, $target, 2);
     break;
 case 'rate_score_1':
-    do_rate(SCORE, $target, 1);
+    do_rate($user, SCORE, $target, 1);
     break;
 case 'rate_score_2':
-    do_rate(SCORE, $target, 2);
+    do_rate($user, SCORE, $target, 2);
     break;
 case 'rate_pr':
-    do_rate(PERSON_ROLE, $target, 1);
+    do_rate($user, PERSON_ROLE, $target, 1);
     break;
 case 'rev_form':
-    review_form($type, $target);
+    review_form($user, $type, $target);
     break;
 case 'rev_action':
-    review_action($type, $target);
+    review_action($user, $type, $target);
     break;
 default:
     error_page("No action $action");

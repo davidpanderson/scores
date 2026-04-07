@@ -32,10 +32,11 @@ define('NO_HOSTS', true);
 define('NO_GLOBAL_PREFS', true);
 define('UNIQUE_USER_NAME', true);
 define('DISABLE_TEAMS', true);
-define('SHOW_USER_FILENAME', 'user.php');
-define('USER_HOME', 'user.php');
+define('SHOW_USER_PAGE', 'user.php');
+define('HOME_PAGE', 'user.php');
 define('PM_RULES', '');
 define('FORUM_RULES', '');
+define('SHORTCUT_ICON', 'CMI.ico');
 
 //-------------- contact info
 
@@ -119,6 +120,33 @@ function make_php_mailer() {
 
 //-------------- Header and footer
 
+function cmi_navbar_right($user) {
+    global $is_login_page;
+    echo '
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+    ';
+    if (!$is_login_page) {
+        if ($user) {
+            echo sprintf('
+                <li><a href=%s%s>%s</a></li>
+                ', url_base(), HOME_PAGE, $user->name
+            );
+            $url_tokens = url_tokens($user->authenticator);
+            echo sprintf('<li><a href="%slogout.php?%s">Log out</a></li>',
+                url_base(), $url_tokens
+            );
+        } else {
+            echo sprintf('
+                <li><a href="cmi_signup.php">%s</a></li>
+                <li><a href="login_form.php">%s</a></li>
+                ',
+                tra("Join"),
+                tra("Login")
+            );
+        }
+    }
+}
 function navbar(
     $url_prefix,
         // prefix for links; needed for pages not in top dir
@@ -139,11 +167,11 @@ function navbar(
 
     $x = array();
     if ($user) {
-        $x[] = array(tra("Account"), $url_prefix.USER_HOME);
+        $x[] = array(tra("Account"), 'account.php');
         $x[] = array(tra("Join"), $url_prefix."join.php");
     }
-    $x[] = array(tra("About %1", PROJECT), $url_prefix."about.php");
-    $x[] = array(tra("Help"), $url_prefix."welcome.php");
+    $x[] = array(tra("About %1", PROJECT), "about.php");
+    $x[] = array(tra("Contact"), "contact.php");
     navbar_menu(tra("Project"), $x);
 
     navbar_menu(tra("Community"), array(
@@ -156,9 +184,7 @@ function navbar(
         array(tra("Languages"), $url_prefix."language_select.php")
     ));
 
-    // add your own menu here if you want
-
-    navbar_right($user);
+    cmi_navbar_right($user);
     navbar_end();
 }
 // Put your project title and logo here

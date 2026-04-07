@@ -175,7 +175,7 @@ function compare($c1, $c2) {
 }
 
 function write_ser_instrument_combo() {
-    $combos = DB_instrument_combo::enum();
+    $combos = DB_instrument_combo::enum('','order by nworks desc');
     foreach ($combos as $combo) {
         $combo->instruments = json_decode($combo->instruments);
         $combo->instruments_sorted = json_decode($combo->instruments_sorted);

@@ -184,6 +184,14 @@ class Table {
             )
         );
     }
+
+    public static function update_multi($clause, $where) {
+        return DB::do_query(
+            sprintf("update %s set %s where %s",
+                static::$table_name, $clause, $where
+            )
+        );
+    }
 }
 
 ?>

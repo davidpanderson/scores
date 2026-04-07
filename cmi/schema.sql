@@ -4,6 +4,10 @@
 # mysql < create_prod.sql
 # or mysql < create_dev.sql
 
+# We also use a BOINC database for user and social data.
+# Field usage:
+# user.posts: editing access level (see cmi_db.inc)
+
 # an indexed or unique text field must be varchar
 # fulltext index can cover at most 256 char ?? still true?
 
@@ -24,8 +28,12 @@ create table location (
     type                    integer         not null default 0,
     parent                  integer         not null default 0,
     ancestors               json,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id),
-    unique(name, type, parent)
+    unique(name, type, parent),
+    index(maker)
 );
 
 create table sex (
@@ -66,7 +74,11 @@ create table person (
     periods                 JSON,
     sex                     integer         not null default 0,
     ethnicity               JSON,
-    primary key(id)
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
+    primary key(id),
+    index(maker)
 );
 alter table person add fulltext index (first_name, last_name);
 alter table person add index iname(first_name, last_name);
@@ -113,8 +125,12 @@ create table ensemble (
     members                 json,
         # person_roles
     period                  integer         not null default 0,
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     unique(name),
-    primary key(id)
+    primary key(id),
+    index(maker)
 );
 
 # publisher, recording company, conservatory
@@ -132,8 +148,12 @@ create table organization (
     ended                   integer         not null default 0,
     location                text,           -- ideally should be an ID
     url                     varchar(255),
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
     primary key(id),
-    unique(name)
+    unique(name),
+    index(maker)
 );
 
 -- can represent
@@ -173,6 +193,7 @@ create table instrument_combo (
     primary key(id)
 );
 alter table instrument_combo add index icinst( (cast(instruments->'$.id' as unsigned array)) );
+alter table instrument_combo add index icnworks(nworks);
 
 # performer, composer, lyricist, etc.
 create table role (
@@ -242,10 +263,15 @@ create table composition (
     nratings2               integer         not null default 0,
     rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
-    primary key(id)
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
+    audio_file              varchar(255)    not null default '',
+    primary key(id),
+    index(maker)
 );
 alter table composition add index comp_lt(long_title);
-alter table composition add fulltext cindex (title);
+alter table composition add fulltext cindex (title, alternative_title);
 alter table composition add index wwt( (cast(comp_types->'$' as unsigned array)) );
 alter table composition add index wic( (cast(instrument_combos->'$' as unsigned array)) );
 alter table composition add index comp_crea( (cast(creators->'$' as unsigned array)) );
@@ -286,7 +312,11 @@ create table score (
     nratings2               integer         not null default 0,
     rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
-    primary key(id)
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
+    primary key(id),
+    index(maker)
 );
 alter table score add index scomp( (cast(compositions->'$' as unsigned array)) );
 alter table score add index score_crea( (cast(creators->'$' as unsigned array)) );
@@ -300,7 +330,11 @@ create table venue (
     capacity                integer         not null default 0,
     started                 integer         not null default 0,
     ended                   integer         not null default 0,
-    primary key(id)
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
+    primary key(id),
+    index(maker)
 );
 
 -- a past or present performance
@@ -339,7 +373,11 @@ create table performance (
     nratings2               integer         not null default 0,
     rating_sum2             integer         not null default 0,
     nreviews                integer         not null default 0,
-    primary key(id)
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
+    primary key(id),
+    index(maker)
 );
 alter table performance add index perf_comp(composition);
 
@@ -352,7 +390,11 @@ create table concert (
         -- sponsor or organizer
     program                 json,
         -- performances (in order)
-    primary key(id)
+    maker                   integer         not null default 0,
+    create_time             integer         not null default 0,
+    edit_time               integer         not null default 0,
+    primary key(id),
+    index(maker)
 );
 
 -- a collection of performances

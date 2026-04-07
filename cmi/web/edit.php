@@ -22,6 +22,12 @@ require_once('write_ser.inc');
 define('BUTTON_CLASS_ADD', 'btn btn-xs btn-success py-0');
 define('BUTTON_CLASS_REMOVE', 'btn btn-xs btn-warning');
 
+function check_access($item) {
+    if (!can_edit($item)) {
+        error_page("You don't have access to edit this item.");
+    }
+}
+
 function edit_error_page($name, $value) {
     page_head('Input error');
     echo "The input field <b>$name</b> had an illegal value '$value'.
@@ -280,6 +286,7 @@ function empty_concert() {
     $con->id = 0;
     $con->_when = '';
     $con->venue = 0;
+    $con->audience_size = 0;
     $con->organization = 0;
     $con->program = [];
     return $con;
@@ -289,6 +296,7 @@ function concert_form($id) {
     if ($id) {
         $con = DB_concert::lookup_id($id);
         if (!$con) error_page("No concert: $id\n");
+        check_access($con);
         $con->program = json_decode($con->program);
     } else {
         $con = empty_concert();
@@ -319,7 +327,8 @@ function concert_form($id) {
         table_header('Name', 'Role', 'Remove');
         foreach ($roles as $role_id) {
             $prole = DB_person_role::lookup_id($role_id);
-            [$name, $role] = person_role_array($prole);
+            $name = person_id_to_name($prole->person);
+            $role = role_str($prole);
             table_row(
                 $name,
                 $role,
@@ -372,8 +381,9 @@ function concert_form($id) {
     } else {
         form_input_text2('Date', 'when', '', 'YYYY-MM-DD');
     }
+    form_input_text('Audience size', 'audience_size', dash($con->audience_size));
     form_select('Sponsoring organization', 'organization', organization_options(), $con->organization);
-    form_submit($id?'Update concert':'Add concert');
+    form_submit2($id?'Update concert':'Add concert');
     form_end();
 
     page_tail();
@@ -383,6 +393,7 @@ function concert_action($id) {
     if ($id) {
         $con = DB_concert::lookup_id($id);
         if (!$con) error_page("No concert: $id\n");
+        check_access($con);
         $con->program = json_decode($con->program);
     } else {
         $con = empty_concert();
@@ -506,6 +517,9 @@ function concert_action($id) {
     }
 
     $venue = get_int('venue');
+    if (!$venue) {
+        error_page('You must specify a venue.');
+    }
     $when = get_str('when', true);
     if ($when) {
         $when = DB::date_num_parse($when);
@@ -514,21 +528,27 @@ function concert_action($id) {
         error_page('You must specify a date.');
     }
     $organization = get_int('organization');
+    $audience_size = get_int('audience_size');
 
     if ($id) {
         $c = DB_concert::lookup_id($id);
         if (!$c) error_page("No concert $id");
         $q = sprintf(
-            "_when=%d, venue=%d, organization=%d, program='%s'",
+            "_when=%d, venue=%d, organization=%d, program='%s', audience_size=%d, edit_time=%d",
             $when, $venue, $organization,
-            json_encode($con->program)
+            json_encode($con->program),
+            $audience_size,
+            time()
         );
         $c->update($q);
     } else {
         $q = sprintf(
-            "(_when, venue, organization, program) values (%d, %d, %d, '%s')",
+            "(_when, venue, organization, program, audience_size, maker, create_time) values (%d, %d, %d, '%s', %d, %d, %d)",
             $when, $venue, $organization,
-            json_encode($con->program)
+            json_encode($con->program),
+            $audience_size,
+            USER_ID,
+            time()
         );
         $id = DB_concert::insert($q);
 
@@ -554,6 +574,7 @@ function location_form($id) {
         if (!$loc) {
             error_page("No location: $id\n");
         }
+        check_access($loc);
     }
     page_head($loc?'Edit location':'Add location');
     form_start('edit.php', 'get');
@@ -569,7 +590,7 @@ function location_form($id) {
     form_select('Parent', 'parent', location_options(),
         $loc?$loc->parent:null
     );
-    form_submit($loc?'Update':'Add');
+    form_submit2($loc?'Update':'Add');
     form_end();
     page_tail();
 }
@@ -584,10 +605,12 @@ function location_action($id) {
         if (!$loc) {
             error_page("No location: $id\n");
         }
-        $q = sprintf("name='%s', type=%d, parent=%d",
+        check_access($loc);
+        $q = sprintf("name='%s', type=%d, parent=%d, edit_time=%d",
             DB::escape($name),
             $loc_type,
-            get_int('parent')
+            get_int('parent'),
+            time()
         );
         $ret = $loc->update($q);
         if ($ret) {
@@ -597,10 +620,12 @@ function location_action($id) {
             error_page('Update failed');
         }
     } else {
-        $q = sprintf("(name, type, parent) values ('%s', %d, %d)",
+        $q = sprintf("(name, type, parent, maker, create_time) values ('%s', %d, %d, %d, %d)",
             DB::escape($name),
             $loc_type,
-            get_int('parent')
+            get_int('parent'),
+            USER_ID,
+            time()
         );
         $ret = DB_location::insert($q);
         if ($ret) {
@@ -634,12 +659,13 @@ function person_form($id) {
     if ($id) {
         $p = DB_person::lookup_id($id);
         if (!$p) die("No person $id");
+        check_access($p);
         $p->locations = $p->locations?json_decode($p->locations):[];
         $p->ethnicity = $p->ethnicity?json_decode($p->ethnicity):[];
-        select2_head("Edit person");
+        page_head_select2("Edit person");
     } else {
         $p = empty_person();
-        select2_head("Add person");
+        page_head_select2("Add person");
     }
     form_start('edit.php');
     form_input_hidden('type', PERSON);
@@ -657,10 +683,10 @@ function person_form($id) {
         $p->died?DB::date_num_to_str($p->died):'YYYY-MM-DD'
     );
     form_select('Death place', 'death_place', location_options(), $p->death_place);
-    select2_multi('Locations', 'locations', location_options(), $p->locations);
+    form_select2_multi('Locations', 'locations', location_options(), $p->locations);
     form_select('Sex', 'sex', sex_options(), $p->sex);
-    select2_multi('Race/Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
-    form_submit($id?'Update':'Add');
+    form_select2_multi('Race/Ethnicity', 'ethnicity', ethnicity_options(), $p->ethnicity);
+    form_submit2($id?'Update':'Add');
     form_end();
     page_tail();
 }
@@ -681,21 +707,31 @@ function person_action($id) {
     if ($id) {
         $p = DB_person::lookup_id($id);
         if (!$p) error_page("No person $id");
+        check_access($p);
         $q = sprintf(
-            "first_name='%s', last_name='%s', born=%d, birth_place=%d, died=%d, death_place=%d, locations='%s', sex=%d, ethnicity='%s'",
+            "first_name='%s', last_name='%s', born=%d, birth_place=%d, died=%d, death_place=%d, locations='%s', sex=%d, ethnicity='%s', edit_time=%d",
             DB::escape($first_name),
             DB::escape($last_name),
-            $born, $birth_place, $died, $death_place,
-            json_encode($locations), $sex, json_encode($ethnicity)
+            $born, $birth_place,
+            $died, $death_place,
+            json_encode($locations),
+            $sex,
+            json_encode($ethnicity),
+            time()
         );
         $p->update($q);
     } else {
         $id = DB_person::insert(
-            sprintf("(first_name, last_name, born, birth_place, died, death_place, locations, sex, ethnicity) values ('%s', '%s', %d, %d, %d, %d, '%s', %d, '%s')",
+            sprintf("(first_name, last_name, born, birth_place, died, death_place, locations, sex, ethnicity, maker, create_time) values ('%s', '%s', %d, %d, %d, %d, '%s', %d, '%s', %d, %d)",
                 DB::escape($first_name),
                 DB::escape($last_name),
-                $born, $birth_place, $died, $death_place,
-                json_encode($locations), $sex, json_encode($ethnicity)
+                $born, $birth_place,
+                $died, $death_place,
+                json_encode($locations),
+                $sex,
+                json_encode($ethnicity),
+                USER_ID,
+                time()
             )
         );
     }
@@ -722,6 +758,7 @@ function empty_ensemble() {
 function ensemble_form($id) {
     if ($id) {
         $ens = DB_ensemble::lookup_id($id);
+        check_access($ens);
     } else {
         $ens = empty_ensemble();
     }
@@ -746,7 +783,7 @@ function ensemble_form($id) {
     form_input_text2(
         'Ended', 'ended', DB::date_num_to_str($ens->ended), 'YYYY-MM-DD'
     );
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -760,15 +797,29 @@ function ensemble_action($id) {
     $location = get_int('location');
     if ($id) {
         $ens = DB_ensemble::lookup_id($id);
+        check_access($ens);
         $q = sprintf(
-            "name='%s', alternate_names='%s', type=%d, started=%d, ended=%d, location=%d",
-            DB::escape($name), DB::escape($alt_names), $type, $started, $ended, $location
+            "name='%s', alternate_names='%s', type=%d, started=%d, ended=%d, location=%d, edit_time=%d",
+            DB::escape($name),
+            DB::escape($alt_names),
+            $type,
+            $started,
+            $ended,
+            $location,
+            time()
         );
         $ens->update($q);
     } else {
         $q = sprintf(
-            "(name, alternate_names, type, started, ended, location) values ('%s', '%s', %d, %d, %d, %d)",
-            DB::escape($name), DB::escape($alt_names), $type, $started, $ended, $location
+            "(name, alternate_names, type, started, ended, location, maker, create_time) values ('%s', '%s', %d, %d, %d, %d, %d, %d)",
+            DB::escape($name),
+            DB::escape($alt_names),
+            $type,
+            $started,
+            $ended,
+            $location,
+            USER_ID,
+            time()
         );
         $id = DB_ensemble::insert($q);
     }
@@ -794,7 +845,7 @@ function person_role_form() {
         'Instrument<br><small>If performer</small>',
         'instrument', instrument_options(true), 0
     );
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -819,6 +870,7 @@ function venue_form($id) {
     $ven = null;
     if ($id) {
         $ven = DB_venue::lookup($id);
+        check_access($ven);
     }
     page_head($ven?'Edit venue':'Add venue');
     form_start('edit.php', 'get');
@@ -832,7 +884,7 @@ function venue_form($id) {
         'Location', 'location', location_options(), $ven?$ven->location:null
     );
     form_input_text('Capacity', 'capacity', $ven?$ven->capacity:null);
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -843,14 +895,19 @@ function venue_action($id) {
     $capacity = get_int('capacity');
     if ($id) {
         $ven = DB_venue::lookup_id($id);
-        $q = sprintf("name='%s', location=%d, capacity=%d",
-            DB::escape($name), $location, $capacity
+        check_access($ven);
+        $q = sprintf("name='%s', location=%d, capacity=%d, edit_time=%d",
+            DB::escape($name), $location, $capacity, time()
         );
         $ven->update($q);
     } else {
         $id = DB_venue::insert(
-            sprintf("(name, location, capacity) values ('%s', %d, %d)",
-                DB::escape($name), $location, $capacity
+            sprintf("(name, location, capacity, maker, create_time) values ('%s', %d, %d, %d, %d)",
+                DB::escape($name),
+                $location,
+                $capacity,
+                USER_ID,
+                time()
             )
         );
     }
@@ -865,6 +922,7 @@ function organization_form($id) {
     $org = null;
     if ($id) {
         $org = DB_organization::lookup_id($id);
+        check_access($org);
     }
     page_head($org?'Edit organization':'Add organization');
     form_start('edit.php', 'get');
@@ -881,7 +939,7 @@ function organization_form($id) {
         $org?$org->location:null
     );
     form_input_text('URL', 'url', $org?$org->url:'');
-    form_submit('OK');
+    form_submit2('OK');
     form_end();
     page_tail();
 }
@@ -893,14 +951,21 @@ function organization_action($id) {
     $url = get_str('url', true);
     if ($id) {
         $org = DB_organization::lookup_id($id);
-        $q = sprintf("name='%s', location=%d, type=%d, url='%s'",
-            DB::escape($name), $location, $type, DB::escape($url)
+        check_access($org);
+        $q = sprintf(
+            "name='%s', location=%d, type=%d, url='%s', edit_time=%d",
+            DB::escape($name), $location, $type, DB::escape($url), time()
         );
         $org->update($q);
     } else {
         $id = DB_organization::insert(
-            sprintf("(name, type, location, url) values ('%s', %d, %d, '%s')",
-                DB::escape($name), $type, $location, DB::escape($url)
+            sprintf("(name, type, location, url, maker, create_time) values ('%s', %d, %d, '%s', %d, %d)",
+                DB::escape($name),
+                $type,
+                $location,
+                DB::escape($url),
+                USER_ID,
+                time()
             )
         );
     }
@@ -954,6 +1019,7 @@ function composition_form($id) {
 
     if ($id) {
         $comp = DB_composition::lookup_id($id);
+        check_access($comp);
         if ($comp->parent) {
             $parent_comp = DB_composition::lookup_id($comp->parent);
             $is_section = true;
@@ -1003,7 +1069,7 @@ function composition_form($id) {
     } else {
         $x = 'composition';
     }
-    select2_head($id?"Edit $x":"Add $x");
+    page_head_select2($id?"Edit $x":"Add $x");
     
     form_start('edit.php', 'get');
     form_input_hidden('type', COMPOSITION);
@@ -1014,7 +1080,7 @@ function composition_form($id) {
     }
     if (!$is_section && !$is_arrangement) {
         form_input_text('Opus', 'opus', $comp?$comp->opus_catalogue:'');
-        select2_multi(
+        form_select2_multi(
             'Composition types<br><small>You can choose > 1</small>',
             'comp_types', comp_type_options(),
             $comp->comp_types
@@ -1027,7 +1093,7 @@ function composition_form($id) {
         // creators
         form_row_start('Creators');
         if ($comp->creators) {
-            start_table('', 'width:50%');
+            start_table('table-striped');
             table_header('Name', 'Role', 'Remove');
             foreach ($comp->creators as $prole_id) {
                 $prole = DB_person_role::lookup_id($prole_id);
@@ -1040,7 +1106,7 @@ function composition_form($id) {
             }
             end_table();
         } else {
-            echo dash('');
+            echo dash();
         }
         echo '
             <p><p>
@@ -1053,7 +1119,7 @@ function composition_form($id) {
         //
         form_row_start('Instrumentations');
         if ($comp->instrument_combos) {
-            start_table('', 'width:50%');
+            start_table('table-striped');
             table_header('Name', 'Remove');
             foreach ($comp->instrument_combos as $icid) {
                 $ic = DB_instrument_combo::lookup_id($icid);
@@ -1109,11 +1175,11 @@ function composition_form($id) {
     form_input_text('# measures', 'n_bars', blank($comp->n_bars));
 
     if ($is_section) {
-        form_submit($id?'Update section':'Add section');
+        form_submit2($id?'Update section':'Add section');
     } else if ($is_arrangement) {
-        form_submit($id?'Update arrangement':'Add arrangement');
+        form_submit2($id?'Update arrangement':'Add arrangement');
     } else {
-        form_submit($id?'Update composition':'Add composition');
+        form_submit2($id?'Update composition':'Add composition');
     }
     form_end();
 
@@ -1126,6 +1192,7 @@ function composition_action($id) {
 
     if ($id) {
         $comp = DB_composition::lookup_id($id);
+        check_access($comp);
         $comp->creators = json_decode2($comp->creators);
         $comp->instrument_combos = json_decode2($comp->instrument_combos);
     } else {
@@ -1237,8 +1304,9 @@ function composition_action($id) {
     if ($id) {
         $c = DB_composition::lookup_id($id);
         if (!$c) error_page("No composition $id");
+        check_access($c);
         $q = sprintf(
-            "long_title='%s', title='%s', opus_catalogue='%s', composed=%d, published=%d, dedication='%s', time_signatures='%s', tempo_markings='%s', metronome_markings='%s', _keys='%s', avg_duration_sec=%d, n_bars=%d, creators='%s', instrument_combos='%s', comp_types='%s'",
+            "long_title='%s', title='%s', opus_catalogue='%s', composed=%d, published=%d, dedication='%s', time_signatures='%s', tempo_markings='%s', metronome_markings='%s', _keys='%s', avg_duration_sec=%d, n_bars=%d, creators='%s', instrument_combos='%s', comp_types='%s', edit_time=%d",
             DB::escape($long_title),
             DB::escape($title),
             DB::escape($opus),
@@ -1253,14 +1321,15 @@ function composition_action($id) {
             $n_bars,
             json_encode($comp->creators, JSON_NUMERIC_CHECK),
             json_encode($comp->instrument_combos, JSON_NUMERIC_CHECK),
-            json_encode($comp_types, JSON_NUMERIC_CHECK)
+            json_encode($comp_types, JSON_NUMERIC_CHECK),
+            time()
         );
         //echo $q; exit;
         $c->update($q);
     } else {
         $q = sprintf(
-            "(long_title, title, opus_catalogue, composed, published, dedication, time_signatures, tempo_markings, metronome_markings, _keys, avg_duration_sec, n_bars, creators, parent, arrangement_of, instrument_combos, comp_types)
-                values('%s', '%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, '%s', '%s')
+            "(long_title, title, opus_catalogue, composed, published, dedication, time_signatures, tempo_markings, metronome_markings, _keys, avg_duration_sec, n_bars, creators, parent, arrangement_of, instrument_combos, comp_types, maker, create_time)
+                values('%s', '%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, '%s', '%s', %d, %d)
             ",
             DB::escape($long_title),
             DB::escape($title),
@@ -1278,7 +1347,9 @@ function composition_action($id) {
             $comp->parent,
             $comp->arrangement_of,
             json_encode($comp->instrument_combos),
-            json_encode($comp_types)
+            json_encode($comp_types),
+            USER_ID,
+            time()
         );
         $id = DB_composition::insert($q);
 
@@ -1361,7 +1432,7 @@ function inst_combo_form() {
     table_row('', '<input type=submit value="Add instrument">');
     echo '</form>';
     end_table();
-    show_button(
+    echo button_link(
         sprintf('edit.php?type=%d&counts=%s&ids=%s&submit=1',
             INST_COMBO,
             urlencode(json_encode($counts)), urlencode(json_encode($ids))
@@ -1411,6 +1482,7 @@ function empty_score() {
     $score = new StdClass;
     $score->id = 0;
     $score->compositions = [];
+    $score->creators = [];
     $score->files = [];
     $score->publisher = 0;
     $score->license = 0;
@@ -1428,6 +1500,7 @@ function score_form($id) {
     $score = null;
     if ($id) {
         $score = DB_score::lookup_id($id);
+        check_access($score);
         $score->compositions = json_decode($score->compositions);
         $score->files = json_decode($score->files);
         $score->languages = json_decode2($score->languages);
@@ -1442,7 +1515,7 @@ function score_form($id) {
 
     // show page
 
-    select2_head($id?'Edit score':'Add score');
+    page_head_select2($id?'Edit score':'Add score');
 
     form_start('edit.php');
     form_input_hidden('type', SCORE);
@@ -1451,7 +1524,7 @@ function score_form($id) {
 
     form_row_start('Compositions');
     if ($score->compositions) {
-        start_table('', 'width:50%');
+        start_table('table-striped');
         table_header('Name', 'Remove');
         foreach ($score->compositions as $cid) {
             $comp = DB_composition::lookup_id($cid);
@@ -1474,7 +1547,7 @@ function score_form($id) {
 
     form_row_start('Creators');
     if ($score->creators) {
-        start_table('', 'width:50%');
+        start_table('table-striped');
         table_header('Name', 'Role', 'Remove');
         foreach ($score->creators as $prole_id) {
             $prole = DB_person_role::lookup_id($prole_id);
@@ -1498,13 +1571,14 @@ function score_form($id) {
 
     form_row_start('Files');
     if ($score->files) {
-        start_table('', 'width:50%');
-        table_header('Description', 'Name', 'Remove');
+        start_table('table-striped');
+        table_header('Description', 'Filename', 'Pages', 'Remove');
         $i = 0;
         foreach ($score->files as $file) {
             table_row(
                 $file->desc,
                 $file->name,
+                dash($file->pages),
                 "<input type=checkbox name=remove_file_$i>"
             );
             $i++;
@@ -1516,7 +1590,7 @@ function score_form($id) {
     echo '
         <p><p>
         Add file:
-        <input name=add_file_name placeholder="File name">
+        <input name=add_file_name placeholder="Filename">
         <input name=add_file_desc placeholder="Description">
         <input name=add_file_pages placeholder="# pages">
     ';
@@ -1524,7 +1598,7 @@ function score_form($id) {
 
     form_select('Publisher', 'publisher', organization_options(), $score->publisher);
     form_select('License', 'license', license_options(), $score->license);
-    select2_multi('Languages', 'languages', language_options(), $score->languages);
+    form_select2_multi('Languages', 'languages', language_options(), $score->languages);
     form_input_text2(
         'Publish date', 'publish_date',
         DB::date_num_to_str($score->publish_date), 'YYYY-MM-DD'
@@ -1537,7 +1611,7 @@ function score_form($id) {
         ['is_vocal', 'Vocal score', $score->is_vocal]
     ];
     form_checkboxes('Attributes', $x);
-    form_submit($id?'Update score':'Add score');
+    form_submit2($id?'Update score':'Add score');
     form_end();
     page_tail();
 }
@@ -1546,6 +1620,7 @@ function score_action($id) {
     if ($id) {
         $score = DB_score::lookup_id($id);
         if (!$score) error_page("No score $id");
+        check_access($score);
         $score->compositions = json_decode($score->compositions);
         $score->files = json_decode($score->files);
     } else {
@@ -1628,7 +1703,7 @@ function score_action($id) {
 
     if ($id) {
         $q = sprintf(
-            "compositions='%s', files='%s', publisher=%d, license=%d, languages='%s', publish_date=%d, edition_number='%s', image_type='%s', is_parts=%d, is_selections=%d, is_vocal=%d",
+            "compositions='%s', files='%s', publisher=%d, license=%d, languages='%s', publish_date=%d, edition_number='%s', image_type='%s', is_parts=%d, is_selections=%d, is_vocal=%d, edit_time=%d",
             json_encode($score->compositions, JSON_NUMERIC_CHECK),
             json_encode($score->files, JSON_NUMERIC_CHECK),
             $publisher,
@@ -1639,12 +1714,13 @@ function score_action($id) {
             DB::escape($image_type),
             $is_parts,
             $is_selections,
-            $is_vocal
+            $is_vocal,
+            time()
         );
         $score->update($q);
     } else {
         $q = sprintf(
-            "(compositions, files, publisher, license, languages, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal) values ('%s', '%s', %d, %d, '%s', %d, '%s', '%s', %d, %d, %d)",
+            "(compositions, files, publisher, license, languages, publish_date, edition_number, image_type, is_parts, is_selections, is_vocal, maker, create_time) values ('%s', '%s', %d, %d, '%s', %d, '%s', '%s', %d, %d, %d, %d, %d)",
             json_encode($score->compositions, JSON_NUMERIC_CHECK),
             json_encode($score->files, JSON_NUMERIC_CHECK),
             $publisher,
@@ -1655,7 +1731,9 @@ function score_action($id) {
             DB::escape($image_type),
             $is_parts,
             $is_selections,
-            $is_vocal
+            $is_vocal,
+            USER_ID,
+            time()
         );
         $id = DB_score::insert($q);
     }
@@ -1689,6 +1767,7 @@ function empty_perf() {
 function perf_form($id) {
     if ($id) {
         $perf = DB_performance::lookup_id($id);
+        check_access($perf);
         $perf->performers = json_decode2($perf->performers);
         $perf->files = json_decode2($perf->files);
     } else {
@@ -1712,7 +1791,8 @@ function perf_form($id) {
         table_header('Name', 'Role', 'Remove');
         foreach ($perf->performers as $pr_id) {
             $prole = DB_person_role::lookup_id($pr_id);
-            [$name, $role] = person_role_array($prole);
+            $name = person_id_to_name($prole->person);
+            $role = role_str($prole);
             table_row(
                 $name, $role,
                 sprintf('<input type=checkbox name=remove_role_%d', $pr_id)
@@ -1752,20 +1832,21 @@ function perf_form($id) {
     }
     echo '<p>Add file:
         <input name=add_file_desc placeholder="Description">
-        <input name=add_file_name placeholder="Name">
+        <input name=add_file_name placeholder="Filename">
     ';
     form_row_end();
 
     form_input_text('Instrumentation', 'instrumentation', $perf->instrumentation);
     form_checkboxes('Synthesized', [['is_synthesized', '', $perf->is_synthesized]]);
     form_input_text('Section', 'section', $perf->section);
-    form_submit($id?'Update recording':'Add recording');
+    form_submit2($id?'Update recording':'Add recording');
     page_tail();
 }
 
 function perf_action($id) {
     if ($id) {
         $perf = DB_performance::lookup_id($id);
+        check_access($perf);
         $perf->performers = json_decode($perf->performers);
         $perf->files = json_decode($perf->files);
     } else {
@@ -1824,25 +1905,28 @@ function perf_action($id) {
 
     if ($id) {
         $q = sprintf(
-            "performers='%s', ensemble=%d, files='%s', is_synthesized=%d, section='%s', instrumentation='%s'",
+            "performers='%s', ensemble=%d, files='%s', is_synthesized=%d, section='%s', instrumentation='%s', edit_time=%d",
             json_encode($perf->performers, JSON_NUMERIC_CHECK),
             $perf->ensemble,
             json_encode($perf->files, JSON_NUMERIC_CHECK),
             get_str('is_synthesized', true)?1:0,
             DB::escape(get_str('section')),
-            DB::escape(get_str('instrumentation'))
+            DB::escape(get_str('instrumentation')),
+            time()
         );
         $perf->update($q);
     } else {
         $q = sprintf(
-            "(composition, performers, ensemble, files, is_synthesized, section, instrumentation) values (%d, '%s', %d, '%s', %d, '%s', '%s')",
+            "(composition, performers, ensemble, files, is_synthesized, section, instrumentation, maker, create_time) values (%d, '%s', %d, '%s', %d, '%s', '%s', %d, %d)",
             $perf->composition,
             json_encode($perf->performers, JSON_NUMERIC_CHECK),
             $perf->ensemble,
             json_encode($perf->files, JSON_NUMERIC_CHECK),
             get_str('is_synthesized', true)?1:0,
             DB::escape(get_str('section')),
-            DB::escape(get_str('instrumentation'))
+            DB::escape(get_str('instrumentation')),
+            USER_ID,
+            time()
         );
         $id = DB_performance::insert($q);
     }
@@ -1850,6 +1934,9 @@ function perf_action($id) {
         sprintf('Location: item.php?type=%d&id=%d', PERFORMANCE, $id)
     );
 }
+
+$user = get_logged_in_user();
+define('USER_ID', $user->id);
 
 $type = get_str('type', true);
 $submit = get_str('submit', true);

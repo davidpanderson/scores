@@ -63,39 +63,41 @@ function top() {
 function left(){
     global $user;
     panel(
-        'About',
+        'About CMI',
         function() {
             echo "
                 <p>
-                Classical Music Index (CMI)
-                is a database of classical music information.
+                Classical Music Index (CMI) is a searchable and editable
+                database of classical music information.
                 <ul>
-                <li> CMI can express
-                    <a href=db_info.php>complex and detailed information</a>:
+                <li> It has
+                    <a href=db_info.php>detailed information</a>:
                     movements, arrangements, instrumentations,
-                    creator roles, and so on.
-                <li> CMI allows complex queries:
+                    creator roles, concerts, and so on.
+                <li> It supports complex queries:
                     for example, you can find string quartets
-                    by female French composers.
-                <li> CMI is
-                    <a href=editing.php>editable</a>:
-                    composers can add entries about their compositions,
-                    and about themselves.
+                    by composed by French women,
+                    or piano music by North Africans.
+                <li>
+                    You can <a href=editing.php>add information</a>
+                    about your compositions, your recordings, or yourself.
                     Volunteer editors can fix or add details.
-                <li> CMI supports
+                <li> It supports
                     <a href=https://continuum-hypothesis.com/music_discover.php>music discovery</a>.
-                    You can rate things,
-                    and you can find music you'll like
+                    You can rate things, and you can find music you'll like
                     based on other people's ratings.
+                <li> It links to scores and recordings on IMSLP.
                 </ul>
             ";
             $user = get_logged_in_user(false);
             if (!$user) {
-                echo 'To rate things, you must ';
-                show_button('cmi_signup.php', 'Create an account');
+                echo 'To rate or create items, you must first ';
+                echo button_link('cmi_signup.php', 'create an account');
                 echo '<p>';
             }
-            //echo '<hr> ';
+            echo "
+            <h4>Search for:</h4>
+            ";
             start_table();
             show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings');
             show_type('People', 'person', 'Composers, performers, arrangers, etc.');
@@ -108,9 +110,23 @@ function left(){
             end_table();
             echo '
                 <p>
-                The CMI code is open source and is
-                <a href=https://github.com/davidpanderson/scores/tree/master/cmi>on Github</a>.
-                CMI includes data from <a href=https://imslp.org>IMSLP</a>.
+                CMI is non-profit, created and operated by volunteers.
+                Its code is open-source and is available on
+                <a href=https://github.com/davidpanderson/scores/tree/master/cmi>Github</a>.
+                <p>
+                CMI is under development.
+                The database may be reset at any time,
+                in which case your account and items you\'ve added will be lost.
+                Please <a href=contact.php>contact us</a>
+                if this is a problem.
+                <p>
+                Features based on ratings are simulated
+                until we get enough ratings.
+                <p>
+                CMI helps performers discover compositions.
+                Its companion project,
+                <a href=https://music-match.org>Music Match</a>,
+                helps performers and composers discover each other.
             ';
         }
     );
@@ -147,7 +163,7 @@ function right() {
 
 page_head(null, null, true);
 
-grid('top', 'left', 'right');
+grid('top', 'left', 'right', 7);
 
 page_tail(false, "", true);
 

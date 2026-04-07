@@ -17,7 +17,7 @@ define('DIFFICULTY_TERMS', [
     'extremely difficult'
 ]);
 
-define ('QUALITY_TERMS', [
+define ('COMPOSITION_TERMS', [
     'terrible',
     'not good',
     'mediocre',
@@ -31,8 +31,21 @@ define ('QUALITY_TERMS', [
     'excellent',
 ]);
 
-function rating_buttons($is_diff, $sel, $action, $id) {
-    $terms = $is_diff?DIFFICULTY_TERMS:QUALITY_TERMS;
+define ('QUALITY_TERMS', [
+    'terrible',
+    'bad',
+    'mediocre',
+    'barely OK',
+    'decent',
+    'average',
+    'above average',
+    'fairly good',
+    'good',
+    'very good',
+    'excellent',
+]);
+
+function rating_buttons($terms, $sel, $action, $id) {
     $x = '<nobr>';
     for ($i=0; $i<=10; $i++) {
         if ($i === $sel) {
@@ -51,19 +64,20 @@ function rating_buttons($is_diff, $sel, $action, $id) {
     return $x.'</nobr>';
 }
 
-function rating_bar($frac) {
-    if ($frac == NO_RATING) return dash('');
-    $width = 240;   // 10*24
+function rating_bar($val, $width=240) {
+    if ($val == NO_RATING) return dash('');
+    $frac = $val/10;
     $n = (int)$width*$frac;
     return sprintf('
-        <table width=264>
+        <table width=%d>
             <tr>
                 <td width=%d align=center bgcolor=palegreen>%.1f</td>
                 <td width=%d bgcolor=lightgray></td>
             </tr>
         </table>
         ',
-        24+$n, $frac*10,
+        $width*1.1,
+        ($width/10)+$n, $frac*10,
         $width - $n
     );
 }
@@ -88,8 +102,8 @@ function avg_rating($type, $target) {
         }
     }
     return [
-        $qn?.1*$qsum/$qn:NO_RATING,
-        $dn?.1*$dsum/$dn:NO_RATING
+        $qn?$qsum/$qn:NO_RATING,
+        $dn?$dsum/$dn:NO_RATING
     ];
 }
 
@@ -121,13 +135,13 @@ function show_reviews($type, $target, $user, $review) {
         $url = "rate.php?action=rev_form&type=$type&target=$target";
         if ($review) {
             row2(
-                sprintf('Your review<br>%s',
-                    button_text($url, 'edit', 'Edit your review', ' btn-success btn-xs')
+                sprintf('<p>Your review<p>%s',
+                    button_link($url, 'edit', 'Edit your review', ' btn-success btn-xs')
                 ),
                 more_review($review)
             );
         } else {
-            row2('', button_text($url, 'Write a review'));
+            row2('', button_link($url, 'Write a review'));
         }
     }
     $revs = DB_rating::enum(
@@ -135,13 +149,16 @@ function show_reviews($type, $target, $user, $review) {
     );
     foreach ($revs as $rev) {
         if ($user && $user->id == $rev->user) continue;
-        $u = BOINCUser::lookup_id($rev->user);
+        $u = BoincUser::lookup_id($rev->user);
         row2(
-            sprintf('Review by <a href=user.php?id=%d>%s</a><br><small>%s</small>',
+            sprintf('Review by <a href=user.php?userid=%d>%s</a><br><small>%s</small>',
                 $rev->user, $u->name,
                 date_str($rev->created)
             ),
-            more_review($rev->review)
+            sprintf('%s%s',
+                $rev->attr1==NO_RATING?'':"(Rating: $rev->attr1)<br>",
+                more_review($rev->review)
+            )
         );
     }
     end_table();
@@ -156,19 +173,28 @@ function comp_right($arg) {
         [$rq, $rd, $review] = get_users_ratings($user, COMPOSITION, $c->id);
     }
     echo '<b>Composition quality</b>';
+    $x = 'composition';
+    if ($c->arrangement_of) $x = 'arrangement';
+    if ($c->parent) $x = 'section';
+    echo "<br><small>How much do you like this $x?</small>";
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'rate_comp_1', $c->id)
+            rating_buttons(COMPOSITION_TERMS, $rq, 'rate_comp_1', $c->id)
         );
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(COMPOSITION, $c->id);
     row2('Average rating', rating_bar($qavg));
     end_table();
     echo '<b>Technical difficulty</b>';
+    echo "<br><small>If you play this $x: how difficult is it for you?</small>";
     start_table();
     if ($user) {
-        row2('Your rating', rating_buttons(true, $rd, 'rate_comp_2', $c->id));
+        row2('Your rating', rating_buttons(DIFFICULTY_TERMS, $rd, 'rate_comp_2', $c->id));
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     row2('Average rating', rating_bar($davg));
     end_table();
@@ -188,7 +214,7 @@ function comp_right($arg) {
 // TODO: use data.  Show only unrated comps
 //
 function show_recommended_comps($c) {
-    $comps = DB_composition::enum("id <> $c->id", 'order by rand() limit 3');
+    $comps = DB_composition::enum('', 'limit 3');
     echo '<ul>';
     foreach ($comps as $comp) {
         show_recommended_comp($comp);
@@ -210,11 +236,13 @@ function person_right($p) {
     foreach ($prs as $pr) {
         $role = DB_role::lookup_id($pr->role);
         $pers_as_role = "$p->first_name $p->last_name as $role->name";
-        echo "<b>$pers_as_role</b>";
         start_table();
+        row_heading($pers_as_role);
         if ($user) {
             [$rq, $rd, $review] = get_users_ratings($user, PERSON_ROLE, $pr->id);
-            row2('Your rating', rating_buttons(true, $rq, 'rate_pr', $pr->id));
+            row2('Your rating', rating_buttons(QUALITY_TERMS, $rq, 'rate_pr', $pr->id));
+        } else {
+            row2('<a href=login_form.php>Log in</a> to rate', '');
         }
         [$qavg, $davg] = avg_rating(PERSON_ROLE, $pr->id);
         row2('Average rating', rating_bar($qavg));
@@ -229,7 +257,6 @@ function person_right($p) {
             $pers_as_role
         );
         show_recommended_prs($p, $role);
-        echo '<hr>';
     }
 }
 
@@ -238,7 +265,7 @@ function person_right($p) {
 function show_recommended_prs($p, $role) {
     $prs = DB_person_role::enum(
         sprintf('role=%d', $role->id),
-        'order by rand() limit 3'
+        'limit 3'
     );
     echo '<ul>';
     foreach ($prs as $pr) {
@@ -259,8 +286,10 @@ function perf_right($perf) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'rate_perf_1', $perf->id)
+            rating_buttons(QUALITY_TERMS, $rq, 'rate_perf_1', $perf->id)
         );
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(PERFORMANCE, $perf->id);
     row2('Average rating', rating_bar($qavg));
@@ -269,7 +298,9 @@ function perf_right($perf) {
         echo '<b>Audio quality</b>';
         start_table();
         if ($user) {
-            row2('Your rating', rating_buttons(true, $rd, 'rate_perf_2', $perf->id));
+            row2('Your rating', rating_buttons(QUALITY_TERMS, $rd, 'rate_perf_2', $perf->id));
+        } else {
+            row2('<a href=login_form.php>Log in</a> to rate', '');
         }
         row2('Average rating', rating_bar($davg));
         end_table();
@@ -288,7 +319,7 @@ function perf_right($perf) {
 }
 
 function show_recommended_perfs($perf) {
-    $ps = DB_performance::enum('', 'order by rand() limit 3');
+    $ps = DB_performance::enum('', 'limit 3');
     echo '<ul>';
     foreach ($ps as $p) {
         $comp = DB_composition::lookup_id($p->composition);
@@ -308,8 +339,10 @@ function score_right($score) {
     start_table();
     if ($user) {
         row2('Your rating',
-            rating_buttons(false, $rq, 'rate_score_1', $score->id)
+            rating_buttons(QUALITY_TERMS, $rq, 'rate_score_1', $score->id)
         );
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(SCORE, $score->id);
     row2('Average rating', rating_bar($qavg));
@@ -317,7 +350,9 @@ function score_right($score) {
     echo '<b>Scan image quality</b>';
     start_table();
     if ($user) {
-        row2('Your rating', rating_buttons(true, $rd, 'rate_score_2', $score->id));
+        row2('Your rating', rating_buttons(QUALITY_TERMS, $rd, 'rate_score_2', $score->id));
+    } else {
+        row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     row2('Average rating', rating_bar($davg));
     end_table();

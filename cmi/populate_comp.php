@@ -669,7 +669,7 @@ function handle_files($main_comp, $c) {
 }
 
 // make a score record
-
+//
 function make_score($item, $comp_id, $flags, $section) {
     if (!$comp_id) throw new Exception('foo');
     $nfiles = min(count($item->file_names), count($item->file_descs));
