@@ -53,6 +53,17 @@ function json_decode2($s) {
     }
 }
 
+function imslp_image_name_to_url($name) {
+    return "https://imslp.org/wiki/Special:ImagefromIndex/$name";
+    if (substr($name, 0, 5) == 'IMSLP') {
+        $id = (int) substr($name, 5);
+        if ($id) {
+            return "https://imslp.org/wiki/Special:ImagefromIndex/$id";
+        }
+    }
+    return "https://imslp.org/wiki/FILE:$name";
+}
+
 function select2_head($title) {
     $head_extra = '
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -665,6 +676,9 @@ function show_compositions($comps) {
         'Opus',
         'Composed',
         'Instrumentation',
+        'Period/style',
+        'Type',
+        'Listen',
         'Code'
     );
     foreach ($comps as $c) {
@@ -689,12 +703,24 @@ function show_compositions($comps) {
             DB::date_num_to_str($c->composed),
             //comp_types_str($c->comp_types),
             instrument_combos_str($c->instrument_combos),
+            period_id_to_name($c->period),
+            comp_types_str($c->comp_types),
+            listen_link($c),
             copy_button(item_code($c->id, 'composition'))
         );
     }
     end_table();
 }
 
+function listen_link($comp) {
+    if ($comp->audio_file) {
+        return sprintf('<a href=%s><img height=18px src=note.png></a>',
+            imslp_image_name_to_url($comp->audio_file)
+        );
+    } else {
+        return '';
+    }
+}
 // show a set of arrangements as a table.  Used for
 // - composition search with arrangement checked
 // - person_role results where role is arranger
@@ -775,4 +801,54 @@ function button_link($url, $text, $title=null) {
         $url, $title, BUTTON_STYLE, $text
     );
 }
+
+/////////// AUDIO /////////////
+
+function audio_element($id, $file) {
+    return sprintf('<audio id="a%d"><source src="%s"></source></audio>',
+        $id, get_final_url(imslp_image_name_to_url($file))
+    );
+}
+
+function audio_button($id) {
+    $audio = sprintf(
+        ' onclick="play_sound(\'a%d\');" onmouseleave="stop_sound(\'a%d\');" ',
+        $id, $id
+    );
+    return sprintf('&nbsp;<a %s ><img height=24px src=note.png></a>', $audio);
+}
+
+// Javascript for audio on search results
+//
+function enable_audio() {
+echo '
+<script language="javascript" type="text/javascript">
+function play_sound(id) {
+    var audio = document.getElementById(id);
+    audio.currentTime = 0;
+    audio.play();
+}
+
+function stop_sound(id) {
+    var audio = document.getElementById(id);
+    audio.pause();
+}
+</script>
+';
+}
+
+// the following doesn't work for IMSLP media files
+//
+function get_final_url($url) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HEADER, true); // Get headers
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return content
+    curl_exec($ch);
+    $final_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL); // Get the effective URL
+    curl_close($ch);
+    return $final_url;
+}
+
 ?>

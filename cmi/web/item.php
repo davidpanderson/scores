@@ -8,6 +8,9 @@ require_once('cmi.inc');
 require_once('ser.inc');
 require_once('rate.inc');
 
+define('MAIN_WIDTH', 8);
+    // width (out of 12) for left part of page
+
 function person_left($p) {
     start_table();
     row2('First name', $p->first_name);
@@ -67,7 +70,7 @@ function person_item($id) {
     if (!$p) error_page("no person $id\n");
     page_head("$p->first_name $p->last_name");
     copy_to_clipboard_script();
-    grid(null, 'person_left', 'person_right', 7, $p);
+    grid(null, 'person_left', 'person_right', MAIN_WIDTH, $p);
     page_tail();
 }
 
@@ -88,7 +91,7 @@ function composition_item($id) {
     page_head($page_title);
     copy_to_clipboard_script();
     $arg = [$c, $par];
-    grid(null, 'comp_left', 'comp_right', 7, $arg);
+    grid(null, 'comp_left', 'comp_right', MAIN_WIDTH, $arg);
     page_tail();
 }
 
@@ -104,7 +107,6 @@ function comp_left($arg) {
         row2('Arrangement of', composition_str($par));
         row2('Creators', dash(creators_str($c->creators, true)));
         row2('Instrumentation', instrument_combos_str($c->instrument_combos));
-        row2(imslp_logo(), sprintf('<a href=%s>View</a>', imslp_comp_url($par)));
     } else if ($is_section) {
         row2('Section of', composition_str($par));
         row2('Title', $c->title);
@@ -114,7 +116,6 @@ function comp_left($arg) {
         row2('Time signatures', dash($c->time_signatures));
         row2('Average duration (sec)', dash($c->avg_duration_sec));
         row2('Number of measures', dash($c->n_bars));
-        row2(imslp_logo(), sprintf('<a href=%s>View</a>', imslp_comp_url($par)));
     } else {
         row2('Title', $c->title);
         if ($c->alternative_title) {
@@ -190,7 +191,7 @@ function comp_left($arg) {
         }
     }
 
-    if ($is_arrangement) {
+    if ($is_arrangement || $is_section) {
         $arrs = [];
     } else {
         echo "<h3>Arrangements</h3>\n";
@@ -227,120 +228,143 @@ function comp_left($arg) {
         }
     }
 
-    echo "<h3>Scores</h3>\n";
-    $scores = DB_score::enum(
-        sprintf('json_overlaps("[%s]", compositions->\'$\')', $c->id)
-    );
-    if ($scores || $arrs) {
-        start_table('table-striped');
-        table_header('Details', 'Section', 'Type', 'Publisher', 'Date', 'File (click to view)');
-        foreach ($scores as $score) {
-            score_row($score);
-        }
-        foreach ($arrs as $arr) {
-            $scores = DB_score::enum(
-                sprintf('json_overlaps("[%s]", compositions->\'$\')', $arr->id)
-            );
-            foreach ($scores as $score) {
-                if ($arr->ics) {
-                    $s = "Arrangement for $arr->ics";
-                } else {
-                    $s = "Arrangement";
-                }
-                if ($arr->arranger) {
-                    $s .= "<br><nobr>by $arr->arranger</nobr></br>";
-                }
-                score_row($score, $s);
-            }
-        }
-        end_table();
-    } else {
-        echo '<p>(No scores)<p>';
-    }
-    if (can_edit($c)) {
-        echo button_link(
-            sprintf('edit.php?type=%d&comp_id=%d', SCORE, $c->id),
-            'Add score'
-        );
-    }
+    // in the IMSLP data, sections don't have scores or recordings
 
-    echo "<h3>Recordings/Performances</h3>\n";
-    $perfs = DB_performance::enum("composition=$c->id");
-    if ($perfs) {
-        // performances may be recordings (with files)
-        // or concert performances, or both
-        // See which of these we have to decide what columns to show
-        //
-        $have_type = false;
-        $have_section = false;
-        $have_ensemble = false;
-        $have_performers = false;
-        $have_instrumentation = false;
-        $have_concert = false;
-        $have_files = false;
-        foreach ($perfs as $perf) {
-            if ($perf->is_synthesized) $have_type = true;
-            if ($perf->section) $have_section = true;
-            if ($perf->ensemble) $have_ensemble = true;
-            $perf->performers = json_decode2($perf->performers);
-            if ($perf->performers) $have_performers = true;
-            if ($perf->instrumentation) $have_instrumentation = true;
-            if ($perf->concert) $have_concert = true;
-            $perf->files = json_decode2($perf->files);
-            if ($perf->files) $have_files = true;
-        }
-        $x = ['Details'];
-        if ($have_type) $x[] = 'Type';
-        if ($have_section) $x[] = 'Section';
-        if ($have_ensemble) $x[] = 'Ensemble';
-        if ($have_performers) $x[] = 'Performers';
-        if ($have_instrumentation) $x[] = 'Arranged for';
-        if ($have_concert) $x[] = 'Concert';
-        if ($have_files) $x[] = 'Files (click to listen)';
-        start_table('table-striped');
-        row_heading_array($x);
-        foreach ($perfs as $perf) {
-            $x = [
-                sprintf('<a href=item.php?type=%d&id=%d>view</a>',
-                    PERFORMANCE, $perf->id
-                ),
-            ];
-            if ($have_type) {
-                $x[] = $perf->is_synthesized?'Synthesized':'';
+    if (!$is_section) {
+        echo "<h3>Scores</h3>\n";
+        $scores = DB_score::enum(
+            sprintf('json_overlaps("[%s]", compositions->\'$\')', $c->id)
+        );
+        if ($scores || $arrs) {
+            start_table('table-striped');
+            table_header('Details', 'Section', 'Type', 'Publisher', 'Date', 'File (click to view)');
+            foreach ($scores as $score) {
+                score_row($score);
             }
-            if ($have_section) {
-                $x[] = dash($perf->section);
-            }
-            if ($have_ensemble) {
-                $x[] = dash(ensemble_str($perf->ensemble, true));
-            }
-            if ($have_performers) {
-                $x[] = creators_str($perf->performers, true);
-            }
-            if ($have_instrumentation) {
-                $x[] = dash($perf->instrumentation);
-            }
-            if ($have_concert) {
-                $y = '';
-                if ($perf->concert) {
-                    $con = DB_concert::lookup_id($perf->concert);
-                    $y = concert_str($con);
+            foreach ($arrs as $arr) {
+                $scores = DB_score::enum(
+                    sprintf('json_overlaps("[%s]", compositions->\'$\')', $arr->id)
+                );
+                foreach ($scores as $score) {
+                    if ($arr->ics) {
+                        $s = "Arrangement for $arr->ics";
+                    } else {
+                        $s = "Arrangement";
+                    }
+                    if ($arr->arranger) {
+                        $s .= "<br><nobr>by $arr->arranger</nobr></br>";
+                    }
+                    score_row($score, $s);
                 }
-                $x[] = $y;
             }
-            if ($have_files) {
-                $f = [];
-                foreach ($perf->files as $file) {
-                    $f[] = sprintf('<a href="%s">%s</a>',
-                        imslp_image_name_to_url($file->name),
-                        $file->desc
-                    );
-                }
-                $x[] = implode('<br>', $f);
-            }
-            row_array($x);
+            end_table();
+        } else {
+            echo '<p>(No scores)<p>';
         }
-        end_table();
+        if (can_edit($c)) {
+            echo button_link(
+                sprintf('edit.php?type=%d&comp_id=%d', SCORE, $c->id),
+                'Add score'
+            );
+        }
+
+        enable_audio();
+
+        echo "<h3>Recordings/Performances</h3>\n";
+        $perfs = DB_performance::enum("composition=$c->id");
+        if ($perfs) {
+            // performances may be recordings (with files)
+            // or concert performances, or both
+            // See which of these we have to decide what columns to show
+            //
+            $have_type = false;
+            $have_section = false;
+            $have_ensemble = false;
+            $have_performers = false;
+            $have_instrumentation = false;
+            $have_concert = false;
+            $have_files = false;
+            foreach ($perfs as $perf) {
+                if ($perf->is_synthesized) $have_type = true;
+                if ($perf->section) $have_section = true;
+                if ($perf->ensemble) $have_ensemble = true;
+                $perf->performers = json_decode2($perf->performers);
+                if ($perf->performers) $have_performers = true;
+                if ($perf->instrumentation) $have_instrumentation = true;
+                if ($perf->concert) $have_concert = true;
+                $perf->files = json_decode2($perf->files);
+                if ($perf->files) $have_files = true;
+            }
+            $x = ['Details'];
+            if ($have_type) $x[] = 'Type';
+            if ($have_section) $x[] = 'Section';
+            if ($have_ensemble) $x[] = 'Ensemble';
+            if ($have_performers) $x[] = 'Performers';
+            if ($have_instrumentation) $x[] = 'Arranged for';
+            if ($have_concert) $x[] = 'Concert';
+            if ($have_files) $x[] = 'Files (click to listen)';
+            start_table('table-striped');
+            row_heading_array($x);
+            foreach ($perfs as $perf) {
+                $x = [
+                    sprintf('<a href=item.php?type=%d&id=%d>view</a>',
+                        PERFORMANCE, $perf->id
+                    ),
+                ];
+                if ($have_type) {
+                    if ($perf->is_synthesized) {
+                        if ($perf->files) {
+                            $f = $perf->files[0];
+                            if (str_ends_with(strtolower($f->name), '.mid')) {
+                                $x[] = 'MIDI';
+                            } else {
+                                $x[] = 'Synthesized';
+                            }
+                        } else {
+                            $x[] = 'Synthesized';
+                        }
+                    } else {
+                        $x[] = '';
+                    }
+                }
+                if ($have_section) {
+                    $x[] = dash($perf->section);
+                }
+                if ($have_ensemble) {
+                    $x[] = dash(ensemble_str($perf->ensemble, true));
+                }
+                if ($have_performers) {
+                    $x[] = creators_str($perf->performers, true);
+                }
+                if ($have_instrumentation) {
+                    $x[] = dash($perf->instrumentation);
+                }
+                if ($have_concert) {
+                    $y = '';
+                    if ($perf->concert) {
+                        $con = DB_concert::lookup_id($perf->concert);
+                        $y = concert_str($con);
+                    }
+                    $x[] = $y;
+                }
+                if ($have_files) {
+                    $f = [];
+                    $i = 0;
+                    foreach ($perf->files as $file) {
+                        //echo audio_element($i, $file->name);
+                        $f[] = sprintf('<a href="%s">%s</a>',
+                            //audio_button($i),
+                            imslp_image_name_to_url($file->name),
+                            $file->desc
+                        );
+                        $i++;
+                    }
+                    $x[] = implode('<br>', $f);
+                }
+                row_array($x);
+            }
+            end_table();
+        }
     }
 
     if ($is_section) {
@@ -357,23 +381,12 @@ function comp_left($arg) {
     );
     echo "<p><br>";
 
-    if (can_edit($c)) {
+    if (!$is_section && can_edit($c)) {
         echo button_link(
             sprintf('edit.php?type=%d&composition=%d', PERFORMANCE, $c->id),
             'Add recording'
         );
     }
-}
-
-function imslp_image_name_to_url($name) {
-    return "https://imslp.org/wiki/Special:ImagefromIndex/$name";
-    if (substr($name, 0, 5) == 'IMSLP') {
-        $id = (int) substr($name, 5);
-        if ($id) {
-            return "https://imslp.org/wiki/Special:ImagefromIndex/$id";
-        }
-    }
-    return "https://imslp.org/wiki/FILE:$name";
 }
 
 function score_row($score, $prefix='') {
@@ -536,7 +549,7 @@ function performance_item($id) {
     $perf->performers = json_decode2($perf->performers);
     page_head("Performance");
     copy_to_clipboard_script();
-    grid(null, 'perf_left', 'perf_right', 7, $perf);
+    grid(null, 'perf_left', 'perf_right', MAIN_WIDTH, $perf);
     page_tail();
 }
 
@@ -589,7 +602,7 @@ function score_item($id) {
     $score = DB_score::lookup_id($id);
     $score->creators = json_decode2($score->creators);
     page_head("Score");
-    grid(null, 'score_left', 'score_right', 7, $score);
+    grid(null, 'score_left', 'score_right', MAIN_WIDTH, $score);
     page_tail();
 }
 
@@ -792,6 +805,7 @@ function main($type, $id) {
     }
 }
 
+get_logged_in_user();
 $type = get_str('type');
 $id = get_int('id');
 

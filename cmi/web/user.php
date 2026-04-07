@@ -50,13 +50,13 @@ function rating_header($type) {
         );
         break;
     case PERFORMANCE:
-        table_header(
+        row_heading_array(
             ['Recording of', 'Performance quality', 'Sound quality', 'Review', 'When'],
             null, 'bg-info'
         );
         break;
     case SCORE:
-        table_header(
+        row_heading_array(
             ['Score for', 'Edition quality', 'Scan quality', 'Review', 'When'],
             null, 'bg-info'
         );
@@ -86,7 +86,7 @@ function rating_item($type, $rating, $item) {
     case PERFORMANCE:
         $c = DB_composition::lookup_id($item->composition);
         table_row(
-            composition_str($item),
+            composition_str($c),
             rating_bar($rating->attr1, BAR_WIDTH),
             rating_bar($rating->attr2, BAR_WIDTH),
             more_review($rating->review),
@@ -272,7 +272,7 @@ function main($user, $is_me) {
     page_tail();
 }
 
-$user = get_logged_in_user(false);
+$user = get_logged_in_user();
 $id = get_int('userid', true);
 if ($user && $user->id==$id) $id=0;
 if ($id) {

@@ -640,10 +640,11 @@ function composition_search($params) {
         $query .= sprintf(" and match(comp1.title, comp1.alternative_title) against ('%s' in boolean mode)",
             DB::escape($params->title)
         );
+    } else {
+        $query .= ' and comp1.parent = 0';
     }
     if (!$params->arr) {
-        $query .= ' and comp1.arrangement_of = 0
-        ';
+        $query .= ' and comp1.arrangement_of = 0';
     }
     if ($inst_combos) {
         $query .= sprintf(' and json_overlaps("%s", comp1.instrument_combos->\'$\')',
@@ -741,7 +742,7 @@ function composition_search($params) {
         echo "QUERY: $query\n";
     }
     $comps = DB::enum($query);
-    $comps = prune_children($comps);
+    //$comps = prune_children($comps);
 
     if (!$comps) {
         echo "<h2>No compositions found</h2>
@@ -960,6 +961,7 @@ function main($type) {
     }
 }
 
+get_logged_in_user();
 main(get_str('type'));
 
 ?>

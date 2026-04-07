@@ -266,6 +266,7 @@ create table composition (
     maker                   integer         not null default 0,
     create_time             integer         not null default 0,
     edit_time               integer         not null default 0,
+    audio_file              varchar(255)    not null default '',
     primary key(id),
     index(maker)
 );
