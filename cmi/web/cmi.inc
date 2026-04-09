@@ -11,6 +11,8 @@ require_once('ser.inc');
 
 define('SHOW_COMP_QUERY', 0);       // show comp search queries
 
+define('AUDIO_TAB_NAME', '_temp');
+
 function get_int_array($name) {
     return array_map('intval', get_array($name));
 }
@@ -712,10 +714,23 @@ function show_compositions($comps) {
     end_table();
 }
 
+function image($dark, $light) {
+    return "<img height=18px src=$dark>";
+    return sprintf(
+'<picture>
+    <source srcset="%s" media="(prefers-color-scheme: dark)">
+    <img height=18px src="%s">
+</picture>
+',
+        $dark, $light
+    );
+}
 function listen_link($comp) {
     if ($comp->audio_file) {
-        return sprintf('<a href=%s><img height=18px src=note.png></a>',
-            imslp_image_name_to_url($comp->audio_file)
+        return sprintf('<a href=%s target=%s>%s</a>',
+            imslp_image_name_to_url($comp->audio_file),
+            AUDIO_TAB_NAME,
+            image('note_black.png', 'note.png')
         );
     } else {
         return '';
@@ -728,7 +743,7 @@ function listen_link($comp) {
 function show_arrangements($comps) {
     start_table('table-striped');
     table_header(
-        'Arrangement of', 'Section', 'Composed', 'Type', 'Arranger', 'Instrumentation'
+        'Arrangement of', 'Section', 'Composed', 'Type', 'Arranger', 'Instrumentation', 'Listen'
     );
     foreach ($comps as $c) {
         $c->creators = json_decode2($c->creators);
@@ -742,7 +757,8 @@ function show_arrangements($comps) {
             DB::date_num_to_str($c2->composed),
             comp_types_str($c2->comp_types),
             creators_str($c->creators, false),
-            instrument_combos_str($c->instrument_combos)
+            instrument_combos_str($c->instrument_combos),
+            listen_link($c2)
         );
     }
     end_table();

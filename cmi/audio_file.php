@@ -55,6 +55,7 @@ function do_comp($id, $perfs) {
                 $nsyn_other = $name;
             } else {
                 $nsyn_orig = $name;
+                break;
             }
         }
     }

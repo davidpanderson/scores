@@ -136,7 +136,7 @@ function person_search($params) {
     if ($params->offset) {
         $params2 = clone $params;
         $params2->offset = max($params->offset-PAGE_SIZE, 0);
-        echo sprintf('<a href=search.php?type=person%s>Previous %d</a>',
+        echo sprintf('<p><a href=search.php?type=person%s>Previous %d</a>',
             person_params_url($params2), PAGE_SIZE 
         );
     }

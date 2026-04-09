@@ -352,9 +352,10 @@ function comp_left($arg) {
                     $i = 0;
                     foreach ($perf->files as $file) {
                         //echo audio_element($i, $file->name);
-                        $f[] = sprintf('<a href="%s">%s</a>',
+                        $f[] = sprintf('<a href="%s" target=%s>%s</a>',
                             //audio_button($i),
                             imslp_image_name_to_url($file->name),
+                            AUDIO_TAB_NAME,
                             $file->desc
                         );
                         $i++;
