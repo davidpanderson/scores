@@ -818,6 +818,17 @@ function button_link($url, $text, $title=null) {
     );
 }
 
+// according to google, keywords is obsolete
+// description should be well-written and < 120 chars
+//
+function meta_string($desc) {
+    return sprintf(
+        '   <meta name="description" content="%s">
+',
+        $desc
+    );
+}
+
 /////////// AUDIO /////////////
 
 function audio_element($id, $file) {

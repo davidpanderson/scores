@@ -80,13 +80,13 @@ function composition_item($id) {
     if (!$c) error_page("no composition $id\n");
     if ($c->arrangement_of) {
         $par = DB_composition::lookup_id($c->arrangement_of);
-        $page_title = "Composition: Arrangement of $par->long_title";
+        $page_title = "Arrangement of $par->long_title";
     } else if ($c->parent) {
         $par = DB_composition::lookup_id($c->parent);
-        $page_title = "Composition: $c->title from $par->title";
+        $page_title = "$c->title from $par->title";
     } else {
         $par = null;
-        $page_title = "Composition: $c->long_title";
+        $page_title = "$c->long_title";
     }
     page_head($page_title);
     copy_to_clipboard_script();
@@ -454,7 +454,7 @@ function location_item($id) {
 function venue_item($id) {
     $v = DB_venue::lookup_id($id);
     if (!$v) error_page("No venue $id");
-    page_head("Venue");
+    page_head("Venue: $v->name");
     start_table();
     row2('Name', $v->name);
     row2('Location', location_id_to_name($v->location));
@@ -806,7 +806,7 @@ function main($type, $id) {
     }
 }
 
-get_logged_in_user();
+//get_logged_in_user();
 $type = get_str('type');
 $id = get_int('id');
 

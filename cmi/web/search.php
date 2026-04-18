@@ -313,31 +313,41 @@ function inst_names($insts, $inst_combo_id, $inst_combo_code, $others_ok) {
     return $x;
 }
 
+// generate strings describing a composition search
+// don't use double quotes (for meta tag)
+//
 function comp_explain($params) {
-    if ($params->arr) {
-        echo sprintf(
-            'The following are arrangements for %s of compositions that:',
-            inst_names(
-                $params->arr_insts, $params->arr_inst_combo_id,
-                $params->arr_inst_combo_code, $params->arr_others_ok
-            )
-        );
-    } else {
-        echo "The following compositions\n";
-    }
-    echo '<ul>';
-    if ($params->title) {
-        echo sprintf('<li> Contain "%s" in the title', $params->title);
-    }
+    $lines = [];
+    $line = '';
     if ($params->period) {
-        echo sprintf('<li> Have period/style "%s"',
-            period_id_to_name($params->period)
-        );
+        $line .= period_id_to_name($params->period).' ';
     }
     if ($params->comp_type) {
-        echo sprintf('<li> Are of type"%s"',
-            comp_type_id_to_name($params->comp_type)
-        );
+        $line .= comp_type_id_to_name($params->comp_type);
+    } else {
+        $line .= 'Compositions';
+    }
+    if ($params->title) {
+        $line .= sprintf(' whose title contains \'%s\'', $params->title);
+    }
+    $lines[] = $line;
+
+    $line = 'by a ';
+    $found = false;
+    if ($params->sex) {
+        $line .= sex_id_to_name($params->sex).' ';
+        $found = true;
+    }
+    if ($params->location) {
+        $line .= location_id_to_adjective($params->location).' ';
+        $found = true;
+    }
+    if ($params->name) {
+        $line .= sprintf('whose name contains \'%s\'', $params->name);
+        $found = true;
+    }
+    if ($found) {
+        $lines[] = $line;
     }
 
     $x = inst_names(
@@ -345,23 +355,19 @@ function comp_explain($params) {
         $params->inst_combo_code, $params->others_ok
     );
     if ($x) {
-        echo sprintf('<li> Were written for %s', $x);
+        $lines[] = "for $x";
     }
-    if ($params->name) {
-        echo sprintf(
-            '<li> Have a composer whose name includes "%s"',
-            $params->name
+
+    if ($params->arr) {
+        $lines[] = sprintf(
+            'arranged for %s',
+            inst_names(
+                $params->arr_insts, $params->arr_inst_combo_id,
+                $params->arr_inst_combo_code, $params->arr_others_ok
+            )
         );
     }
-    if ($params->sex) {
-        echo sprintf('<li> Have a %s composer', sex_id_to_name($params->sex));
-    }
-    if ($params->location) {
-        echo sprintf('<li> Have a composer from %s',
-            location_id_to_name($params->location)
-        );
-    }
-    echo '</ul>';
+    return $lines;
 }
 
 function comp_encode($params) {
@@ -565,8 +571,13 @@ function composition_search($params) {
         page_tail();
         return;
     }
-    page_head('Compositions');
-    comp_explain($params);
+    $lines = comp_explain($params);
+    page_head('Composition search', head_extra: meta_string(implode(', ', $lines)));
+    echo "<ul>\n";
+    foreach ($lines as $line) {
+        echo "<li> $line\n";
+    }
+    echo "</ul>\n";
     echo button_link(
         sprintf(
             'search.php?type=composition%s&show_form=1>',
@@ -961,7 +972,7 @@ function main($type) {
     }
 }
 
-get_logged_in_user();
+//get_logged_in_user();
 main(get_str('type'));
 
 ?>

@@ -36,9 +36,8 @@ require_once("../inc/bootstrap.inc");
 
 require_once('cmi.inc');
 
-$config = get_config();
-$no_web_account_creation = parse_bool($config, "no_web_account_creation");
-$project_id = parse_config($config, "<project_id>");
+$no_web_account_creation = project_config_bool("no_web_account_creation");
+$project_id = project_config_val("project_id");
 
 $stopped = web_stopped();
 $user = get_logged_in_user(false);
@@ -93,7 +92,7 @@ function left(){
             ";
             $user = get_logged_in_user(false);
             if (!$user) {
-                echo 'To use CMI, you must first ';
+                echo 'To rate or create items, you must first ';
                 echo button_link('cmi_signup.php', 'create an account');
                 echo '<p>';
             }

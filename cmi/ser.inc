@@ -283,6 +283,12 @@ function location_id_to_name($id) {
     return $n[$id]->name;
 }
 
+function location_id_to_adjective($id) {
+    if (!$id) return '';
+    $n = get_locations();
+    return $n[$id]->adjective;
+}
+
 /////////////// sex /////////////////
 
 function sex_name_to_id($name) {

@@ -17,9 +17,11 @@ define('GLOBAL_HEAD_EXTRA', '<script src="https://ajax.googleapis.com/ajax/libs/
 define("PROJECT", "Classical Music Index");
 define("COPYRIGHT_HOLDER", "David P. Anderson");
 
+define("DARK_MODE", false);
+
 //-------------- URLs and directories
 
-$master_url = parse_config(get_config(), "<master_url>");
+$master_url = project_config_val("master_url");
 define("URL_BASE", $master_url);
 define("IMAGE_PATH", "../user_profile/images/");
 define("IMAGE_URL", "user_profile/images/");
