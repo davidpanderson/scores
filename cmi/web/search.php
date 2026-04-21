@@ -325,7 +325,7 @@ function comp_explain($params) {
     if ($params->comp_type) {
         $line .= comp_type_id_to_name($params->comp_type);
     } else {
-        $line .= 'Compositions';
+        $line .= $line?'compositions':'Compositions';
     }
     if ($params->title) {
         $line .= sprintf(' whose title contains \'%s\'', $params->title);
@@ -342,6 +342,7 @@ function comp_explain($params) {
         $line .= location_id_to_adjective($params->location).' ';
         $found = true;
     }
+    $line .= 'composer ';
     if ($params->name) {
         $line .= sprintf('whose name contains \'%s\'', $params->name);
         $found = true;
@@ -460,7 +461,7 @@ function form_get_combos($insts, $inst_combo_id, $inst_combo_code, $others_ok) {
         if ($inst_combos) {
             return [$inst_combos, ''];
         }
-        return [null, 'No instrumentations with those instruments'];
+        return [null, 'There are no instrumentations with those instruments'];
     }
     if ($inst_combo_id) {
         if ($inst_combo_code) {
@@ -572,7 +573,13 @@ function composition_search($params) {
         return;
     }
     $lines = comp_explain($params);
-    page_head('Composition search', head_extra: meta_string(implode(', ', $lines)));
+    $title = implode(' ', $lines);
+
+    page_head(
+        'Composition search',
+        head_extra: meta_string($title),
+        browser_title: $title
+    );
     echo "<ul>\n";
     foreach ($lines as $line) {
         echo "<li> $line\n";

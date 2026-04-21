@@ -368,18 +368,7 @@ function comp_left($arg) {
         }
     }
 
-    if ($is_section) {
-        $t = "$c->title $par->long_title";
-    } else {
-        $t = $c->long_title;
-    }
-    echo button_link(
-        sprintf(
-            'https://youtube.com/results?search_query=%s',
-            urlencode($t)
-        ),
-        'YouTube'
-    );
+    echo youtube_link($c, 28);
     echo "<p><br>";
 
     if (!$is_section && can_edit($c)) {

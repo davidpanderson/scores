@@ -733,9 +733,22 @@ function listen_link($comp) {
             image('note_black.png', 'note.png')
         );
     } else {
-        return '';
+        return youtube_link($comp);
     }
 }
+
+function youtube_link($c, $height=18) {
+    if ($c->parent) {
+        $t = "$c->title $par->long_title";
+    } else {
+        $t = $c->long_title;
+    }
+    return sprintf(
+        '<a href="https://youtube.com/results?search_query=%s" target=_temp><img height=%d src=youtube.png></a>',
+        urlencode($t), $height
+    );
+}
+
 // show a set of arrangements as a table.  Used for
 // - composition search with arrangement checked
 // - person_role results where role is arranger
