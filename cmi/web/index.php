@@ -100,7 +100,7 @@ function left(){
             <h4>Search for:</h4>
             ";
             start_table();
-            show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings');
+            show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings<br><a href=popular.php>Popular searches</a>');
             show_type('People', 'person', 'Composers, performers, arrangers, etc.');
             show_type('Ensembles', 'ensemble', 'Orchestras, choirs, chamber groups, etc.');
             show_type('Organizations', 'organization', 'Publishers and concert sponsors');

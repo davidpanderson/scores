@@ -739,12 +739,13 @@ function listen_link($comp) {
 
 function youtube_link($c, $height=18) {
     if ($c->parent) {
-        $t = "$c->title $par->long_title";
+        $c2 = DB_composition::lookup_id($c->parent);
+        $t = "$c->title $c2->long_title";
     } else {
         $t = $c->long_title;
     }
     return sprintf(
-        '<a href="https://youtube.com/results?search_query=%s" target=_temp><img height=%d src=youtube.png></a>',
+        '<a href="https://youtube.com/results?search_query=%s" title="Search for recordings of this composition on YouTube" target=_temp><img height=%d src=youtube.png></a>',
         urlencode($t), $height
     );
 }

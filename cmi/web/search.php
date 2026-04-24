@@ -259,6 +259,7 @@ function comp_get() {
     $params->inst_combo_id = get_int('inst_combo_id', true);
     $params->inst_combo_code = get_str('inst_combo_code', true);
     $params->others_ok = get_str('others_ok', true);
+    $params->composer_id = get_int('composer_id', true);
     $params->name = get_str('name', true);
     $params->sex = get_int('sex', true);
     $params->location = get_int('location', true);
@@ -277,6 +278,7 @@ function comp_no_params($params) {
     if ($params->insts) return false;
     if ($params->inst_combo_id) return false;
     if ($params->inst_combo_code) return false;
+    if ($params->composer_id) return false;
     if ($params->name) return false;
     if ($params->sex) return false;
     if ($params->location) return false;
@@ -332,23 +334,29 @@ function comp_explain($params) {
     }
     $lines[] = $line;
 
-    $line = 'by a ';
-    $found = false;
-    if ($params->sex) {
-        $line .= sex_id_to_name($params->sex).' ';
-        $found = true;
-    }
-    if ($params->location) {
-        $line .= location_id_to_adjective($params->location).' ';
-        $found = true;
-    }
-    $line .= 'composer ';
-    if ($params->name) {
-        $line .= sprintf('whose name contains \'%s\'', $params->name);
-        $found = true;
-    }
-    if ($found) {
+    if ($params->composer_id) {
+        $pers = DB_person::lookup_id($params->composer_id);
+        $line = sprintf('by %s %s', $pers->first_name, $pers->last_name);
         $lines[] = $line;
+    } else {
+        $line = 'by a ';
+        $found = false;
+        if ($params->sex) {
+            $line .= sex_id_to_name($params->sex).' ';
+            $found = true;
+        }
+        if ($params->location) {
+            $line .= location_id_to_adjective($params->location).' ';
+            $found = true;
+        }
+        $line .= 'composer ';
+        if ($params->name) {
+            $line .= sprintf('whose name contains \'%s\'', $params->name);
+            $found = true;
+        }
+        if ($found) {
+            $lines[] = $line;
+        }
     }
 
     $x = inst_names(
@@ -360,13 +368,12 @@ function comp_explain($params) {
     }
 
     if ($params->arr) {
-        $lines[] = sprintf(
-            'arranged for %s',
-            inst_names(
-                $params->arr_insts, $params->arr_inst_combo_id,
-                $params->arr_inst_combo_code, $params->arr_others_ok
-            )
+        $names = inst_names(
+            $params->arr_insts, $params->arr_inst_combo_id,
+            $params->arr_inst_combo_code, $params->arr_others_ok
         );
+        if (!$names) $names = 'any instrument';
+        $lines[] = sprintf('arranged for %s', $names);
     }
     return $lines;
 }
@@ -587,7 +594,7 @@ function composition_search($params) {
     echo "</ul>\n";
     echo button_link(
         sprintf(
-            'search.php?type=composition%s&show_form=1>',
+            'search.php?type=composition%s&show_form=1',
             comp_encode($params)
         ),
         'Change search'
@@ -681,13 +688,19 @@ function composition_search($params) {
 
     // composer
     //
-    $composer_params = $params->name || $params->sex || $params->location;
+    $composer_params = $params->composer_id
+        || $params->name || $params->sex || $params->location
+    ;
     if ($composer_params) {
-        $id = comp_single_person($params);
-        if ($id === null) {
-            echo "<p>There are no matching composers.";
-            page_tail();
-            return;
+        if ($params->composer_id) {
+            $id = $params->composer_id;
+        } else {
+            $id = comp_single_person($params);
+            if ($id === null) {
+                echo "<p>There are no matching composers.";
+                page_tail();
+                return;
+            }
         }
         if ($id > 0) {
             // Here there's a single composer matching the spec
