@@ -715,7 +715,7 @@ function show_compositions($comps) {
 }
 
 function image($dark, $light) {
-    return "<img height=18px src=$dark>";
+    return "<img height=18px title=\"Listen to a recording\" src=$dark>";
     return sprintf(
 '<picture>
     <source srcset="%s" media="(prefers-color-scheme: dark)">
@@ -726,15 +726,17 @@ function image($dark, $light) {
     );
 }
 function listen_link($comp) {
+    $x = '<nobr>';
+    $x .= youtube_link($comp);
     if ($comp->audio_file) {
-        return sprintf('<a href=%s target=%s>%s</a>',
+        $x .= sprintf(' <a href=%s target=%s>%s</a>',
             imslp_image_name_to_url($comp->audio_file),
             AUDIO_TAB_NAME,
             image('note_black.png', 'note.png')
         );
-    } else {
-        return youtube_link($comp);
     }
+    $x .= '</nobr>';
+    return $x;
 }
 
 function youtube_link($c, $height=18) {

@@ -8,7 +8,7 @@
 # - make clean
 # - make
 
-all: data/make_prop_done
+all: data/repair_done
 
 data/init_done:
 	populate_init.php && touch data/init_done
@@ -39,6 +39,9 @@ data/make_ser_done: data/populate_nworks_done
 
 data/make_prop_done: data/make_ser_done
 	propagate.php && touch data/make_prop_done
+
+data/repair_done: data/make_prop_done
+	repair.php && touch data/repair_done
 
 clean:
 	rm -f data/*_done data/*.ser

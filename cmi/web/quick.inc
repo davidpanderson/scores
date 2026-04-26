@@ -1,7 +1,5 @@
 <?php
 
-// generate web page for popular composition searches
-
 require_once('../inc/util.inc');
 require_once('cmi.inc');
 
@@ -11,10 +9,9 @@ function compare($x, $y) {
     return 0;
 }
 
-function main() {
+function quick_search() {
     $x = json_decode(file_get_contents('top_comps.json'));
     uasort($x, 'compare');
-    page_head('Popular composition searches');
     foreach ($x as $person) {
         $pid = $person->person_id;
         $p = DB_person::lookup_id($pid);
@@ -39,8 +36,6 @@ function main() {
         }
         echo "</ul>\n";
     }
-    page_tail();
 }
 
-main();
 ?>

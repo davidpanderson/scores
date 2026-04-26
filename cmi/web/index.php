@@ -59,7 +59,7 @@ function top() {
     //panel(null, 'panel_contents');
 }
 
-function left(){
+function about(){
     global $user;
     panel(
         'About CMI',
@@ -100,7 +100,7 @@ function left(){
             <h4>Search for:</h4>
             ";
             start_table();
-            show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings<br><a href=popular.php>Popular searches</a>');
+            show_type('Compositions', 'composition', 'Musical works, and associated scores and recordings');
             show_type('People', 'person', 'Composers, performers, arrangers, etc.');
             show_type('Ensembles', 'ensemble', 'Orchestras, choirs, chamber groups, etc.');
             show_type('Organizations', 'organization', 'Publishers and concert sponsors');
@@ -122,7 +122,7 @@ function left(){
                 if this is a problem.
                 <p>
                 Features based on ratings are simulated
-                until we get enough ratings.
+                until CMI gets enough ratings.
                 <p>
                 CMI helps performers discover compositions.
                 Its companion project,
@@ -140,6 +140,18 @@ function show_type($title, $name, $desc) {
     ]);
 }
         
+function left() {
+    about();
+    panel(tra('News'),
+        function() {
+            include("motd.php");
+            if (!web_stopped()) {
+                show_news(0, 5);
+            }
+        }
+    );
+}
+
 function right() {
     $user = get_logged_in_user(false);
     if ($user) {
@@ -152,12 +164,10 @@ function right() {
             }
         );
     }
-    panel(tra('News'),
+    panel(tra('Quick search'),
         function() {
-            include("motd.php");
-            if (!web_stopped()) {
-                show_news(0, 5);
-            }
+            include("quick.inc");
+            quick_search();
         }
     );
 }
