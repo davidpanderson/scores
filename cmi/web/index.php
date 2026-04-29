@@ -62,30 +62,24 @@ function top() {
 function about(){
     global $user;
     panel(
-        'About CMI',
+        '<font size=+2>Find music you love</font>',
         function() {
             echo "
                 <p>
-                Classical Music Index (CMI) is a searchable and editable
-                database of classical music information.
+                Classical Music Index (CMI) is a searchable music database.
                 <ul>
+                <li> It's designed to help you
+                    <a href=https://continuum-hypothesis.com/music_discover.php>discover new music</a>.
+                <li> It supports detailed queries: for example,
+                    you can find string quartets composed by French women,
+                    or piano music by North Africans.
                 <li> It has
                     <a href=db_info.php>detailed information</a>:
                     movements, arrangements, instrumentations,
                     creator roles, concerts, and so on.
-                <li> It supports complex queries:
-                    for example, you can find string quartets
-                    composed by French women,
-                    or piano music by North Africans.
                 <li>
-                    You can <a href=editing.php>add information</a>
-                    about compositions, recordings, or yourself.
-                    Volunteer editors can fix or add details.
-                <li> It supports
-                    <a href=https://continuum-hypothesis.com/music_discover.php>music discovery</a>.
-                    You can rate things, and you can find music you'll like
-                    based on other people's ratings.
-                <li> It links to scores and recordings on IMSLP.
+                    You can <a href=editing.php>add or fix information</a>.
+                <li> It links to scores and recordings on <a href=https://imslp.org>IMSLP</a>.
                     <b>This works best if you're
                     logged in to IMSLP from this browser.</b>
                 </ul>

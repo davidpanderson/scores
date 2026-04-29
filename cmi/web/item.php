@@ -658,7 +658,7 @@ function person_role_item($id) {
         $inst = DB_instrument::lookup_id($pr->instrument);
         $inst = " ($inst->name)";
     }
-    page_head("Works with $person->first_name $person->last_name as $role $inst");
+    page_head("Compositions with $person->first_name $person->last_name as $role $inst");
     switch ($role) {
     case 'performer':
         echo '<h3>Performances</h3>';

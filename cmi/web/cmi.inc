@@ -147,7 +147,7 @@ function role_str($prole) {
 function person_role_str($prole, $show_role=true) {
     $s = person_id_to_name($prole->person);
     if ($show_role) {
-        $s .= sprintf(' (%s)', role_str($prole));
+        $s .= sprintf(', %s', role_str($prole));
     }
     return $s;
 }
@@ -160,7 +160,7 @@ function creators_str($cts, $show_role) {
         $prole = DB_person_role::lookup_id($id);
         $x[] = person_role_str($prole, $show_role);
     }
-    return implode(' and ', $x);
+    return implode('<br>', $x);
 }
 
 function pluralize($x) {
