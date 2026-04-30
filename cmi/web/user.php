@@ -80,13 +80,16 @@ function rating_item($type, $rating, $item) {
             rating_bar($rating->attr1, BAR_WIDTH),
             rating_bar($rating->attr2, BAR_WIDTH),
             more_review($rating->review),
-            date_str($rating->created)
+            '<nobr>'.date_str($rating->created).'</nobr>'
         );
         break;
     case PERFORMANCE:
         $c = DB_composition::lookup_id($item->composition);
         table_row(
-            composition_str($c),
+            sprintf('<a href=item.php?type=%d&id=%d>%s<br>Performed by %s</a>',
+                PERFORMANCE, $item->id, composition_str($c, false),
+                creators_str(json_decode($item->performers), true, ' and ')
+            ),
             rating_bar($rating->attr1, BAR_WIDTH),
             rating_bar($rating->attr2, BAR_WIDTH),
             more_review($rating->review),
@@ -256,6 +259,11 @@ function right($arg) {
                 $x = get_community_links_object($user);
                 community_links($x, get_logged_in_user(false));
             }
+            if ($is_me) {
+                row2('Your account<br><small>Name, email, preferences, etc.</small>',
+                    '<a href=account.php>View</a>'
+                );
+            }
             end_table();
         }
     );
@@ -272,7 +280,7 @@ function main($user, $is_me) {
     page_tail();
 }
 
-$user = get_logged_in_user();
+$user = get_logged_in_user(false);
 $id = get_int('userid', true);
 if ($user && $user->id==$id) $id=0;
 if ($id) {

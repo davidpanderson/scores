@@ -6,13 +6,12 @@ function form($user) {
     page_head("Contact CMI");
     echo "
         <p>
-        Email <a href=https://boinc.berkeley.edu/anderson/>David Anderson</a>.
-        Please let me know if
+        Please <a href=mailto:continuum873@gmail.com>email us</a> if
         <p>
         <ul>
-        <li> Something doesn't work or is confusing.
-        <li> There's a feature you'd like to see.
-        <li> Other users are behaving inappropriately
+        <li> something doesn't work or is confusing;
+        <li> there's a feature you'd like to see;
+        <li> other users are behaving inappropriately
             (spam, abusive language, etc.)
         </ul>
     ";

@@ -154,13 +154,13 @@ function person_role_str($prole, $show_role=true) {
 
 // $cts is a list of person_role IDs
 //
-function creators_str($cts, $show_role) {
+function creators_str($cts, $show_role, $sep = '<br>') {
     $x = [];
     foreach ($cts as $id) {
         $prole = DB_person_role::lookup_id($id);
         $x[] = person_role_str($prole, $show_role);
     }
-    return implode('<br>', $x);
+    return implode($sep, $x);
 }
 
 function pluralize($x) {

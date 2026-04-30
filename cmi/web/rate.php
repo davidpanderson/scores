@@ -12,6 +12,7 @@ require_once('../inc/util.inc');
 require_once('cmi_db.inc');
 require_once('ser.inc');
 require_once('cmi.inc');
+require_once('rate.inc');
 
 function review_form($user, $type, $target) {
     $r = DB_rating::lookup(
@@ -185,10 +186,52 @@ function do_rate($user, $type, $id, $attr) {
     }
 }
 
-$user = get_logged_in_user();
+function show_raters($type, $target) {
+    switch ($type) {
+    case COMPOSITION:
+        $attrs = ['Rating', 'Difficulty'];
+        $comp = DB_composition::lookup_id($target);
+        $name = $comp->long_title;
+        break;
+    case PERFORMANCE:
+        $attrs = ['Rating', 'Sound quality'];
+        break;
+    case SCORE:
+        $attrs = ['Edition quality', 'Image quality'];
+        break;
+    case PERSON_ROLE:
+        $attrs = ['Rating'];
+        break;
+    }
+    $ratings = DB_rating::enum("type=$type and target=$target");
+    $n = count($attrs);
+    page_head("Ratings of $name");
+    start_table('table-striped');
+    row_heading_array(array_merge(['User'], $attrs, ['Review']));
+    foreach ($ratings as $r) {
+        $user = BoincUser::lookup_id($r->user);
+        $x = [sprintf('<a href=user.php?userid=%d>%s</a>', $user->id, $user->name)];
+        $x[] = rating_bar($r->attr1);
+        if ($n == 2) {
+            $x[] = rating_bar($r->attr2);
+        }
+        $x[] = more_review($r->review);
+        row_array($x);
+    }
+    end_table();
+    page_tail();
+}
+
 $action = get_str('action');
 $type = get_int('type', true);
 $target = get_int('target');
+
+if ($action == 'raters') {
+    show_raters($type, $target);
+    exit;
+}
+
+$user = get_logged_in_user();
 switch($action) {
 case 'rate_comp_1':
     do_rate($user, COMPOSITION, $target, 1);

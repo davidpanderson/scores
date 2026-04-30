@@ -178,7 +178,7 @@ function comp_left($arg) {
             }
             end_table();
         } else {
-            echo '<p>(No sections)<p>';
+            echo '<p>---<p>';
         }
         if (can_edit($c)) {
             echo button_link(
@@ -215,7 +215,7 @@ function comp_left($arg) {
             }
             end_table();
         } else {
-            echo '<p>(No arrangements)<p>';
+            echo '<p>---<p>';
         }
         if (can_edit($c)) {
             echo button_link(
@@ -259,7 +259,7 @@ function comp_left($arg) {
             }
             end_table();
         } else {
-            echo '<p>(No scores)<p>';
+            echo '<p>---<p>';
         }
         if (can_edit($c)) {
             echo button_link(
@@ -658,10 +658,9 @@ function person_role_item($id) {
         $inst = DB_instrument::lookup_id($pr->instrument);
         $inst = " ($inst->name)";
     }
-    page_head("Compositions with $person->first_name $person->last_name as $role $inst");
     switch ($role) {
     case 'performer':
-        echo '<h3>Performances</h3>';
+        page_head("Performances with $person->first_name $person->last_name as $role $inst");
         start_table('table-striped');
         table_header('Details', 'Composition');
         $q = sprintf("json_contains(performers, '%d', '$')", $id);
@@ -678,7 +677,7 @@ function person_role_item($id) {
         end_table();
         break;
     case 'conductor':
-        echo '<h3>Performances</h3>';
+        page_head("Performances with $person->first_name $person->last_name as $role $inst");
         start_table('table-striped');
         table_header('Composition', 'Ensemble');
         $q = sprintf("json_contains(performers, '%d', '$')", $id);
@@ -693,6 +692,7 @@ function person_role_item($id) {
         end_table();
         break;
     case 'arranger':
+        page_head("Compositions with $person->first_name $person->last_name as $role");
         $q = sprintf("json_contains(creators, '%d', '$') and parent=0", $id);
         $comps = DB_composition::enum($q);
         show_arrangements($comps);
@@ -700,15 +700,16 @@ function person_role_item($id) {
     case 'composer':
     case 'librettist':
     case 'lyricist':
+        page_head("Compositions with $person->first_name $person->last_name as $role");
         $q = sprintf("json_contains(creators, '%d', '$') and parent=0", $id);
         $comps = DB_composition::enum($q);
         show_compositions($comps);
         break;
     case 'editor':
     case 'translator':
-        echo '<h3>Scores</h3>';
+        page_head("Scores with $person->first_name $person->last_name as $role");
         start_table('table-striped');
-        table_header('Composition', 'Attributes');
+        table_header('Composition', 'Score attributes');
         $q = sprintf("json_contains(creators, '%d', '$')", $id);
         $scores = DB_score::enum($q);
         foreach ($scores as $score) {

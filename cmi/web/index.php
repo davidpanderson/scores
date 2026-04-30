@@ -154,6 +154,9 @@ function right() {
             function() use($user){
                 start_table();
                 show_community_private($user);
+                row2('Your account<br><small>Name, email, preferences, etc.</small>',
+                    '<a href=account.php>View</a>'
+                );
                 end_table();
             }
         );
