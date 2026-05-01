@@ -197,7 +197,7 @@ function instrument_combo_str($ic) {
     return $s;
 }
 
-function instrument_combos_str($ics) {
+function instrument_combos_str($ics, $sep='<br>') {
     if (!$ics) return '';
     $ics = json_decode($ics);
     $x = [];
@@ -205,7 +205,7 @@ function instrument_combos_str($ics) {
         $ic = DB_instrument_combo::lookup_id($id);
         $x[] = instrument_combo_str($ic);
     }
-    return implode('<br>', $x);
+    return implode($sep, $x);
 }
 
 function sex_options() {
@@ -529,7 +529,7 @@ function composition_str($c, $link=true) {
         }
         $s .= $c2->long_title;
         if ($c->instrument_combos) {
-            $s .= ' for '.instrument_combos_str($c->instrument_combos);
+            $s .= ' for '.instrument_combos_str($c->instrument_combos, ' or ');
         }
     } else if ($c->parent) {
         $c2 = DB_composition::lookup_id($c->parent);
@@ -537,7 +537,7 @@ function composition_str($c, $link=true) {
     } else {
         $s = $c->long_title;
         if ($c->instrument_combos) {
-            $s .= ' for '.instrument_combos_str($c->instrument_combos);
+            $s .= ' for '.instrument_combos_str($c->instrument_combos, ' or ');
         }
     }
     if ($link) {

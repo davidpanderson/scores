@@ -170,7 +170,7 @@ function show_reviews($type, $target, $user, $review) {
         );
     }
     if ($first) {
-        echo "  ---";
+        echo '<p>'.dash('').'<p>';
     } else {
         end_table();
     }
@@ -231,6 +231,7 @@ function comp_right($arg) {
 // TODO: use data.  Show only unrated comps
 //
 function show_recommended_comps($c) {
+    echo '(Coming soon)'; return;
     $comps = DB_composition::enum('', 'limit 3');
     echo '<ul>';
     foreach ($comps as $comp) {
@@ -285,6 +286,7 @@ function person_right($p) {
 // TODO: use data.  Show only unrated items
 //
 function show_recommended_prs($p, $role) {
+    echo '(Coming soon)'; return;
     $prs = DB_person_role::enum(
         sprintf('role=%d', $role->id),
         'limit 3'
@@ -346,6 +348,7 @@ function perf_right($perf) {
 }
 
 function show_recommended_perfs($perf) {
+    echo '(Coming soon)'; return;
     $ps = DB_performance::enum('', 'limit 3');
     echo '<ul>';
     foreach ($ps as $p) {

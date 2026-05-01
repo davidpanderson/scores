@@ -66,22 +66,22 @@ function about(){
         function() {
             echo "
                 <p>
-                Classical Music Index (CMI) is a searchable music database.
+                Classical Music Index (CMI) is a music database that
                 <ul>
-                <li> It's designed to help you
-                    <a href=https://continuum-hypothesis.com/music_discover.php>discover new music</a>.
-                <li> It supports detailed queries: for example,
+                <li> helps you
+                    <a href=https://continuum-hypothesis.com/music_discover.php>discover new music</a>;
+                <li> supports detailed queries: for example,
                     you can find string quartets composed by French women,
-                    or piano music by North Africans.
-                <li> It has
+                    or piano music by North Africans;
+                <li> has
                     <a href=db_info.php>detailed information</a>:
                     movements, arrangements, instrumentations,
-                    creator roles, concerts, and so on.
+                    creator roles, concerts, and so on;
                 <li>
-                    You can <a href=editing.php>add or fix information</a>.
-                <li> It links to scores and recordings on <a href=https://imslp.org>IMSLP</a>.
-                    <b>This works best if you're
-                    logged in to IMSLP from this browser.</b>
+                    lets you <a href=editing.php>add or fix information</a>;
+                <li> links to scores and recordings on <a href=https://imslp.org>IMSLP</a>.
+                    <b>This works best if you
+                    log in to IMSLP from this browser.</b>
                 </ul>
             ";
             $user = get_logged_in_user(false);
@@ -110,12 +110,7 @@ function about(){
                 <a href=https://github.com/davidpanderson/scores/tree/master/cmi>Github</a>.
                 <p>
                 CMI is under development.
-                The database may be reset at any time,
-                in which case your account and items you\'ve added will be lost.
-                Please <a href=contact.php>contact us</a>
-                if this is a problem.
-                <p>
-                Features based on ratings are simulated
+                Features based on ratings are disabled
                 until CMI gets enough ratings.
                 <p>
                 CMI helps performers discover compositions.

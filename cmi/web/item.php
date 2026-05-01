@@ -178,7 +178,7 @@ function comp_left($arg) {
             }
             end_table();
         } else {
-            echo '<p>---<p>';
+            echo '<p>&mdash;<p>';
         }
         if (can_edit($c)) {
             echo button_link(
@@ -205,7 +205,7 @@ function comp_left($arg) {
                 $arr->ics = $ics;
                 $arr->arranger = creators_str($arr->creators, false);
                 table_row(
-                    sprintf('<a href=item.php?type=%d&id=%d>view</a>',
+                    sprintf('<a href=item.php?type=%d&id=%d>View</a>',
                         COMPOSITION, $arr->id
                     ),
                     $arr->title?$arr->title:'Complete',
@@ -215,7 +215,7 @@ function comp_left($arg) {
             }
             end_table();
         } else {
-            echo '<p>---<p>';
+            echo '<p>&mdash;<p>';
         }
         if (can_edit($c)) {
             echo button_link(
@@ -259,7 +259,7 @@ function comp_left($arg) {
             }
             end_table();
         } else {
-            echo '<p>---<p>';
+            echo '<p>&mdash;<p>';
         }
         if (can_edit($c)) {
             echo button_link(
@@ -307,7 +307,7 @@ function comp_left($arg) {
             row_heading_array($x);
             foreach ($perfs as $perf) {
                 $x = [
-                    sprintf('<a href=item.php?type=%d&id=%d>view</a>',
+                    sprintf('<a href=item.php?type=%d&id=%d>View</a>',
                         PERFORMANCE, $perf->id
                     ),
                 ];
@@ -396,7 +396,7 @@ function score_row($score, $prefix='') {
     }
     $pub_year = DB::date_num_to_str($score->publish_date);
     table_row(
-        sprintf('<a href=item.php?type=%d&id=%d>view</a>', SCORE, $score->id),
+        sprintf('<a href=item.php?type=%d&id=%d>View</a>', SCORE, $score->id),
         $score->section?$score->section:'Complete',
         dash($prefix.implode(',', $type)),
         org_link($score->publisher),
@@ -428,7 +428,7 @@ function location_item($id) {
             )
         );
     } else {
-        row2('Parent', '---');
+        row2('Parent', '&mdash');
     }
     row2('',
         button_link(

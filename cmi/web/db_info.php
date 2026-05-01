@@ -12,13 +12,12 @@ CMI stores this information in a SQL database (DB)
 which is a set of 'tables'.
 Tables are like spreadsheets:
 they consist of rows, and each row contains fields.
-This document describes the various tables in CMI,
-and how they are connected.
+This document describes the various tables in CMI, and how they are connected.
 <h2>People and roles</h2>
 <p>
 Let's start with compositions and composers.
 CMI has a table of compositions.
-This table has a row for the Moonlight Sonata by Beethoven.
+This table has, for example, a row for the Moonlight Sonata by Beethoven.
 This row stores the title of the piece,
 the year it was composed, and so on.
 The row could potentially contain the composer's name - 'Ludwig van Beethoven'.
@@ -112,9 +111,9 @@ It also means that CMI users can rate sections separately:
 you might like one movement but not another.
 
 
-<h2>Instruments and Instrumentations</h2>
+<h2>Instruments</h2>
 <p>
-The Instrument table represents
+'Instruments' include
 <ul>
 <li> Individual instruments, such as Piano.
 <li> An instrument played a specific way, such as Piano 4 hands.
@@ -124,11 +123,10 @@ or unspecified ('singer').
 such as 'orchestra' or 'male chorus'.
 </ul>
 
+<h2>Instrumentations</h2>
 <p>
-An Instrumentation is a list of instruments,
-each with a specified count.
-For example: 'piano, 2 violins, and bassoon'
-or 'violin and orchestra'.
+An Instrumentation is a list of instruments, each with a specified count.
+For example: 'piano, 2 violins, and bassoon' or 'violin and orchestra'.
 
 <p>
 Each Composition links to the Instrumentation(s) it's written for.
@@ -176,6 +174,28 @@ and the sponsoring Organization, if any.
 For past concerts, it can include the audience size.
 EOT;
 text_end();
+
+<h2>Ensembles</h2>
+<p>
+An ensemble is a group of performers,
+such as an orchestra or string quartet.
+
+<h2>Organizations</h2>
+<p>
+An organization is business or non-profit that
+publishes music or organizes concerts.
+
+<h2>Venues</h2>
+<p>
+A venue is a location where concerts take place.
+
+<h2>Locations</h2>
+<p>
+CMI has a hierarchical description of locations:
+continents, subcontinents, countries, provinces, cities.
+People can be associated with one or more locations,
+and venues have a location.
+
 
 page_tail();
 ?>

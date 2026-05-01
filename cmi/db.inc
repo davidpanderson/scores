@@ -192,6 +192,25 @@ class Table {
             )
         );
     }
+
+    public function delete() {
+        return DB::do_query(
+            sprintf('delete from %s where id=%d',
+                static::$table_name, $this->id
+            )
+        );
+    }
+
+    public static function count($clause) {
+        $result = DB::do_query(
+            sprintf('select count(*) as total from %s where %s',
+                static::$table_name, $clause
+            )
+        );
+        $x = $result->fetch_object('StdClass');
+        $result->free();
+        return (int) $x->total;
+    }
 }
 
 ?>

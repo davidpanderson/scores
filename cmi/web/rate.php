@@ -25,9 +25,9 @@ function review_form($user, $type, $target) {
         $review = $r->review;
     }
     if ($review) {
-        page_head('Edit review');
+        page_head('Edit a review');
     } else {
-        page_head('Write review');
+        page_head('Write a review');
     }
     switch($type) {
     case COMPOSITION:
