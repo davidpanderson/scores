@@ -12,6 +12,11 @@ function main() {
     foreach ($x as $person) {
         $pid = $person->person_id;
         $p = DB_person::lookup_id($pid);
+        $name = $p->last_name;
+        if ($name == 'Bach') {
+            $name = "$p->first_name $p->last_name";
+            $name = str_replace(' ', '-', $name);
+        }
         foreach ($person->insts as $cid) {
             $url = sprintf('https://classicalmusicindex.org/search.php?type=composition&composer_id=%d&inst_combo_id=%d',
                 $pid, $cid
@@ -19,7 +24,7 @@ function main() {
             $ic = DB_instrument_combo::lookup_id($cid);
             echo sprintf(
                 'Redirect "/s/%s/%s" %s',
-                $p->last_name,
+                $name,
                 instrument_combo_str($ic),
                 $url
             );
@@ -33,7 +38,7 @@ function main() {
         );
         echo sprintf(
             'Redirect "/s/%s" %s',
-            $p->last_name,
+            $name,
             $url
         );
         echo "\n";

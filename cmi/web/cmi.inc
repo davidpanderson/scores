@@ -747,8 +747,8 @@ function youtube_link($c, $height=18) {
         $t = $c->long_title;
     }
     return sprintf(
-        '<a href="https://youtube.com/results?search_query=%s" title="Search for recordings of this composition on YouTube" target=_temp><img height=%d src=youtube.png></a>',
-        urlencode($t), $height
+        '<a href="https://youtube.com/results?search_query=%s" title="Search for recordings of this composition on YouTube" target="%s"><img height=%d src=youtube.png></a>',
+        urlencode($t), AUDIO_TAB_NAME, $height
     );
 }
 

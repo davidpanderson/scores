@@ -15,7 +15,7 @@ define('GLOBAL_HEAD_EXTRA', '<script src="https://ajax.googleapis.com/ajax/libs/
 //-------------- Project name and owner
 
 define("PROJECT", "Classical Music Index");
-define("COPYRIGHT_HOLDER", "David P. Anderson");
+define("COPYRIGHT_HOLDER", "CMI");
 
 define("DARK_MODE", false);
 
@@ -39,6 +39,7 @@ define('HOME_PAGE', 'user.php');
 define('PM_RULES', '');
 define('FORUM_RULES', '');
 define('SHORTCUT_ICON', 'CMI.ico');
+define('EMAIL_FROM', 'Classical Music Index');
 
 //-------------- contact info
 
