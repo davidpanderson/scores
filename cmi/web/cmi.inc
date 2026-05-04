@@ -122,7 +122,7 @@ function comp_types_str($cts) {
 // return 'first last', linked to person item page
 //
 function person_id_to_name($id) {
-    $person = DB_person::lookup_id($id);
+    $person = person_lookup($id);
     return sprintf(
         "<a href=item.php?type=%d&id=%d>%s %s</a>",
         PERSON,
@@ -157,7 +157,7 @@ function person_role_str($prole, $show_role=true) {
 function creators_str($cts, $show_role, $sep = '<br>') {
     $x = [];
     foreach ($cts as $id) {
-        $prole = DB_person_role::lookup_id($id);
+        $prole = person_role_lookup($id);
         $x[] = person_role_str($prole, $show_role);
     }
     return implode($sep, $x);
@@ -202,7 +202,7 @@ function instrument_combos_str($ics, $sep='<br>') {
     $ics = json_decode($ics);
     $x = [];
     foreach ($ics as $id) {
-        $ic = DB_instrument_combo::lookup_id($id);
+        $ic = instrument_combo_lookup($id);
         $x[] = instrument_combo_str($ic);
     }
     return implode($sep, $x);
@@ -597,7 +597,7 @@ function program_perf_str($n, $perf) {
     $s = sprintf('%d) %s', $n, composition_str($comp));
     $roles = json_decode($perf->performers);
     foreach ($roles as $role_id) {
-        $role = DB_person_role::lookup_id($role_id);
+        $role = person_role_lookup($role_id);
         $s .= sprintf("<br>%s%s\n",
             spaces(6),
             person_role_str($role)
@@ -684,6 +684,7 @@ function show_compositions($comps) {
         'Code'
     );
     foreach ($comps as $c) {
+        $c->creators = json_decode2($c->creators);
         if ($c->parent) {
             $p = DB_composition::lookup_id($c->parent);
             $alt = $p->alternative_title?" ($p->alternative_title)":'';
@@ -699,7 +700,7 @@ function show_compositions($comps) {
             sprintf('<a href=item.php?type=%d&id=%d>%s</a>%s%s',
                 COMPOSITION, $c->id, $c->title, $alt, $par
             ),
-            creators_str(json_decode2($c->creators), true),
+            creators_str($c->creators, true),
             $c->_keys,
             $c->opus_catalogue,
             DB::date_num_to_str($c->composed),
@@ -739,12 +740,20 @@ function listen_link($comp) {
     return $x;
 }
 
+// first last title opus
+// first last title opus section_title
+//
 function youtube_link($c, $height=18) {
     if ($c->parent) {
         $c2 = DB_composition::lookup_id($c->parent);
-        $t = "$c->title $c2->long_title";
+        $c2->creators = json_decode2($c2->creators);
+        $t = sprintf('%s %s %s %s',
+            composer_name($c2), $c2->title, $c2->opus_catalogue, $c->title
+        );
     } else {
-        $t = $c->long_title;
+        $t = sprintf('%s %s %s',
+            composer_name($c), $c->title, $c->opus_catalogue
+        );
     }
     return sprintf(
         '<a href="https://youtube.com/results?search_query=%s" title="Search for recordings of this composition on YouTube" target="%s"><img height=%d src=youtube.png></a>',
@@ -764,6 +773,7 @@ function show_arrangements($comps) {
     foreach ($comps as $c) {
         $c->creators = json_decode2($c->creators);
         $c2 = DB_composition::lookup_id($c->arrangement_of);
+        $c2->creators = json_decode2($c2->creators);
         table_row(
             sprintf(
                 '<a href=item.php?type=%d&id=%d>%s</a>',
@@ -892,6 +902,43 @@ function get_final_url($url) {
     $final_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL); // Get the effective URL
     curl_close($ch);
     return $final_url;
+}
+
+////////////// caching DB lookups
+
+function instrument_combo_lookup($id) {
+    static $ics=[];
+    if (!array_key_exists($id, $ics)) {
+        $ics[$id] = DB_instrument_combo::lookup_id($id);
+    }
+    return $ics[$id];
+}
+
+function person_lookup($id) {
+    static $ps=[];
+    if (!array_key_exists($id, $ps)) {
+        $ps[$id] = DB_person::lookup_id($id);
+    }
+    return $ps[$id];
+}
+
+function person_role_lookup($id) {
+    static $prs=[];
+    if (!array_key_exists($id, $prs)) {
+        $prs[$id] = DB_person_role::lookup_id($id);
+    }
+    return $prs[$id];
+}
+
+function composer_name($c) {
+    foreach ($c->creators as $prid) {
+        $pr = person_role_lookup($prid);
+        if (role_id_to_name($pr->role) == 'composer') {
+            $p = person_lookup($pr->person);
+            return "$p->first_name $p->last_name";
+        }
+    }
+    return '';
 }
 
 ?>

@@ -307,7 +307,7 @@ function inst_names($insts, $inst_combo_id, $inst_combo_code, $others_ok) {
     } else {
         return null;
     }
-    $ic = DB_instrument_combo::lookup_id($id);
+    $ic = instrument_combo_lookup($id);
     $x = instrument_combo_str($ic);
     if ($others_ok) {
         $x .= ' (and possibly other instruments)';
@@ -335,7 +335,7 @@ function comp_explain($params) {
     $lines[] = $line;
 
     if ($params->composer_id) {
-        $pers = DB_person::lookup_id($params->composer_id);
+        $pers = person_lookup($params->composer_id);
         $line = sprintf('by %s %s', $pers->first_name, $pers->last_name);
         $lines[] = $line;
     } else {

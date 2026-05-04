@@ -76,13 +76,15 @@ function person_item($id) {
 
 function composition_item($id) {
     $c = DB_composition::lookup_id($id);
-    $c->creators = json_decode2($c->creators);
     if (!$c) error_page("no composition $id\n");
+    $c->creators = json_decode2($c->creators);
     if ($c->arrangement_of) {
         $par = DB_composition::lookup_id($c->arrangement_of);
+        $par->creators = json_decode2($par->creators);
         $page_title = "Arrangement of $par->long_title";
     } else if ($c->parent) {
         $par = DB_composition::lookup_id($c->parent);
+        $par->creators = json_decode2($par->creators);
         $page_title = "$c->title from $par->title";
     } else {
         $par = null;

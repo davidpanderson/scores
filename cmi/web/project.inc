@@ -58,7 +58,7 @@ display_errors();
 //-------------- CSS styling
 
 // add your own stylesheets (included after bootstrap)
-//define("STYLESHEET", "aaa.css");
+define("STYLESHEET", "cmi.css");
 //define("STYLESHEET2", "bbb.css");
 
 //-------------- enable/disable web features
