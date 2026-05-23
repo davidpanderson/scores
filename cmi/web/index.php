@@ -36,9 +36,8 @@ require_once("../inc/bootstrap.inc");
 
 require_once('cmi.inc');
 
-$config = get_config();
-$no_web_account_creation = parse_bool($config, "no_web_account_creation");
-$project_id = parse_config($config, "<project_id>");
+$no_web_account_creation = project_config_bool("no_web_account_creation");
+$project_id = project_config_val("project_id");
 
 $stopped = web_stopped();
 $user = get_logged_in_user(false);
@@ -60,34 +59,29 @@ function top() {
     //panel(null, 'panel_contents');
 }
 
-function left(){
+function about(){
     global $user;
     panel(
-        'About CMI',
+        '<font size=+2>Find music you love</font>',
         function() {
             echo "
                 <p>
-                Classical Music Index (CMI)
-                is a database of classical music information.
+                Classical Music Index (CMI) is a music database that
                 <ul>
-                <li> It has
-                    <a href=db_info.php>complex and detailed information</a>:
+                <li> helps you
+                    <a href=https://continuum-hypothesis.com/music_discover.php>discover new music</a>;
+                <li> supports detailed queries: for example,
+                    you can find string quartets composed by French women,
+                    or piano music by North Africans;
+                <li> has
+                    <a href=db_info.php>detailed information</a>:
                     movements, arrangements, instrumentations,
-                    creator roles, and so on.
-                <li> It allows complex queries:
-                    for example, you can find string quartets
-                    by female French composers.
-                <li> It is
-                    <a href=editing.php>editable</a>:
-                    you can add entries about your compositions,
-                    your recordings,
-                    or yourself.
-                    Volunteer editors can fix or add details.
-                <li> It supports
-                    <a href=https://continuum-hypothesis.com/music_discover.php>music discovery</a>.
-                    You can rate things, and you can find music you'll like
-                    based on other people's ratings.
-                <li> It links to scores and recordings on IMSLP.
+                    creator roles, concerts, and so on;
+                <li>
+                    lets you <a href=editing.php>add or fix information</a>;
+                <li> links to scores and recordings on <a href=https://imslp.org>IMSLP</a>.
+                    <b>This works best if you
+                    log in to IMSLP from this browser.</b>
                 </ul>
             ";
             $user = get_logged_in_user(false);
@@ -111,22 +105,18 @@ function left(){
             end_table();
             echo '
                 <p>
-                CMI is a non-profit project, created and operated by volunteers.
-                Its source code is open source and is available on
+                CMI is non-profit, created and operated by volunteers.
+                Its code is open-source and is available on
                 <a href=https://github.com/davidpanderson/scores/tree/master/cmi>Github</a>.
                 <p>
                 CMI is under development.
-                The database may be reset at any time,
-                in which case your account and items you\'ve added will be lost.
-                Please <a href=contact.php>contact us</a>
-                if this is a problem.
+                Features based on ratings are disabled
+                until CMI gets enough ratings.
                 <p>
-                Features based on ratings are simulated
-                until we get enough ratings.
-                <p>
-                Check out CMI\'s companion project,
+                CMI helps performers discover compositions.
+                Its companion project,
                 <a href=https://music-match.org>Music Match</a>,
-                which helps performers and composers discover each other.
+                helps performers and composers discover each other.
             ';
         }
     );
@@ -139,6 +129,18 @@ function show_type($title, $name, $desc) {
     ]);
 }
         
+function left() {
+    about();
+    panel(tra('News'),
+        function() {
+            include("motd.php");
+            if (!web_stopped()) {
+                show_news(0, 5);
+            }
+        }
+    );
+}
+
 function right() {
     $user = get_logged_in_user(false);
     if ($user) {
@@ -147,16 +149,17 @@ function right() {
             function() use($user){
                 start_table();
                 show_community_private($user);
+                row2('Your account<br><small>Name, email, preferences, etc.</small>',
+                    '<a href=account.php>View</a>'
+                );
                 end_table();
             }
         );
     }
-    panel(tra('News'),
+    panel(tra('Quick search'),
         function() {
-            include("motd.php");
-            if (!web_stopped()) {
-                show_news(0, 5);
-            }
+            include("quick.inc");
+            quick_search();
         }
     );
 }

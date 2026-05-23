@@ -6,7 +6,7 @@
 require_once("../inc/util.inc");
 require_once("../inc/user_util.inc");
 require_once("../inc/account.inc");
-require_once("../inc/recaptchalib.php");
+//require_once("../inc/recaptchalib.php");
 require_once("cmi.inc");
 
 function join_form() {
@@ -36,7 +36,7 @@ function join_form() {
         ),
         "new_email_addr"
     );
-    $min_passwd_length = parse_element(get_config(), "<min_passwd_length>");
+    $min_passwd_length = project_config_val('min_passwd_length');
     if (!$min_passwd_length) {
         $min_passwd_length = 6;
     }

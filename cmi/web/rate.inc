@@ -108,7 +108,7 @@ function avg_rating($type, $target) {
 }
 
 function more_review($rev) {
-    return show_text_more_aux($rev, 80);
+    return dash(show_text_more_aux($rev, 80));
 }
 
 function get_users_ratings($user, $type, $target) {
@@ -129,9 +129,13 @@ function get_users_ratings($user, $type, $target) {
 }
 
 function show_reviews($type, $target, $user, $review) {
-    echo '<b>Reviews</b><p>';
-    start_table();
+    echo '<b>Reviews</b>';
+    $first = true;
     if ($user) {
+        if ($first) {
+            start_table();
+            $first = false;
+        }
         $url = "rate.php?action=rev_form&type=$type&target=$target";
         if ($review) {
             row2(
@@ -150,6 +154,10 @@ function show_reviews($type, $target, $user, $review) {
     foreach ($revs as $rev) {
         if ($user && $user->id == $rev->user) continue;
         $u = BoincUser::lookup_id($rev->user);
+        if ($first) {
+            start_table();
+            $first = false;
+        }
         row2(
             sprintf('Review by <a href=user.php?userid=%d>%s</a><br><small>%s</small>',
                 $rev->user, $u->name,
@@ -161,7 +169,11 @@ function show_reviews($type, $target, $user, $review) {
             )
         );
     }
-    end_table();
+    if ($first) {
+        echo '<p>'.dash('').'<p>';
+    } else {
+        end_table();
+    }
 }
 
 // right panel for composition: rating and review stuff
@@ -186,7 +198,7 @@ function comp_right($arg) {
         row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(COMPOSITION, $c->id);
-    row2('Average rating', rating_bar($qavg));
+    row2('Average', rating_bar($qavg));
     end_table();
     echo '<b>Technical difficulty</b>';
     echo "<br><small>If you play this $x: how difficult is it for you?</small>";
@@ -196,8 +208,13 @@ function comp_right($arg) {
     } else {
         row2('<a href=login_form.php>Log in</a> to rate', '');
     }
-    row2('Average rating', rating_bar($davg));
+    row2('Average', rating_bar($davg));
     end_table();
+    if ($qavg != NO_RATING || $davg != NO_RATING) {
+        echo sprintf('<p><a href=rate.php?action=raters&type=%d&target=%d>Show ratings</a><p>',
+            COMPOSITION, $c->id
+        );
+    }
     if ($user) {
         show_reviews(COMPOSITION, $c->id, $user, $review);
     } else {
@@ -214,6 +231,7 @@ function comp_right($arg) {
 // TODO: use data.  Show only unrated comps
 //
 function show_recommended_comps($c) {
+    echo '(Coming soon)'; return;
     $comps = DB_composition::enum('', 'limit 3');
     echo '<ul>';
     foreach ($comps as $comp) {
@@ -245,15 +263,20 @@ function person_right($p) {
             row2('<a href=login_form.php>Log in</a> to rate', '');
         }
         [$qavg, $davg] = avg_rating(PERSON_ROLE, $pr->id);
-        row2('Average rating', rating_bar($qavg));
+        row2('Average', rating_bar($qavg));
         end_table();
+        if ($qavg != NO_RATING || $davg != NO_RATING) {
+            echo sprintf('<p><a href=rate.php?action=raters&type=%d&target=%d>Show ratings</a><p>',
+                PERSON_ROLE, $pr->id
+            );
+        }
         if ($user) {
             show_reviews(PERSON_ROLE, $pr->id, $user, $review);
         } else {
             show_reviews(PERSON_ROLE, $pr->id, null, null);
         }
         echo sprintf(
-            '<p><b>People who liked %s also liked:</b><p>',
+            '<br><p><b>People who liked %s also liked:</b><p>',
             $pers_as_role
         );
         show_recommended_prs($p, $role);
@@ -263,6 +286,7 @@ function person_right($p) {
 // TODO: use data.  Show only unrated items
 //
 function show_recommended_prs($p, $role) {
+    echo '(Coming soon)'; return;
     $prs = DB_person_role::enum(
         sprintf('role=%d', $role->id),
         'limit 3'
@@ -292,7 +316,7 @@ function perf_right($perf) {
         row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(PERFORMANCE, $perf->id);
-    row2('Average rating', rating_bar($qavg));
+    row2('Average', rating_bar($qavg));
     end_table();
     if ($perf->files) {
         echo '<b>Audio quality</b>';
@@ -302,8 +326,13 @@ function perf_right($perf) {
         } else {
             row2('<a href=login_form.php>Log in</a> to rate', '');
         }
-        row2('Average rating', rating_bar($davg));
+        row2('Average', rating_bar($davg));
         end_table();
+    }
+    if ($qavg != NO_RATING || $davg != NO_RATING) {
+        echo sprintf('<p><a href=rate.php?action=raters&type=%d&target=%d>Show ratings</a><p>',
+            PERFORMANCE, $perf->id
+        );
     }
     if ($user) {
         show_reviews(PERFORMANCE, $perf->id, $user, $review);
@@ -319,6 +348,7 @@ function perf_right($perf) {
 }
 
 function show_recommended_perfs($perf) {
+    echo '(Coming soon)'; return;
     $ps = DB_performance::enum('', 'limit 3');
     echo '<ul>';
     foreach ($ps as $p) {
@@ -345,7 +375,7 @@ function score_right($score) {
         row2('<a href=login_form.php>Log in</a> to rate', '');
     }
     [$qavg, $davg] = avg_rating(SCORE, $score->id);
-    row2('Average rating', rating_bar($qavg));
+    row2('Average', rating_bar($qavg));
     end_table();
     echo '<b>Scan image quality</b>';
     start_table();
@@ -354,8 +384,13 @@ function score_right($score) {
     } else {
         row2('<a href=login_form.php>Log in</a> to rate', '');
     }
-    row2('Average rating', rating_bar($davg));
+    row2('Average', rating_bar($davg));
     end_table();
+    if ($qavg != NO_RATING || $davg != NO_RATING) {
+        echo sprintf('<p><a href=rate.php?action=raters&type=%d&target=%d>Show ratings</a><p>',
+            SCORE, $score->id
+        );
+    }
     if ($user) {
         show_reviews(SCORE, $score->id, $user, $review);
     } else {

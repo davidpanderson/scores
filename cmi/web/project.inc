@@ -15,11 +15,13 @@ define('GLOBAL_HEAD_EXTRA', '<script src="https://ajax.googleapis.com/ajax/libs/
 //-------------- Project name and owner
 
 define("PROJECT", "Classical Music Index");
-define("COPYRIGHT_HOLDER", "David P. Anderson");
+define("COPYRIGHT_HOLDER", "CMI");
+
+define("DARK_MODE", false);
 
 //-------------- URLs and directories
 
-$master_url = parse_config(get_config(), "<master_url>");
+$master_url = project_config_val("master_url");
 define("URL_BASE", $master_url);
 define("IMAGE_PATH", "../user_profile/images/");
 define("IMAGE_URL", "user_profile/images/");
@@ -36,6 +38,8 @@ define('SHOW_USER_PAGE', 'user.php');
 define('HOME_PAGE', 'user.php');
 define('PM_RULES', '');
 define('FORUM_RULES', '');
+define('SHORTCUT_ICON', 'CMI.ico');
+define('EMAIL_FROM', 'Classical Music Index');
 
 //-------------- contact info
 
@@ -54,7 +58,7 @@ display_errors();
 //-------------- CSS styling
 
 // add your own stylesheets (included after bootstrap)
-//define("STYLESHEET", "aaa.css");
+define("STYLESHEET", "cmi.css");
 //define("STYLESHEET2", "bbb.css");
 
 //-------------- enable/disable web features
@@ -119,6 +123,33 @@ function make_php_mailer() {
 
 //-------------- Header and footer
 
+function cmi_navbar_right($user) {
+    global $is_login_page;
+    echo '
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+    ';
+    if (!$is_login_page) {
+        if ($user) {
+            echo sprintf('
+                <li><a href=%s%s>%s</a></li>
+                ', url_base(), HOME_PAGE, $user->name
+            );
+            $url_tokens = url_tokens($user->authenticator);
+            echo sprintf('<li><a href="%slogout.php?%s">Log out</a></li>',
+                url_base(), $url_tokens
+            );
+        } else {
+            echo sprintf('
+                <li><a href="cmi_signup.php">%s</a></li>
+                <li><a href="login_form.php">%s</a></li>
+                ',
+                tra("Join"),
+                tra("Login")
+            );
+        }
+    }
+}
 function navbar(
     $url_prefix,
         // prefix for links; needed for pages not in top dir
@@ -156,9 +187,7 @@ function navbar(
         array(tra("Languages"), $url_prefix."language_select.php")
     ));
 
-    // add your own menu here if you want
-
-    navbar_right($user);
+    cmi_navbar_right($user);
     navbar_end();
 }
 // Put your project title and logo here

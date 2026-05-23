@@ -50,13 +50,13 @@ function rating_header($type) {
         );
         break;
     case PERFORMANCE:
-        table_header(
+        row_heading_array(
             ['Recording of', 'Performance quality', 'Sound quality', 'Review', 'When'],
             null, 'bg-info'
         );
         break;
     case SCORE:
-        table_header(
+        row_heading_array(
             ['Score for', 'Edition quality', 'Scan quality', 'Review', 'When'],
             null, 'bg-info'
         );
@@ -80,13 +80,16 @@ function rating_item($type, $rating, $item) {
             rating_bar($rating->attr1, BAR_WIDTH),
             rating_bar($rating->attr2, BAR_WIDTH),
             more_review($rating->review),
-            date_str($rating->created)
+            '<nobr>'.date_str($rating->created).'</nobr>'
         );
         break;
     case PERFORMANCE:
         $c = DB_composition::lookup_id($item->composition);
         table_row(
-            composition_str($item),
+            sprintf('<a href=item.php?type=%d&id=%d>%s<br>Performed by %s</a>',
+                PERFORMANCE, $item->id, composition_str($c, false),
+                creators_str(json_decode($item->performers), true, ' and ')
+            ),
             rating_bar($rating->attr1, BAR_WIDTH),
             rating_bar($rating->attr2, BAR_WIDTH),
             more_review($rating->review),
@@ -255,6 +258,11 @@ function right($arg) {
             } else {
                 $x = get_community_links_object($user);
                 community_links($x, get_logged_in_user(false));
+            }
+            if ($is_me) {
+                row2('Your account<br><small>Name, email, preferences, etc.</small>',
+                    '<a href=account.php>View</a>'
+                );
             }
             end_table();
         }

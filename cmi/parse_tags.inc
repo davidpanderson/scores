@@ -31,6 +31,10 @@ function parse_tags($tags) {
             continue;
         }
         // must be an instrument combo
+
+        // if it contains \n, remove that and what follows
+        $part = explode("\n", $part);
+        $part = $part[0];
         $combo = [];
         $arr = false;
         $insts = explode(' ', $part);
@@ -46,7 +50,7 @@ function parse_tags($tags) {
             if (inst_by_code($code)) {
                 $combo[] = [$count, $code];
             } else {
-                echo "unknown inst code $code in $tags\n";
+                echo "unknown inst code '$code' in $tags\n";
             }
         }
         if ($combo) {

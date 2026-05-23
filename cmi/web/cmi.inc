@@ -11,6 +11,8 @@ require_once('ser.inc');
 
 define('SHOW_COMP_QUERY', 0);       // show comp search queries
 
+define('AUDIO_TAB_NAME', '_temp');
+
 function get_int_array($name) {
     return array_map('intval', get_array($name));
 }
@@ -51,6 +53,17 @@ function json_decode2($s) {
     } else {
         return [];
     }
+}
+
+function imslp_image_name_to_url($name) {
+    return "https://imslp.org/wiki/Special:ImagefromIndex/$name";
+    if (substr($name, 0, 5) == 'IMSLP') {
+        $id = (int) substr($name, 5);
+        if ($id) {
+            return "https://imslp.org/wiki/Special:ImagefromIndex/$id";
+        }
+    }
+    return "https://imslp.org/wiki/FILE:$name";
 }
 
 function select2_head($title) {
@@ -113,7 +126,7 @@ function comp_types_str($cts) {
 // return 'first last', linked to person item page
 //
 function person_id_to_name($id) {
-    $person = DB_person::lookup_id($id);
+    $person = person_lookup($id);
     return sprintf(
         "<a href=item.php?type=%d&id=%d>%s %s</a>",
         PERSON,
@@ -138,20 +151,20 @@ function role_str($prole) {
 function person_role_str($prole, $show_role=true) {
     $s = person_id_to_name($prole->person);
     if ($show_role) {
-        $s .= sprintf(' (%s)', role_str($prole));
+        $s .= sprintf(', %s', role_str($prole));
     }
     return $s;
 }
 
 // $cts is a list of person_role IDs
 //
-function creators_str($cts, $show_role) {
+function creators_str($cts, $show_role, $sep = '<br>') {
     $x = [];
     foreach ($cts as $id) {
-        $prole = DB_person_role::lookup_id($id);
+        $prole = person_role_lookup($id);
         $x[] = person_role_str($prole, $show_role);
     }
-    return implode(' and ', $x);
+    return implode($sep, $x);
 }
 
 function pluralize($x) {
@@ -188,15 +201,15 @@ function instrument_combo_str($ic) {
     return $s;
 }
 
-function instrument_combos_str($ics) {
+function instrument_combos_str($ics, $sep='<br>') {
     if (!$ics) return '';
     $ics = json_decode($ics);
     $x = [];
     foreach ($ics as $id) {
-        $ic = DB_instrument_combo::lookup_id($id);
+        $ic = instrument_combo_lookup($id);
         $x[] = instrument_combo_str($ic);
     }
-    return implode('<br>', $x);
+    return implode($sep, $x);
 }
 
 function sex_options() {
@@ -433,6 +446,15 @@ function comp_type_options() {
     return $x;
 }
 
+function period_options() {
+    $ps = get_periods();
+    $x = [[0, dash(null)]];
+    foreach ($ps as $p) {
+        $x[] = [$p->id, $p->name];
+    }
+    return $x;
+}
+
 function organization_type_str($id) {
     $ot = DB_organization_type::lookup_id($id);
     return $ot->name;
@@ -511,16 +533,16 @@ function composition_str($c, $link=true) {
         }
         $s .= $c2->long_title;
         if ($c->instrument_combos) {
-            $s .= ' for '.instrument_combos_str($c->instrument_combos);
+            $s .= ' for '.instrument_combos_str($c->instrument_combos, ' or ');
         }
     } else if ($c->parent) {
         $c2 = DB_composition::lookup_id($c->parent);
         $s = sprintf('Section (%s) of %s', $c->title, $c2->long_title);
     } else {
-        $s = sprintf('%s for %s',
-            $c->long_title,
-            instrument_combos_str($c->instrument_combos)
-        );
+        $s = $c->long_title;
+        if ($c->instrument_combos) {
+            $s .= ' for '.instrument_combos_str($c->instrument_combos, ' or ');
+        }
     }
     if ($link) {
         return sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
@@ -579,7 +601,7 @@ function program_perf_str($n, $perf) {
     $s = sprintf('%d) %s', $n, composition_str($comp));
     $roles = json_decode($perf->performers);
     foreach ($roles as $role_id) {
-        $role = DB_person_role::lookup_id($role_id);
+        $role = person_role_lookup($role_id);
         $s .= sprintf("<br>%s%s\n",
             spaces(6),
             person_role_str($role)
@@ -656,29 +678,91 @@ function show_compositions($comps) {
     table_header(
         'Title<br><small>click for details</small>',
         'Creators',
-        'View on IMSLP',
         'Key',
         'Opus',
         'Composed',
         'Instrumentation',
+        'Period/style',
+        'Type',
+        'Listen',
         'Code'
     );
     foreach ($comps as $c) {
+        $c->creators = json_decode2($c->creators);
+        if ($c->parent) {
+            $p = DB_composition::lookup_id($c->parent);
+            $alt = $p->alternative_title?" ($p->alternative_title)":'';
+            $par = sprintf(
+                '<br>Section of <a href=item.php?type=%d&id=%d>%s</a>%s',
+                COMPOSITION, $p->id, $p->title, $alt
+            );
+        } else {
+            $par = '';
+        }
+        $alt = $c->alternative_title?" ($c->alternative_title)":'';
         table_row(
-            sprintf('<a href=item.php?type=%d&id=%d>%s</a>',
-                COMPOSITION, $c->id, $c->title
+            sprintf('<a href=item.php?type=%d&id=%d>%s</a>%s%s',
+                COMPOSITION, $c->id, $c->title, $alt, $par
             ),
-            creators_str(json_decode2($c->creators), true),
-            imslp_link($c),
+            creators_str($c->creators, true),
             $c->_keys,
             $c->opus_catalogue,
             DB::date_num_to_str($c->composed),
             //comp_types_str($c->comp_types),
             instrument_combos_str($c->instrument_combos),
+            period_id_to_name($c->period),
+            comp_types_str($c->comp_types),
+            listen_link($c),
             copy_button(item_code($c->id, 'composition'))
         );
     }
     end_table();
+}
+
+function image($dark, $light) {
+    return "<img height=18px title=\"Listen to a recording\" src=$dark>";
+    return sprintf(
+'<picture>
+    <source srcset="%s" media="(prefers-color-scheme: dark)">
+    <img height=18px src="%s">
+</picture>
+',
+        $dark, $light
+    );
+}
+function listen_link($comp) {
+    $x = '<nobr>';
+    $x .= youtube_link($comp);
+    if ($comp->audio_file) {
+        $x .= sprintf(' <a href=%s target=%s>%s</a>',
+            imslp_image_name_to_url($comp->audio_file),
+            AUDIO_TAB_NAME,
+            image('note_black.png', 'note.png')
+        );
+    }
+    $x .= '</nobr>';
+    return $x;
+}
+
+// first last title opus
+// first last title opus section_title
+//
+function youtube_link($c, $height=18) {
+    if ($c->parent) {
+        $c2 = DB_composition::lookup_id($c->parent);
+        $c2->creators = json_decode2($c2->creators);
+        $t = sprintf('%s %s %s %s',
+            composer_name($c2), $c2->title, $c2->opus_catalogue, $c->title
+        );
+    } else {
+        $t = sprintf('%s %s %s',
+            composer_name($c), $c->title, $c->opus_catalogue
+        );
+    }
+    return sprintf(
+        '<a href="https://youtube.com/results?search_query=%s" title="Search for recordings of this composition on YouTube" target="%s"><img height=%d src=youtube.png></a>',
+        urlencode($t), AUDIO_TAB_NAME, $height
+    );
 }
 
 // show a set of arrangements as a table.  Used for
@@ -688,36 +772,39 @@ function show_compositions($comps) {
 function show_arrangements($comps) {
     start_table('table-striped');
     table_header(
-        'Arrangement of', 'Section', 'View on IMSLP', 'Composed', 'Type', 'Arranger', 'Instrumentation'
+        'Arrangement of', 'Section', 'Composed', 'Type', 'Arranger', 'Instrumentation', 'Listen'
     );
     foreach ($comps as $c) {
         $c->creators = json_decode2($c->creators);
         $c2 = DB_composition::lookup_id($c->arrangement_of);
+        $c2->creators = json_decode2($c2->creators);
         table_row(
             sprintf(
                 '<a href=item.php?type=%d&id=%d>%s</a>',
                 COMPOSITION, $c2->id, $c2->long_title
             ),
             $c->title,
-            imslp_link($c2),
             DB::date_num_to_str($c2->composed),
             comp_types_str($c2->comp_types),
             creators_str($c->creators, false),
-            instrument_combos_str($c->instrument_combos)
+            instrument_combos_str($c->instrument_combos),
+            listen_link($c2)
         );
     }
     end_table();
 }
 
-function imslp_link($c) {
+// URL of IMSLP page for a composition
+//
+function imslp_comp_url($c) {
     $t = str_replace(' ', '_', $c->long_title);
     $t = str_replace('No._', 'No.', $t);
     $t = str_replace('Op._', 'Op.', $t);
-    $url = sprintf('https://imslp.org/wiki/%s', $t);
-    return sprintf(
-        '<a href=%s><img width=50 src=imslp_logo.png></a>',
-        $url
-    );
+    return sprintf('https://imslp.org/wiki/%s', $t);
+}
+
+function imslp_logo() {
+    return '<img width=50 src=imslp_logo.jpg>';
 }
 
 // show user name, linked to their user page
@@ -760,4 +847,102 @@ function button_link($url, $text, $title=null) {
         $url, $title, BUTTON_STYLE, $text
     );
 }
+
+// according to google, keywords is obsolete
+// description should be well-written and < 120 chars
+//
+function meta_string($desc) {
+    return sprintf(
+        '   <meta name="description" content="%s">
+',
+        $desc
+    );
+}
+
+/////////// AUDIO /////////////
+
+function audio_element($id, $file) {
+    return sprintf('<audio id="a%d"><source src="%s"></source></audio>',
+        $id, get_final_url(imslp_image_name_to_url($file))
+    );
+}
+
+function audio_button($id) {
+    $audio = sprintf(
+        ' onclick="play_sound(\'a%d\');" onmouseleave="stop_sound(\'a%d\');" ',
+        $id, $id
+    );
+    return sprintf('&nbsp;<a %s ><img height=24px src=note.png></a>', $audio);
+}
+
+// Javascript for audio on search results
+//
+function enable_audio() {
+echo '
+<script language="javascript" type="text/javascript">
+function play_sound(id) {
+    var audio = document.getElementById(id);
+    audio.currentTime = 0;
+    audio.play();
+}
+
+function stop_sound(id) {
+    var audio = document.getElementById(id);
+    audio.pause();
+}
+</script>
+';
+}
+
+// the following doesn't work for IMSLP media files
+//
+function get_final_url($url) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HEADER, true); // Get headers
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return content
+    curl_exec($ch);
+    $final_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL); // Get the effective URL
+    curl_close($ch);
+    return $final_url;
+}
+
+////////////// caching DB lookups
+
+function instrument_combo_lookup($id) {
+    static $ics=[];
+    if (!array_key_exists($id, $ics)) {
+        $ics[$id] = DB_instrument_combo::lookup_id($id);
+    }
+    return $ics[$id];
+}
+
+function person_lookup($id) {
+    static $ps=[];
+    if (!array_key_exists($id, $ps)) {
+        $ps[$id] = DB_person::lookup_id($id);
+    }
+    return $ps[$id];
+}
+
+function person_role_lookup($id) {
+    static $prs=[];
+    if (!array_key_exists($id, $prs)) {
+        $prs[$id] = DB_person_role::lookup_id($id);
+    }
+    return $prs[$id];
+}
+
+function composer_name($c) {
+    foreach ($c->creators as $prid) {
+        $pr = person_role_lookup($prid);
+        if (role_id_to_name($pr->role) == 'composer') {
+            $p = person_lookup($pr->person);
+            return "$p->first_name $p->last_name";
+        }
+    }
+    return '';
+}
+
 ?>

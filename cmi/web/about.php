@@ -30,8 +30,8 @@ genders, nationalities, dates, and so on.
 Data is stored in a relational database,
 and arbitrary relational queries on this data are possible.
 The current interface supports queries like
-'show me all the arrangements of string quartets for two pianos'
-or 'show me all the music for solo violin by female French composers'.
+'show me arrangements of string quartets for two pianos'
+or 'show me music for solo violin by female French composers'.
 The interface could be extended to allow even more detailed queries.
 <li>
 CMI is designed to support music discovery by
