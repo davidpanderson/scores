@@ -172,8 +172,6 @@ Its program is represented as a list of Performancs (see above).
 It also links to Venue (a description of the concert venue)
 and the sponsoring Organization, if any.
 For past concerts, it can include the audience size.
-EOT;
-text_end();
 
 <h2>Ensembles</h2>
 <p>
@@ -195,6 +193,8 @@ CMI has a hierarchical description of locations:
 continents, subcontinents, countries, provinces, cities.
 People can be associated with one or more locations,
 and venues have a location.
+EOT;
+text_end();
 
 
 page_tail();

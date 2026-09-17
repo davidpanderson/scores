@@ -79,7 +79,7 @@ function about(){
                     creator roles, concerts, and so on;
                 <li>
                     lets you <a href=editing.php>add or fix information</a>;
-                <li> links to scores and recordings on <a href=https://imslp.org>IMSLP</a>.
+                <li> links to scores on <a href=https://imslp.org>IMSLP</a>.
                     <b>This works best if you
                     log in to IMSLP from this browser.</b>
                 </ul>

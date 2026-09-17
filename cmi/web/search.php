@@ -662,8 +662,9 @@ function composition_search($params) {
     // clauses for main composition
     //
     if ($params->title) {
-        $query .= sprintf(" and match(comp1.title, comp1.alternative_title) against ('%s' in boolean mode)",
-            DB::escape($params->title)
+        $x = DB::escape($params->title);
+        $query .= sprintf(" and (match(comp1.title, comp1.alternative_title) against ('%s' in boolean mode) or comp1.title like '%%%s%%' or comp1.alternative_title like '%%%s%%')",
+            $x, $x, $x
         );
     } else {
         $query .= ' and comp1.parent = 0';

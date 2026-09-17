@@ -11,7 +11,8 @@ require_once('ser.inc');
 
 define('SHOW_COMP_QUERY', 0);       // show comp search queries
 
-define('AUDIO_TAB_NAME', '_temp');
+define('IMSLP_AUDIO', 0);
+define('AUDIO_TAB_NAME', 'cmi');
 
 function get_int_array($name) {
     return array_map('intval', get_array($name));
@@ -729,12 +730,14 @@ function image($dark, $light) {
 function listen_link($comp) {
     $x = '<nobr>';
     $x .= youtube_link($comp);
-    if ($comp->audio_file) {
-        $x .= sprintf(' <a href=%s target=%s>%s</a>',
-            imslp_image_name_to_url($comp->audio_file),
-            AUDIO_TAB_NAME,
-            image('note_black.png', 'note.png')
-        );
+    if (IMSLP_AUDIO) {
+        if ($comp->audio_file) {
+            $x .= sprintf(' <a href=%s target="%s">%s</a>',
+                imslp_image_name_to_url($comp->audio_file),
+                AUDIO_TAB_NAME,
+                image('note_black.png', 'note.png')
+            );
+        }
     }
     $x .= '</nobr>';
     return $x;
@@ -756,8 +759,10 @@ function youtube_link($c, $height=18) {
         );
     }
     return sprintf(
-        '<a href="https://youtube.com/results?search_query=%s" title="Search for recordings of this composition on YouTube" target="%s"><img height=%d src=youtube.png></a>',
-        urlencode($t), AUDIO_TAB_NAME, $height
+        '<a href="https://youtube.com/results?search_query=%s" title="Search for recordings of this composition on YouTube" target=%s><img height=%d src=youtube.png></a>',
+        urlencode($t),
+        AUDIO_TAB_NAME,
+        $height
     );
 }
 
@@ -864,6 +869,7 @@ function audio_element($id, $file) {
 }
 
 function audio_button($id) {
+    if (!IMSLP_AUDIO) return;
     $audio = sprintf(
         ' onclick="play_sound(\'a%d\');" onmouseleave="stop_sound(\'a%d\');" ',
         $id, $id
@@ -874,6 +880,7 @@ function audio_button($id) {
 // Javascript for audio on search results
 //
 function enable_audio() {
+    if (!IMSLP_AUDIO) return;
 echo '
 <script language="javascript" type="text/javascript">
 function play_sound(id) {
