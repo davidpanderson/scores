@@ -81,6 +81,10 @@ function select2_head($title) {
     ";
 }
 
+// $items is a list of [val, label] pairs;
+// $selected is the list of selected values.
+// $extra is e.g. id=foo
+//
 function select2_multi($label, $name, $items, $selected=null, $extra='') {
     echo sprintf('
         <div class="form-group">
